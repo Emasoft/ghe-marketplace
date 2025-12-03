@@ -25,7 +25,7 @@ This template defines the standard format for posting conversation exchanges to 
 <img src="AVATAR_URL" width="77" align="left"/>
 
 **NAME said:**
-<br>
+<br><br>
 
 CONTENT_HERE
 
@@ -36,7 +36,7 @@ CONTENT_HERE
 
 - `AVATAR_URL`: The avatar URL from the table above
 - `NAME`: The display name (e.g., "Emasoft", "Claude (Orchestrator)", "ghe:dev-thread-manager")
-- `CONTENT_HERE`: The message content (use `>` for quotes)
+- `CONTENT_HERE`: The message content (only use `>` when quoting someone else, not for direct text)
 
 ## Example: User Message
 
@@ -44,12 +44,12 @@ CONTENT_HERE
 <img src="https://avatars.githubusercontent.com/u/713559?v=4&s=77" width="77" align="left"/>
 
 **Emasoft said:**
-<br>
+<br><br>
 
-> This is a quoted message from the user.
-> It can span multiple lines.
+This is the user's direct message text.
+No quote marks needed for direct text.
 
-Additional context or details here.
+Use `>` quote marks only when actually quoting someone else.
 
 ---
 ```
@@ -60,7 +60,7 @@ Additional context or details here.
 <img src="https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3" width="77" align="left"/>
 
 **Claude (Orchestrator) said:**
-<br>
+<br><br>
 
 Response content here.
 
@@ -74,7 +74,7 @@ Response content here.
 ## Important Notes
 
 1. **Empty line after avatar**: Always leave an empty line after the `<img>` tag
-2. **`<br>` after name**: Always add `<br>` after "**Name said:**" to create spacing
+2. **`<br><br>` after name**: Always add double `<br><br>` after "**Name said:**" for proper spacing
 3. **Separator**: Always end with `---` horizontal rule
 4. **Avatar size**: Always use `width="77"` for consistency
 5. **Alignment**: Always use `align="left"` for the avatar
