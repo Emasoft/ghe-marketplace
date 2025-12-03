@@ -58,6 +58,39 @@ A message containing **criticism or evaluation** about the code:
 - Code quality assessments
 - Any positive or negative evaluation of code or program behavior
 
+## Core Features
+
+### 1. ON TRACK - Always Focused on the Current Task
+
+Each GitHub Issue thread keeps Claude focused on **one task at a time**. No more context drift or mixing different problems together. When you say *"Let's work on issue #42"*, Claude reads that specific thread and stays on track.
+
+### 2. ALIGNED TEAM WORK - Seamless Collaboration
+
+Other collaborators who have installed the GHE plugin can **collaborate effortlessly**. Everyone stays up to date by following the thread and commenting in it. Human developers and AI agents work together in the same conversation, with full visibility of each other's progress.
+
+### 3. PERFECT MEMORY - Nothing Gets Lost
+
+Both Claude and the user have **all information stored in the thread**. No word will be forgotten, even across multiple sessions. Specialized agents retrieve any information from the thread history and provide it to Claude or the user on demand. Context compaction? No problem - the thread is your permanent record.
+
+### 4. EPIC THREADS - Big Plans, Organized Execution
+
+Not just single issues - **large implementation plans** are conducted via Epic threads. When a set of changes is defined, the Epic thread automatically launches a **WAVE**. A WAVE is composed of many new threads, each one focusing on developing a specific functionality. This enables orchestrated, parallel development of complex features while keeping the big picture in the Epic.
+
+```
+EPIC THREAD: "Implement Authentication System"
+    │
+    └── WAVE 1
+        ├── Issue #101: User registration
+        ├── Issue #102: Login/logout flow
+        ├── Issue #103: Password reset
+        └── Issue #104: Session management
+    │
+    └── WAVE 2
+        ├── Issue #105: OAuth integration
+        ├── Issue #106: Two-factor auth
+        └── Issue #107: API tokens
+```
+
 ## Installation
 
 ### Quick Install (Recommended)
