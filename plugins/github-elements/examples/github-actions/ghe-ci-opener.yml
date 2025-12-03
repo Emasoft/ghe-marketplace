@@ -1,0 +1,119 @@
+# GitHub Elements - CI Failure Issue Opener
+# Automatically opens issues when CI workflows fail
+# Links to failed runs and tags relevant epics
+
+name: GHE CI Failure Issue Opener
+
+on:
+  workflow_run:
+    workflows: ["CI", "Tests", "Build"]  # Adjust to match your CI workflow names
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+  pull-requests: read
+
+jobs:
+  open-failure-issue:
+    runs-on: ubuntu-latest
+    # Only run when workflow failed
+    if: github.event.workflow_run.conclusion == 'failure'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Open issue for CI failure
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Authentication: Use GitHub App (recommended) or API key
+          # Install GitHub App with: /install-github-app in Claude Code
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Or use API key instead:
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          additional_permissions: |
+            actions: read
+          prompt: |
+            TASK: GitHub Elements CI Failure Issue Creation
+            REPOSITORY: ${{ github.repository }}
+            WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+            WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+            WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+            HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+            HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+            CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+            ACTOR: ${{ github.event.workflow_run.actor.login }}
+
+            You are opening a GitHub issue for a CI/CD failure following GHE conventions.
+
+            STEP 1: Gather failure information
+            - Use available CI tools to get workflow run details
+            - Try to identify which job(s) failed
+            - Extract relevant error messages if accessible
+
+            STEP 2: Determine epic context
+            - Parse branch name for epic identifier (e.g., feature/jwt-auth-* -> jwt-auth epic)
+            - Check if there's an existing GHE thread for this branch
+
+            STEP 3: Check for duplicate issues (deduplication protocol)
+            - Search for open issues with title containing "CI Failure" and this workflow run ID
+            - Also search for issues with same branch AND same error signature
+            - If duplicate exists, add a comment instead of opening new issue
+
+            DEDUPLICATION CRITERIA:
+            1. Exact match: Same workflow run ID → Always skip, add comment to existing
+            2. Same branch + same error: Likely same root cause → Add comment, don't create new
+            3. Same error across branches: Potential systemic issue → Create issue but link related
+
+            PRIORITY HANDLING:
+            - If failure is on main/master branch: Add "priority:critical" label
+            - Main branch failures should be addressed before feature branch work
+            - Post to any in-progress DEV thread: "Main branch CI failing - please address first"
+
+            STEP 4: Create issue with this format:
+
+            TITLE: [CI Failure] ${{ github.event.workflow_run.name }} - {brief description}
+
+            BODY:
+            ```markdown
+            ## CI Failure Report
+
+            **Workflow**: ${{ github.event.workflow_run.name }}
+            **Branch**: ${{ github.event.workflow_run.head_branch }}
+            **Commit**: ${{ github.event.workflow_run.head_sha }}
+            **Triggered by**: @${{ github.event.workflow_run.actor.login }}
+            **Run URL**: ${{ github.event.workflow_run.html_url }}
+
+            ### Failure Summary
+            [Brief description of what failed]
+
+            ### Error Details
+            [Key error messages if accessible, or "See workflow logs for details"]
+
+            ### Related GHE Context
+            [If epic identified, mention it here]
+            [If existing thread found, link it]
+
+            ### Suggested Actions
+            - [ ] Review the workflow logs
+            - [ ] Identify root cause
+            - [ ] Fix and re-run CI
+
+            ---
+            *This issue was automatically created by GHE CI Failure Monitor.*
+            ```
+
+            STEP 5: Add labels
+            - Add "ci-failure" label (create if doesn't exist)
+            - Add "type:bug" label
+            - Add "source:ci" label (marks auto-created)
+            - If epic identified, add epic label (use issue NUMBER: "epic:NNN")
+            - If main/master branch: Add "priority:critical" label
+
+            OUTPUT: Confirm issue creation with issue number and URL.
+
+          claude_args: |
+            --max-turns 10
+            --model claude-sonnet-4-20250514

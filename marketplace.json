@@ -1,0 +1,41 @@
+{
+  "$schema": "https://claude.ai/schemas/marketplace/v1.json",
+  "name": "github-elements-marketplace",
+  "description": "Marketplace for GitHub Elements plugin - persistent memory for Claude Code using GitHub Issues",
+  "author": {
+    "name": "Emasoft",
+    "email": "713559+Emasoft@users.noreply.github.com",
+    "github": "Emasoft"
+  },
+  "plugins": [
+    {
+      "name": "github-elements",
+      "version": "1.0.0",
+      "description": "GitHub Issues as permanent memory for AI agents. Enables multi-session work tracking, context survival across compaction, and team collaboration through GitHub's native features.",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/Emasoft/github-elements-plugin",
+      "installPath": "./plugins/github-elements",
+      "categories": ["workflow", "persistence", "collaboration", "github"],
+      "keywords": [
+        "github",
+        "issues",
+        "persistent-memory",
+        "workflow",
+        "multi-session",
+        "context-survival",
+        "collaboration",
+        "serena-mcp"
+      ],
+      "features": {
+        "commands": 1,
+        "agents": 10,
+        "skills": 6,
+        "hooks": 1
+      },
+      "requirements": {
+        "gh_cli": "GitHub CLI (gh) must be installed and authenticated",
+        "serena_mcp": "SERENA MCP (optional, for memory bank integration)"
+      }
+    }
+  ]
+}

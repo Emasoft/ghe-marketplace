@@ -1,0 +1,117 @@
+# GitHub Elements - Stale Thread Monitor
+# Runs daily to detect threads with no activity for >24 hours
+# Posts warning comments on stale threads
+
+name: GHE Stale Thread Monitor
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC (adjust as needed)
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    # Allow manual triggering for testing
+    inputs:
+      stale_hours:
+        description: 'Hours of inactivity to consider stale'
+        required: false
+        default: '24'
+
+env:
+  STALE_HOURS: ${{ github.event.inputs.stale_hours || '24' }}
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  check-stale-threads:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for stale GHE threads
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Authentication: Use GitHub App (recommended) or API key
+          # Install GitHub App with: /install-github-app in Claude Code
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Or use API key instead:
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            TASK: GitHub Elements Stale Thread Detection
+            REPOSITORY: ${{ github.repository }}
+            STALE_THRESHOLD: ${{ env.STALE_HOURS }} hours
+
+            You are monitoring GitHub Elements (GHE) workflow threads for staleness.
+
+            STEP 1: Find all open issues with the "in-progress" label in this repository.
+
+            STEP 2: For each in-progress issue, check when the last activity occurred:
+            - Last comment timestamp
+            - Last label change
+            - Last assignee change
+
+            STEP 2.5: ALSO check for UNCLAIMED issues with "ready" label that have been waiting too long:
+            - Issues with "ready" label but no assignee
+            - Check creation date or last activity
+            - If waiting > 48 hours with no claims, flag as "stale-unclaimed"
+
+            STEP 3: STALE CLASSIFICATION:
+            - IN-PROGRESS STALE: Has assignee, no activity for ${{ env.STALE_HOURS }} hours
+            - UNCLAIMED STALE: No assignee, "ready" label, waiting > 48 hours
+
+            Note: These are DIFFERENT issues requiring DIFFERENT responses:
+            - In-progress stale = Prompt assignee for checkpoint
+            - Unclaimed stale = Escalate to coordinator for prioritization
+
+            STEP 4: For each stale thread, post appropriate warning:
+
+            FOR IN-PROGRESS STALE:
+            ```
+            ## Stale Thread Warning (In-Progress)
+
+            This thread has had no activity for over ${{ env.STALE_HOURS }} hours.
+
+            **Actions needed:**
+            - If work is ongoing, post a checkpoint to update progress
+            - If blocked, document the blocker in a comment
+            - If work is paused, consider unassigning to free up the thread
+
+            Note: "Stale" means no activity, not "slow progress". Quality work takes time.
+            A checkpoint showing deliberate progress resets the stale timer.
+
+            This is an automated reminder from the GHE Stale Monitor.
+            ```
+
+            FOR UNCLAIMED STALE (no assignee, "ready" label, >48h):
+            ```
+            ## Unclaimed Issue Alert
+
+            This issue has been ready for claiming for over 48 hours but has no assignee.
+
+            **Possible reasons:**
+            - Issue is too complex and needs breakdown
+            - Issue lacks sufficient context
+            - Issue is blocked by other work
+            - No available agents with required skills
+
+            **Actions needed:**
+            - Epic coordinator: Review and reprioritize
+            - Consider: Is this issue properly scoped?
+            - Consider: Are prerequisites met?
+
+            This is an automated alert from the GHE Stale Monitor.
+            ```
+
+            STEP 5: If more than 3 threads are stale, create a summary issue titled:
+            "[GHE] Stale Thread Summary - {today's date}"
+
+            With body listing all stale threads and their last activity dates.
+
+            OUTPUT: Report how many threads were checked, how many were stale, and what actions were taken.
+
+          claude_args: |
+            --max-turns 10
+            --model claude-sonnet-4-20250514

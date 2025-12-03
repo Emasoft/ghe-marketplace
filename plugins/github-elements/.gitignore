@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.temp
+.cache/
+
+# Local settings (user-specific, not plugin-specific)
+*.local.md

@@ -1,0 +1,24 @@
+{
+  "name": "github-elements",
+  "version": "1.0.0",
+  "description": "GitHub Issues as persistent memory with orchestrated DEV/TEST/REVIEW workflow management. Includes specialized agents for thread lifecycle, phase validation, memory synchronization, and enforcement.",
+  "author": {
+    "name": "Emasoft",
+    "email": "713559+Emasoft@users.noreply.github.com"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/Emasoft/claude-code-plugins",
+  "homepage": "https://github.com/Emasoft/claude-code-plugins/tree/main/github-elements-plugin",
+  "keywords": [
+    "github",
+    "issues",
+    "memory",
+    "workflow",
+    "orchestration",
+    "agents",
+    "DEV",
+    "TEST",
+    "REVIEW"
+  ],
+  "hooks": "./hooks/hooks.json"
+}

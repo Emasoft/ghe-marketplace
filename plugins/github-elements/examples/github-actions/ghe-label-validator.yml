@@ -1,0 +1,102 @@
+# GitHub Elements - Label Validator
+# Validates GHE label combinations on issues
+# Posts corrective comments when invalid combinations detected
+
+name: GHE Label Validator
+
+on:
+  issues:
+    types: [labeled, unlabeled]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  validate-labels:
+    runs-on: ubuntu-latest
+    # Only run for issues that might be GHE threads (have any ghe-related label)
+    if: |
+      contains(github.event.issue.labels.*.name, 'type:dev') ||
+      contains(github.event.issue.labels.*.name, 'type:test') ||
+      contains(github.event.issue.labels.*.name, 'type:review')
+
+    steps:
+      - name: Validate GHE labels
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Authentication: Use GitHub App (recommended) or API key
+          # Install GitHub App with: /install-github-app in Claude Code
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Or use API key instead:
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            TASK: GitHub Elements Label Validation
+            REPOSITORY: ${{ github.repository }}
+            ISSUE_NUMBER: ${{ github.event.issue.number }}
+            ISSUE_TITLE: ${{ github.event.issue.title }}
+            CURRENT_LABELS: ${{ join(github.event.issue.labels.*.name, ', ') }}
+            LABEL_ADDED: ${{ github.event.label.name }}
+            ACTION: ${{ github.event.action }}
+
+            You are validating GitHub Elements (GHE) label combinations.
+
+            GHE LABEL RULES:
+
+            1. TYPE LABELS (thread type - exactly one required):
+               - type:dev = Development thread
+               - type:test = Testing thread
+               - type:review = Code review thread
+
+            2. STATUS LABELS (current status - at most one):
+               - ready = Available to claim (no assignee allowed)
+               - in-progress = Being worked on (requires assignee)
+               - blocked = Has blocker
+               - needs-input = Waiting for external input
+
+            3. EPIC LABELS (linking):
+               - epic:NNN = Linked to epic issue #NNN (use issue number, not name)
+
+            VALID COMBINATIONS:
+            - Exactly one type: label
+            - At most one status label
+            - At most one epic: label
+            - in-progress requires an assignee
+            - ready requires NO assignee
+
+            INVALID COMBINATIONS (must warn):
+            - Multiple type: labels on same issue
+            - in-progress without an assignee
+            - ready WITH an assignee
+            - Both ready and in-progress on same issue
+
+            VALIDATION STEPS:
+
+            1. Check if issue #${{ github.event.issue.number }} has valid label combinations
+            2. If VALID: Do nothing, no comment needed
+            3. If INVALID: Post a comment explaining:
+               - What's wrong
+               - Which labels conflict
+               - How to fix it
+
+            COMMENT FORMAT (only if invalid):
+            ```
+            ## GHE Label Validation Warning
+
+            **Issue**: [describe the problem]
+
+            **Current labels**: [list current labels]
+
+            **Problem**: [explain the conflict]
+
+            **To fix**: [specific instructions]
+
+            ---
+            *This is an automated validation from the GHE Label Validator.*
+            ```
+
+            Be concise. Only post if there's actually a problem.
+
+          claude_args: |
+            --max-turns 5
+            --model claude-sonnet-4-20250514
