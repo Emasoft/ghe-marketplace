@@ -199,6 +199,8 @@ notification_level: <verbose/normal/quiet>
 default_reviewer: "<github-username>"
 stale_threshold_hours: <12/24/48/72>
 epic_label_prefix: "epic:"
+current_issue: null
+auto_transcribe: true
 ---
 
 # GHE Configuration
@@ -214,6 +216,18 @@ This project is configured for GHE (GitHub-Elements) workflow tracking.
 - **Notification Level**: <level>
 - **Default Reviewer**: @<username>
 - **Stale Threshold**: <N> hours
+
+## Active Issue Tracking
+
+- **Current Issue**: None (say "lets work on issue #N" to activate)
+- **Auto Transcribe**: Yes (all exchanges posted to issue thread)
+
+## Trigger Phrases
+
+To start/resume issue tracking, say:
+- "lets work on this new issue" - Creates a new issue
+- "lets work on issue #123" - Activates existing issue
+- "lets resume working on issue #123" - Resumes existing issue
 
 ## Modifying Settings
 

@@ -9,11 +9,11 @@ This template defines the standard format for posting conversation exchanges to 
 | **Emasoft** | Owner | `https://avatars.githubusercontent.com/u/713559?v=4&s=77` |
 | **Claude** | Orchestrator | `https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3` |
 | **Hephaestus** | `ghe:dev-thread-manager` | `https://robohash.org/hephaestus.png?size=77x77&set=set3` |
-| **Artemis** | `ghe:test-thread-manager` | `https://robohash.org/artemis.png?size=77x77&set=set3` |
-| **Hera** | `ghe:review-thread-manager` | `https://robohash.org/hera.png?size=77x77&set=set3` |
-| **Athena** | `ghe:github-elements-orchestrator` | `https://robohash.org/athena.png?size=77x77&set=set3` |
-| **Themis** | `ghe:phase-gate` | `https://robohash.org/themis.png?size=77x77&set=set3` |
-| **Mnemosyne** | `ghe:memory-sync` | `https://robohash.org/mnemosyne.png?size=77x77&set=set3` |
+| **Artemis** | `ghe:test-thread-manager` | `https://robohash.org/artemis-goddess.png?size=77x77&set=set5` |
+| **Hera** | `ghe:review-thread-manager` | `https://robohash.org/hera-goddess.png?size=77x77&set=set5` |
+| **Athena** | `ghe:github-elements-orchestrator` | `https://robohash.org/athena-goddess.png?size=77x77&set=set5` |
+| **Themis** | `ghe:phase-gate` | `https://robohash.org/themis-goddess.png?size=77x77&set=set5` |
+| **Mnemosyne** | `ghe:memory-sync` | `https://robohash.org/mnemosyne-goddess.png?size=77x77&set=set5` |
 | **Ares** | `ghe:enforcement` | `https://robohash.org/ares.png?size=77x77&set=set3` |
 | **Hermes** | `ghe:reporter` | `https://robohash.org/hermes.png?size=77x77&set=set3` |
 | **Chronos** | `ghe:ci-issue-opener` | `https://robohash.org/chronos.png?size=77x77&set=set3` |

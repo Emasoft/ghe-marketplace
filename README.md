@@ -288,11 +288,11 @@ gh auth login
 | Avatar | Name | Agent ID | Purpose |
 |:------:|:----:|----------|---------|
 | <img src="https://robohash.org/hephaestus.png?size=77x77&set=set3" width="77"/> | **Hephaestus** | `ghe:dev-thread-manager` | Builds and shapes the work (DEV phase) |
-| <img src="https://robohash.org/artemis.png?size=77x77&set=set3" width="77"/> | **Artemis** | `ghe:test-thread-manager` | Hunts down bugs and verifies behavior (TEST phase) |
-| <img src="https://robohash.org/hera.png?size=77x77&set=set3" width="77"/> | **Hera** | `ghe:review-thread-manager` | Brings clarity, discovers issues (REVIEW phase) |
-| <img src="https://robohash.org/athena.png?size=77x77&set=set3" width="77"/> | **Athena** | `ghe:github-elements-orchestrator` | Strategist coordinating the workflow |
-| <img src="https://robohash.org/themis.png?size=77x77&set=set3" width="77"/> | **Themis** | `ghe:phase-gate` | Upholds rules and judges phase transitions |
-| <img src="https://robohash.org/mnemosyne.png?size=77x77&set=set3" width="77"/> | **Mnemosyne** | `ghe:memory-sync` | Records and preserves knowledge |
+| <img src="https://robohash.org/artemis-goddess.png?size=77x77&set=set5" width="77"/> | **Artemis** | `ghe:test-thread-manager` | Hunts down bugs and verifies behavior (TEST phase) |
+| <img src="https://robohash.org/hera-goddess.png?size=77x77&set=set5" width="77"/> | **Hera** | `ghe:review-thread-manager` | Brings clarity, discovers issues (REVIEW phase) |
+| <img src="https://robohash.org/athena-goddess.png?size=77x77&set=set5" width="77"/> | **Athena** | `ghe:github-elements-orchestrator` | Strategist coordinating the workflow |
+| <img src="https://robohash.org/themis-goddess.png?size=77x77&set=set5" width="77"/> | **Themis** | `ghe:phase-gate` | Upholds rules and judges phase transitions |
+| <img src="https://robohash.org/mnemosyne-goddess.png?size=77x77&set=set5" width="77"/> | **Mnemosyne** | `ghe:memory-sync` | Records and preserves knowledge |
 | <img src="https://robohash.org/ares.png?size=77x77&set=set3" width="77"/> | **Ares** | `ghe:enforcement` | Maintains order and enforces boundaries |
 | <img src="https://robohash.org/hermes.png?size=77x77&set=set3" width="77"/> | **Hermes** | `ghe:reporter` | Messenger delivering status reports |
 | <img src="https://robohash.org/chronos.png?size=77x77&set=set3" width="77"/> | **Chronos** | `ghe:ci-issue-opener` | Sounds the alarm when CI fails |
