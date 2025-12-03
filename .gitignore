@@ -1,1 +1,4 @@
 .DS_Store
+
+# GHE plugin settings (user-local, per-machine)
+.claude/*.local.md
