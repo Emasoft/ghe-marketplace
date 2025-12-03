@@ -2,81 +2,125 @@
 
 A Claude Code plugin marketplace containing the **GitHub Elements** plugin for persistent memory using GitHub Issues.
 
-## Available Plugins
-
-### github-elements v1.0.0
-
-GitHub Issues as **permanent memory** for AI agents. Enables multi-session work tracking, context survival across compaction, and team collaboration.
-
-**Features:**
-- 10 specialized agents (DEV, TEST, REVIEW managers, orchestrator, etc.)
-- 6 skills (status, claim, checkpoint, transition, report, tracking)
-- 1 command (/github-elements:setup)
-- 1 hook (SessionStart for context recovery)
-
-**Requirements:**
-- GitHub CLI (`gh`) installed and authenticated
-- SERENA MCP (optional, for memory bank integration)
-
 ## Installation
 
-### Option 1: Install from this marketplace
+### Quick Install (Recommended)
 
 ```bash
-# Clone this marketplace
-git clone https://github.com/Emasoft/github-elements-marketplace.git ~/.claude/marketplaces/github-elements
-
-# The plugin will be auto-discovered from:
-# ~/.claude/marketplaces/github-elements/plugins/github-elements/
+# Clone this marketplace to Claude Code's marketplaces directory
+git clone https://github.com/Emasoft/github-elements-marketplace.git ~/.claude/marketplaces/github-elements-marketplace
 ```
 
-### Option 2: Install plugin directly
+After cloning, restart Claude Code. The plugin will be auto-discovered.
+
+### Alternative: Install Plugin Only
+
+If you only want the plugin without the marketplace structure:
 
 ```bash
-# Clone directly to plugins directory
-git clone https://github.com/Emasoft/github-elements-plugin.git ~/.claude/plugins/github-elements
+# Clone the plugin directly
+git clone https://github.com/Emasoft/github-elements-marketplace.git /tmp/ghe-temp
+cp -r /tmp/ghe-temp/plugins/github-elements ~/.claude/plugins/
+rm -rf /tmp/ghe-temp
 ```
 
-### Option 3: Symlink for development
+### For Development (Symlink)
 
 ```bash
-# For local development, symlink to your clone
-ln -s /path/to/github-elements-plugin ~/.claude/plugins/github-elements
+# Clone to your preferred location
+git clone https://github.com/Emasoft/github-elements-marketplace.git ~/Code/github-elements-marketplace
+
+# Symlink to Claude Code
+ln -s ~/Code/github-elements-marketplace ~/.claude/marketplaces/github-elements-marketplace
 ```
 
-## Marketplace Structure
+## Post-Installation Setup
 
-```
-github-elements-marketplace/
-├── marketplace.json       # Marketplace index
-├── README.md              # This file
-└── plugins/
-    └── github-elements/   # The plugin
-        ├── .claude-plugin/
-        │   └── plugin.json
-        ├── agents/
-        ├── skills/
-        ├── commands/
-        ├── hooks/
-        ├── scripts/
-        ├── LICENSE
-        └── README.md
-```
-
-## Usage
-
-After installation, run the setup command:
+After installation, run the setup command in Claude Code:
 
 ```
 /github-elements:setup
 ```
 
-This creates `.claude/github-elements.local.md` with your project settings.
+This creates `.claude/github-elements.local.md` with your project-specific settings.
+
+## Requirements
+
+- **GitHub CLI** (`gh`) - Must be installed and authenticated
+  ```bash
+  # Install
+  brew install gh  # macOS
+
+  # Authenticate
+  gh auth login
+  ```
+
+- **SERENA MCP** (Optional) - For memory bank integration with project-level context
+
+## Available Plugin
+
+### github-elements v1.0.0
+
+GitHub Issues as **permanent memory** for AI agents. Enables multi-session work tracking, context survival across compaction, and team collaboration.
+
+| Component | Count | Description |
+|-----------|-------|-------------|
+| Agents | 10 | DEV/TEST/REVIEW managers, orchestrator, enforcement, etc. |
+| Skills | 6 | status, claim, checkpoint, transition, report, tracking |
+| Commands | 1 | `/github-elements:setup` for project configuration |
+| Hooks | 1 | SessionStart for automatic context recovery |
+
+### Core Features
+
+- **Persistent Memory**: GitHub Issues survive context compaction
+- **Multi-Session Tracking**: Continue work across Claude Code sessions
+- **Team Collaboration**: Multiple agents can work on same project
+- **Phase Workflow**: DEV → TEST → REVIEW circular development cycle
+- **SERENA Integration**: Optional memory bank for large documents
+
+## Marketplace Structure
+
+```
+github-elements-marketplace/
+├── marketplace.json       # Plugin index with metadata
+├── README.md              # This file
+├── LICENSE                # MIT License
+└── plugins/
+    └── github-elements/   # The complete plugin
+        ├── .claude-plugin/
+        │   └── plugin.json
+        ├── agents/        # 10 specialized agents
+        ├── skills/        # 6 workflow skills
+        ├── commands/      # Setup command
+        ├── hooks/         # SessionStart hook
+        ├── scripts/       # Helper scripts
+        ├── examples/      # GitHub Actions examples
+        └── README.md      # Plugin documentation
+```
+
+## Updating
+
+```bash
+cd ~/.claude/marketplaces/github-elements-marketplace
+git pull
+```
+
+## Uninstalling
+
+```bash
+rm -rf ~/.claude/marketplaces/github-elements-marketplace
+```
 
 ## License
 
-Apache-2.0
+MIT License - Copyright (c) 2025 Emasoft
 
 ## Author
 
-Emasoft - https://github.com/Emasoft
+[Emasoft](https://github.com/Emasoft)
+
+## Links
+
+- [Plugin Documentation](plugins/github-elements/README.md)
+- [GitHub Actions Examples](plugins/github-elements/examples/github-actions/)
+- [Issue Tracker](https://github.com/Emasoft/github-elements-marketplace/issues)
