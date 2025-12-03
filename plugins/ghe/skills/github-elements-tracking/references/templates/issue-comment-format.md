@@ -4,20 +4,20 @@ This template defines the standard format for posting conversation exchanges to 
 
 ## Avatar URLs
 
-| Role | Avatar URL |
-|------|------------|
-| **Emasoft (Owner)** | `https://avatars.githubusercontent.com/u/713559?v=4&s=77` |
-| **Claude (Orchestrator)** | `https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3` |
-| **dev-thread-manager** | `https://robohash.org/ghe-dev-thread-manager.png?size=77x77&set=set3` |
-| **test-thread-manager** | `https://robohash.org/ghe-test-thread-manager.png?size=77x77&set=set3` |
-| **review-thread-manager** | `https://robohash.org/ghe-review-thread-manager.png?size=77x77&set=set3` |
-| **orchestrator** | `https://robohash.org/ghe-orchestrator.png?size=77x77&set=set3` |
-| **phase-gate** | `https://robohash.org/ghe-phase-gate.png?size=77x77&set=set3` |
-| **memory-sync** | `https://robohash.org/ghe-memory-sync.png?size=77x77&set=set3` |
-| **enforcement** | `https://robohash.org/ghe-enforcement.png?size=77x77&set=set3` |
-| **reporter** | `https://robohash.org/ghe-reporter.png?size=77x77&set=set3` |
-| **ci-issue-opener** | `https://robohash.org/ghe-ci-issue-opener.png?size=77x77&set=set3` |
-| **pr-checker** | `https://robohash.org/ghe-pr-checker.png?size=77x77&set=set3` |
+| Name | Agent ID | Avatar URL |
+|------|----------|------------|
+| **Emasoft** | Owner | `https://avatars.githubusercontent.com/u/713559?v=4&s=77` |
+| **Claude** | Orchestrator | `https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3` |
+| **Hephaestus** | `ghe:dev-thread-manager` | `https://robohash.org/hephaestus.png?size=77x77&set=set3` |
+| **Artemis** | `ghe:test-thread-manager` | `https://robohash.org/artemis.png?size=77x77&set=set3` |
+| **Hera** | `ghe:review-thread-manager` | `https://robohash.org/hera.png?size=77x77&set=set3` |
+| **Athena** | `ghe:github-elements-orchestrator` | `https://robohash.org/athena.png?size=77x77&set=set3` |
+| **Themis** | `ghe:phase-gate` | `https://robohash.org/themis.png?size=77x77&set=set3` |
+| **Mnemosyne** | `ghe:memory-sync` | `https://robohash.org/mnemosyne.png?size=77x77&set=set3` |
+| **Ares** | `ghe:enforcement` | `https://robohash.org/ares.png?size=77x77&set=set3` |
+| **Hermes** | `ghe:reporter` | `https://robohash.org/hermes.png?size=77x77&set=set3` |
+| **Chronos** | `ghe:ci-issue-opener` | `https://robohash.org/chronos.png?size=77x77&set=set3` |
+| **Cerberus** | `ghe:pr-checker` | `https://robohash.org/cerberus.png?size=77x77&set=set3` |
 
 ## Comment Template
 
@@ -35,7 +35,7 @@ CONTENT_HERE
 ## Template Variables
 
 - `AVATAR_URL`: The avatar URL from the table above
-- `NAME`: The display name (e.g., "Emasoft", "Claude (Orchestrator)", "ghe:dev-thread-manager")
+- `NAME`: The display name (e.g., "Emasoft", "Claude", "Hephaestus", "Artemis")
 - `CONTENT_HERE`: The message content (only use `>` when quoting someone else, not for direct text)
 
 ## Example: User Message
