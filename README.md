@@ -285,18 +285,18 @@ gh auth login
 
 ### Agents
 
-| Agent | Purpose |
-|-------|---------|
-| `ghe:dev-thread-manager` | Manages DEV phase work |
-| `ghe:test-thread-manager` | Manages TEST phase work |
-| `ghe:review-thread-manager` | Manages REVIEW phase, bug triage |
-| `ghe:github-elements-orchestrator` | Coordinates workflow |
-| `ghe:phase-gate` | Validates phase transitions |
-| `ghe:memory-sync` | Syncs to SERENA memory bank |
-| `ghe:enforcement` | Audits workflow compliance |
-| `ghe:reporter` | Generates status reports |
-| `ghe:ci-issue-opener` | Creates issues from CI failures |
-| `ghe:pr-checker` | Validates PRs against workflow |
+| Avatar | Agent | Purpose |
+|:------:|-------|---------|
+| <img src="https://robohash.org/ghe-dev-thread-manager.png?size=48x48&set=set3" width="48"/> | `ghe:dev-thread-manager` | Manages DEV phase work |
+| <img src="https://robohash.org/ghe-test-thread-manager.png?size=48x48&set=set3" width="48"/> | `ghe:test-thread-manager` | Manages TEST phase work |
+| <img src="https://robohash.org/ghe-review-thread-manager.png?size=48x48&set=set3" width="48"/> | `ghe:review-thread-manager` | Manages REVIEW phase, bug triage |
+| <img src="https://robohash.org/ghe-orchestrator.png?size=48x48&set=set3" width="48"/> | `ghe:github-elements-orchestrator` | Coordinates workflow |
+| <img src="https://robohash.org/ghe-phase-gate.png?size=48x48&set=set3" width="48"/> | `ghe:phase-gate` | Validates phase transitions |
+| <img src="https://robohash.org/ghe-memory-sync.png?size=48x48&set=set3" width="48"/> | `ghe:memory-sync` | Syncs to SERENA memory bank |
+| <img src="https://robohash.org/ghe-enforcement.png?size=48x48&set=set3" width="48"/> | `ghe:enforcement` | Audits workflow compliance |
+| <img src="https://robohash.org/ghe-reporter.png?size=48x48&set=set3" width="48"/> | `ghe:reporter` | Generates status reports |
+| <img src="https://robohash.org/ghe-ci-issue-opener.png?size=48x48&set=set3" width="48"/> | `ghe:ci-issue-opener` | Creates issues from CI failures |
+| <img src="https://robohash.org/ghe-pr-checker.png?size=48x48&set=set3" width="48"/> | `ghe:pr-checker` | Validates PRs against workflow |
 
 ### Skills
 
