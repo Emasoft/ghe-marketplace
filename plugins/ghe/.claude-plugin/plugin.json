@@ -1,0 +1,26 @@
+{
+  "name": "ghe",
+  "version": "0.1.0-alpha",
+  "description": "GHE (GitHub-Elements) - Automated project management for Claude Code using GitHub Issues as persistent memory with orchestrated DEV/TEST/REVIEW workflow.",
+  "author": {
+    "name": "Emasoft",
+    "email": "713559+Emasoft@users.noreply.github.com"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/Emasoft/ghe-marketplace",
+  "keywords": [
+    "ghe",
+    "github-elements",
+    "project-management",
+    "github",
+    "issues",
+    "memory",
+    "workflow",
+    "orchestration",
+    "agents",
+    "DEV",
+    "TEST",
+    "REVIEW"
+  ],
+  "hooks": "./hooks/hooks.json"
+}

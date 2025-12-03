@@ -1,7 +1,7 @@
 {
   "$schema": "https://claude.ai/schemas/marketplace/v1.json",
-  "name": "github-elements-marketplace",
-  "description": "Marketplace for GitHub Elements plugin - persistent memory for Claude Code using GitHub Issues",
+  "name": "ghe-marketplace",
+  "description": "GHE (GitHub-Elements) - Automated project management for Claude Code using GitHub Issues as persistent memory",
   "author": {
     "name": "Emasoft",
     "email": "713559+Emasoft@users.noreply.github.com",
@@ -9,16 +9,17 @@
   },
   "plugins": [
     {
-      "name": "github-elements",
-      "version": "1.0.0",
-      "description": "GitHub Issues as permanent memory for AI agents. Enables multi-session work tracking, context survival across compaction, and team collaboration through GitHub's native features.",
-      "license": "Apache-2.0",
-      "repository": "https://github.com/Emasoft/github-elements-plugin",
-      "installPath": "./plugins/github-elements",
-      "categories": ["workflow", "persistence", "collaboration", "github"],
+      "name": "ghe",
+      "version": "0.1.0-alpha",
+      "description": "GHE (GitHub-Elements) - Automated project management for Claude Code. Uses GitHub Issues as persistent memory for multi-session work tracking, context survival, and team collaboration.",
+      "license": "MIT",
+      "repository": "https://github.com/Emasoft/ghe-marketplace",
+      "installPath": "./plugins/ghe",
+      "categories": ["workflow", "persistence", "collaboration", "github", "project-management"],
       "keywords": [
-        "github",
-        "issues",
+        "ghe",
+        "github-elements",
+        "project-management",
         "persistent-memory",
         "workflow",
         "multi-session",
