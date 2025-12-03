@@ -6,7 +6,7 @@
 
 **Persistent Memory for Claude Code**
 
-[![Version](https://img.shields.io/badge/version-0.1.4--alpha-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.1.4-alpha)
+[![Version](https://img.shields.io/badge/version-0.1.5--alpha-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.1.5-alpha)
 [![Release](https://img.shields.io/github/v/release/Emasoft/ghe-marketplace?include_prereleases&label=release)](https://github.com/Emasoft/ghe-marketplace/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
@@ -274,7 +274,7 @@ gh auth login
 
 ## Plugin Contents
 
-### GHE v0.1.4-alpha
+### GHE v0.1.5-alpha
 
 | Component | Count | Description |
 |-----------|-------|-------------|
