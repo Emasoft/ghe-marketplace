@@ -28,9 +28,9 @@ This template defines the standard format for posting conversation exchanges to 
 <br><br>
 
 CONTENT_HERE
-
----
 ```
+
+**Note:** Only add `---` separator if the message includes file links, citations, or references that need to be visually separated from the main text.
 
 ## Template Variables
 
@@ -50,8 +50,6 @@ This is the user's direct message text.
 No quote marks needed for direct text.
 
 Use `>` quote marks only when actually quoting someone else.
-
----
 ```
 
 ## Example: Agent Response
@@ -67,15 +65,34 @@ Response content here.
 **Actions taken:**
 - Action 1
 - Action 2
+```
+
+## Example: Message with References
+
+```markdown
+<img src="https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3" width="77" align="left"/>
+
+**Claude (Orchestrator) said:**
+<br><br>
+
+Here is my analysis of the issue.
 
 ---
+
+**Files modified:**
+- `src/main.py`
+- `tests/test_main.py`
+
+**References:**
+- Issue #42
+- PR #15
 ```
 
 ## Important Notes
 
 1. **Empty line after avatar**: Always leave an empty line after the `<img>` tag
 2. **`<br><br>` after name**: Always add double `<br><br>` after "**Name said:**" for proper spacing
-3. **Separator**: Always end with `---` horizontal rule
+3. **Separator**: Only use `---` when message has file links, citations, or references to separate
 4. **Avatar size**: Always use `width="77"` for consistency
 5. **Alignment**: Always use `align="left"` for the avatar
 
