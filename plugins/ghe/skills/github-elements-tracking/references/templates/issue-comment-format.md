@@ -15,9 +15,9 @@ This template defines the standard format for posting conversation exchanges to 
 | **Themis** | `ghe:phase-gate` | `https://robohash.org/themis.png?size=77x77&set=set3` |
 | **Mnemosyne** | `ghe:memory-sync` | `https://robohash.org/mnemosyne.png?size=77x77&set=set3` |
 | **Ares** | `ghe:enforcement` | `https://robohash.org/ares.png?size=77x77&set=set3` |
-| **Hermes** | `ghe:reporter` | `https://robohash.org/hermes.png?size=77x77&set=set3` |
+| **Hermes** | `ghe:reporter` | `https://robohash.org/cerberus.png?size=77x77&set=set3` |
 | **Chronos** | `ghe:ci-issue-opener` | `https://robohash.org/chronos.png?size=77x77&set=set3` |
-| **Cerberus** | `ghe:pr-checker` | `https://robohash.org/cerberus.png?size=77x77&set=set3` |
+| **Cerberus** | `ghe:pr-checker` | `https://robohash.org/hermes.png?size=77x77&set=set3` |
 
 ## Comment Template
 
