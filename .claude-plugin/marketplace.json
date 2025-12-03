@@ -1,42 +1,36 @@
 {
-  "$schema": "https://claude.ai/schemas/marketplace/v1.json",
   "name": "ghe-marketplace",
-  "description": "GHE (GitHub-Elements) - Automated project management for Claude Code using GitHub Issues as persistent memory",
-  "author": {
+  "owner": {
     "name": "Emasoft",
-    "email": "713559+Emasoft@users.noreply.github.com",
-    "github": "Emasoft"
+    "email": "713559+Emasoft@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "GHE (GitHub-Elements) - Automated project management for Claude Code using GitHub Issues as persistent memory",
+    "version": "0.1.1-alpha"
   },
   "plugins": [
     {
       "name": "ghe",
-      "version": "0.1.0-alpha",
+      "source": "./plugins/ghe",
+      "version": "0.1.1-alpha",
       "description": "GHE (GitHub-Elements) - Automated project management for Claude Code. Uses GitHub Issues as persistent memory for multi-session work tracking, context survival, and team collaboration.",
+      "author": {
+        "name": "Emasoft",
+        "email": "713559+Emasoft@users.noreply.github.com"
+      },
       "license": "MIT",
       "repository": "https://github.com/Emasoft/ghe-marketplace",
-      "installPath": "./plugins/ghe",
-      "categories": ["workflow", "persistence", "collaboration", "github", "project-management"],
+      "homepage": "https://github.com/Emasoft/ghe-marketplace",
       "keywords": [
         "ghe",
         "github-elements",
         "project-management",
         "persistent-memory",
         "workflow",
-        "multi-session",
-        "context-survival",
-        "collaboration",
-        "serena-mcp"
+        "collaboration"
       ],
-      "features": {
-        "commands": 1,
-        "agents": 10,
-        "skills": 6,
-        "hooks": 1
-      },
-      "requirements": {
-        "gh_cli": "GitHub CLI (gh) must be installed and authenticated",
-        "serena_mcp": "SERENA MCP (optional, for memory bank integration)"
-      }
+      "category": "workflow",
+      "tags": ["github", "persistence", "memory", "project-management"]
     }
   ]
 }
