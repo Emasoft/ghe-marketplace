@@ -25,6 +25,7 @@ This template defines the standard format for posting conversation exchanges to 
 <img src="AVATAR_URL" width="77" align="left"/>
 
 **NAME said:**
+<br>
 
 CONTENT_HERE
 
@@ -43,6 +44,7 @@ CONTENT_HERE
 <img src="https://avatars.githubusercontent.com/u/713559?v=4&s=77" width="77" align="left"/>
 
 **Emasoft said:**
+<br>
 
 > This is a quoted message from the user.
 > It can span multiple lines.
@@ -58,6 +60,7 @@ Additional context or details here.
 <img src="https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3" width="77" align="left"/>
 
 **Claude (Orchestrator) said:**
+<br>
 
 Response content here.
 
@@ -71,7 +74,7 @@ Response content here.
 ## Important Notes
 
 1. **Empty line after avatar**: Always leave an empty line after the `<img>` tag
-2. **Empty line before content**: Always leave an empty line after the "**Name said:**" line
+2. **`<br>` after name**: Always add `<br>` after "**Name said:**" to create spacing
 3. **Separator**: Always end with `---` horizontal rule
 4. **Avatar size**: Always use `width="77"` for consistency
 5. **Alignment**: Always use `align="left"` for the avatar
