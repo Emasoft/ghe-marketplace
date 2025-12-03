@@ -60,21 +60,25 @@ A message containing **criticism or evaluation** about the code:
 
 ## Core Features
 
-### 1. ON TRACK - Always Focused on the Current Task
+### 1. SESSION CONTINUITY - Never Lose Information Again
 
-Each GitHub Issue thread keeps Claude focused on **one task at a time**. No more context drift or mixing different problems together. When you say *"Let's work on issue #42"*, Claude reads that specific thread and stays on track.
+No more losing information and details every time the session is **COMPACTED**! A hook and a team of agents will automatically align Claude with the thread on GitHub where all developments, ideas, data, files, progress, information, results, problems, reports, actions, logs, changes to the code, etc. done while working with Claude are stored in their original chronological flow of events.
 
-### 2. ALIGNED TEAM WORK - Seamless Collaboration
+### 2. ON TRACK - Always Focused on the Current Task
 
-Other collaborators who have installed the GHE plugin can **collaborate effortlessly**. Everyone stays up to date by following the thread and commenting in it. Human developers and AI agents work together in the same conversation, with full visibility of each other's progress.
+Each GitHub Issue thread keeps Claude **always focused on the current task**. No more context drift or mixing different problems together.
 
-### 3. PERFECT MEMORY - Nothing Gets Lost
+### 3. ALIGNED TEAM WORK - Easy Collaboration
 
-Both Claude and the user have **all information stored in the thread**. No word will be forgotten, even across multiple sessions. Specialized agents retrieve any information from the thread history and provide it to Claude or the user on demand. Context compaction? No problem - the thread is your permanent record.
+Other collaborators that have installed the GHE plugin will be able to **collaborate easily and be always up to date** following the thread and commenting in it.
 
-### 4. EPIC THREADS - Big Plans, Organized Execution
+### 4. PERFECT MEMORY - Nothing Gets Forgotten
 
-Not just single issues - **large implementation plans** are conducted via Epic threads. When a set of changes is defined, the Epic thread automatically launches a **WAVE**. A WAVE is composed of many new threads, each one focusing on developing a specific functionality. This enables orchestrated, parallel development of complex features while keeping the big picture in the Epic.
+Both Claude and the user will have **all the information stored in the thread**. No word will be forgotten. Specialized agents will find any information from the thread and will provide it to Claude or the user.
+
+### 5. EPIC THREADS - Big Implementation Plans with WAVES
+
+Not only single issues, but **big implementation plans** will be conducted via Epic threads. Every time a set of changes is defined, the Epic thread will launch automatically a **WAVE**. A WAVE will be composed by many new threads, each one focusing on developing a functionality.
 
 ```
 EPIC THREAD: "Implement Authentication System"
