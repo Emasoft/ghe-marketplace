@@ -318,10 +318,217 @@ git pull
 rm -rf ~/.claude/marketplaces/ghe-marketplace
 ```
 
+---
+
+## Troubleshooting
+
+**Something not working? Don't worry! Let's fix it together.**
+
+<details>
+<summary><b>Claude doesn't see the plugin</b></summary>
+
+**What happened?** Claude Code didn't find the plugin in your folders.
+
+**Let's check:**
+1. Open your terminal
+2. Type this and press Enter:
+   ```bash
+   ls ~/.claude/marketplaces/ghe-marketplace
+   ```
+3. Do you see files? Great! Try restarting Claude Code.
+4. No files? The plugin isn't installed. Go back to [Installation](#installation) and try again.
+
+</details>
+
+<details>
+<summary><b>GitHub CLI says "not logged in"</b></summary>
+
+**What happened?** The `gh` tool doesn't know who you are yet.
+
+**Let's fix it:**
+1. Open your terminal
+2. Type this and press Enter:
+   ```bash
+   gh auth login
+   ```
+3. Follow the steps on screen. Pick "GitHub.com" and "HTTPS".
+4. It will open your browser. Click "Authorize".
+5. Done! Now `gh` knows you.
+
+</details>
+
+<details>
+<summary><b>The /ghe:setup command doesn't work</b></summary>
+
+**What happened?** Claude Code can't find the command.
+
+**Let's check:**
+1. Did you restart Claude Code after installing? (Close it completely, then open again)
+2. Is the plugin in the right folder? Check with:
+   ```bash
+   ls ~/.claude/marketplaces/ghe-marketplace/plugins/ghe/commands/
+   ```
+3. Still not working? Try installing again from [Installation](#installation).
+
+</details>
+
+<details>
+<summary><b>Claude forgets everything after compaction</b></summary>
+
+**What happened?** The SessionStart hook might not be running.
+
+**Let's check:**
+1. Do you have a GitHub Issue for your project? GHE needs one to save your work.
+2. Did you run `/ghe:setup` in your project? This tells GHE which repo to use.
+3. Check if the hook file exists:
+   ```bash
+   ls ~/.claude/marketplaces/ghe-marketplace/plugins/ghe/hooks/
+   ```
+
+</details>
+
+<details>
+<summary><b>I see errors about "permission denied"</b></summary>
+
+**What happened?** Some files need permission to run.
+
+**Let's fix it:**
+```bash
+chmod +x ~/.claude/marketplaces/ghe-marketplace/plugins/ghe/scripts/*.sh
+chmod +x ~/.claude/marketplaces/ghe-marketplace/plugins/ghe/hooks/scripts/*.sh
+```
+
+Now try again!
+
+</details>
+
+<details>
+<summary><b>Still stuck?</b></summary>
+
+**That's okay!** Here's what to do:
+
+1. **Check the GitHub Issues**: Maybe someone had the same problem.
+   - Go to: https://github.com/Emasoft/ghe-marketplace/issues
+
+2. **Ask for help**: Open a new issue and tell us:
+   - What you tried to do
+   - What happened instead
+   - Copy any error messages you see
+
+We'll help you figure it out!
+
+</details>
+
+---
+
+## Prerequisites
+
+Before using GHE, you need:
+
+### 1. Claude Code
+
+GHE is a plugin for **Claude Code**, Anthropic's official AI coding assistant.
+
+<table>
+<tr>
+<td width="100" align="center">
+<a href="https://www.anthropic.com">
+<img src="https://img.icons8.com/fluency/96/artificial-intelligence.png" width="48"/>
+</a>
+</td>
+<td>
+
+**Anthropic** - The company behind Claude
+https://www.anthropic.com
+
+</td>
+</tr>
+<tr>
+<td width="100" align="center">
+<a href="https://docs.anthropic.com/en/docs/claude-code">
+<img src="https://img.icons8.com/fluency/96/console.png" width="48"/>
+</a>
+</td>
+<td>
+
+**Claude Code Documentation**
+https://docs.anthropic.com/en/docs/claude-code
+
+</td>
+</tr>
+<tr>
+<td width="100" align="center">
+<a href="https://www.npmjs.com/package/@anthropic-ai/claude-code">
+<img src="https://img.icons8.com/fluency/96/npm.png" width="48"/>
+</a>
+</td>
+<td>
+
+**Install Claude Code**
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+</td>
+</tr>
+</table>
+
+### 2. GitHub CLI
+
+GHE uses the GitHub CLI (`gh`) to interact with your repositories.
+
+```bash
+# macOS
+brew install gh
+
+# Windows
+winget install GitHub.cli
+
+# Linux
+sudo apt install gh
+```
+
+Then authenticate:
+```bash
+gh auth login
+```
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Support
+
+- **Issues**: https://github.com/Emasoft/ghe-marketplace/issues
+- **Discussions**: https://github.com/Emasoft/ghe-marketplace/discussions
+
+## Acknowledgments
+
+- [Anthropic](https://www.anthropic.com) for creating Claude and Claude Code
+- The Claude Code community for inspiration and feedback
+
+---
+
 ## License
 
 MIT License - Copyright (c) 2025 Emasoft
 
-## Author
+See [LICENSE](LICENSE) for details.
 
-[Emasoft](https://github.com/Emasoft)
+---
+
+<div align="center">
+
+**Made with Claude Code**
+
+[Emasoft](https://github.com/Emasoft) | [Report Bug](https://github.com/Emasoft/ghe-marketplace/issues) | [Request Feature](https://github.com/Emasoft/ghe-marketplace/issues)
+
+</div>
