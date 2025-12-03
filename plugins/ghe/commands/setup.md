@@ -5,11 +5,11 @@ allowed-tools: ["Write", "Read", "AskUserQuestion", "Bash"]
 
 # GitHub Elements Setup Command
 
-This command creates `.claude/github-elements.local.md` with user preferences.
+This command creates `.claude/ghe.local.md` with user preferences.
 
 ## Step 1: Check Existing Configuration
 
-First check if `.claude/github-elements.local.md` already exists:
+First check if `.claude/ghe.local.md` already exists:
 - If exists, read current settings and offer to modify
 - If not, create new configuration
 
@@ -186,7 +186,7 @@ Ensure `.claude/` directory exists:
 mkdir -p .claude
 ```
 
-Write settings file using Write tool to `.claude/github-elements.local.md`:
+Write settings file using Write tool to `.claude/ghe.local.md`:
 
 ```markdown
 ---
@@ -201,9 +201,9 @@ stale_threshold_hours: <12/24/48/72>
 epic_label_prefix: "epic:"
 ---
 
-# GitHub Elements Configuration
+# GHE Configuration
 
-This project is configured for GitHub Elements workflow tracking.
+This project is configured for GHE (GitHub-Elements) workflow tracking.
 
 ## Current Settings
 
@@ -270,7 +270,7 @@ Ensure settings file is gitignored:
 # Check if .gitignore exists and has the pattern
 if ! grep -q ".claude/*.local.md" .gitignore 2>/dev/null; then
   echo "" >> .gitignore
-  echo "# GitHub Elements plugin settings (user-local)" >> .gitignore
+  echo "# GHE plugin settings (user-local)" >> .gitignore
   echo ".claude/*.local.md" >> .gitignore
 fi
 ```
@@ -279,11 +279,11 @@ fi
 
 Tell the user:
 
-1. Settings file created at `.claude/github-elements.local.md`
+1. Settings file created at `.claude/ghe.local.md`
 2. All required GitHub labels created (type:, status, gate:, violation:, etc.)
 3. Summary of configured settings
 4. Reminder that changes require Claude Code restart
-5. How to re-run setup: `/github-elements:setup`
+5. How to re-run setup: `/ghe:setup`
 6. Settings are gitignored (personal to this machine)
 
 ## Implementation Notes

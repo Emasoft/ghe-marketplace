@@ -6,7 +6,7 @@
 
 **Persistent Memory for Claude Code**
 
-[![Version](https://img.shields.io/badge/version-0.1.0--alpha-blue.svg)](https://github.com/Emasoft/ghe-marketplace)
+[![Version](https://img.shields.io/badge/version-0.1.2--alpha-blue.svg)](https://github.com/Emasoft/ghe-marketplace)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://claude.ai/code)
 
