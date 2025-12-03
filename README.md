@@ -15,6 +15,45 @@ GHE is a Claude Code plugin that turns GitHub Issues into a **persistent memory 
 - **Team collaboration** - Multiple agents working on the same project
 - **Context survival** - Your work history persists in GitHub Issues
 
+## The Element
+
+<p align="center">
+  <img src="plugins/ghe/assets/element-triangle.svg" alt="The Element Triangle" width="400"/>
+</p>
+
+An **Element** is a unit of information stored as a single message/reply to a GitHub Issue in the issue tracker. Every piece of information in GHE is an Element.
+
+There are **3 types of Elements**:
+
+### Element of Knowledge
+
+A message describing **objective information ABOUT the code**:
+- Files, signatures, incompatibilities, errors, results
+- Algorithm pseudocode, quotes from papers, ideas
+- Architectures, design, requirements, formats
+- APIs, features, functionalities, data structures
+- Configurations, databases, dev stack, compilers, dependencies
+
+### Element of Action
+
+A message containing or linking **actual source code**:
+- Code snippets showing an issue in the codebase
+- Proposed patches or fixes
+- Summarized changes with diffs
+- Contributions to the project (linked PRs, forks)
+- Proposed variations to parts of the code
+
+> Must be actual code, not pseudocode - a snippet, diff, or patch.
+
+### Element of Judgement
+
+A message containing **criticism or evaluation** about the code:
+- Bug reports and descriptions
+- Performance issues
+- Incompatibilities, security issues
+- Code quality assessments
+- Any positive or negative evaluation of code or program behavior
+
 ## Installation
 
 ### Quick Install (Recommended)
