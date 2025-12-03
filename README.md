@@ -1,19 +1,55 @@
-# GHE Marketplace
+<div align="center">
+
+# GHE
+
+### **G**it**H**ub-**E**lements
+
+**Persistent Memory for Claude Code**
+
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha-blue.svg)](https://github.com/Emasoft/ghe-marketplace)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://claude.ai/code)
+
+*Turn GitHub Issues into a persistent memory system for AI agents.*
+
+</div>
+
+---
 
 > **ALPHA** - This plugin is in early development. APIs and workflows may change.
 
-**GHE** = **G**it**H**ub-**E**lements
-
-Automated project management for Claude Code using GitHub Issues as persistent memory.
-
 ## What is GHE?
 
-GHE is a Claude Code plugin that turns GitHub Issues into a **persistent memory system** for AI agents. It enables:
+GHE is a Claude Code plugin that transforms GitHub Issues into a **persistent memory system** for AI-assisted development. Your work survives context compaction, your team stays synchronized, and nothing gets lost.
 
-- **Multi-session work tracking** - Continue where you left off after context compaction
-- **Automated workflow management** - DEV → TEST → REVIEW phase cycle
-- **Team collaboration** - Multiple agents working on the same project
-- **Context survival** - Your work history persists in GitHub Issues
+<table>
+<tr>
+<td>
+
+**Multi-session continuity**<br/>
+<sub>Continue where you left off</sub>
+
+</td>
+<td>
+
+**Automated workflow**<br/>
+<sub>DEV &rarr; TEST &rarr; REVIEW</sub>
+
+</td>
+<td>
+
+**Team collaboration**<br/>
+<sub>Humans + AI in sync</sub>
+
+</td>
+<td>
+
+**Perfect recall**<br/>
+<sub>Every detail preserved</sub>
+
+</td>
+</tr>
+</table>
 
 ## The Element
 
@@ -58,42 +94,104 @@ A message containing **criticism or evaluation** about the code:
 - Code quality assessments
 - Any positive or negative evaluation of code or program behavior
 
-## Core Features
+---
 
-### 1. SESSION CONTINUITY - Never Lose Information Again
+## Why GHE?
 
-No more losing information and details every time the session is **COMPACTED**! A hook and a team of agents will automatically align Claude with the thread on GitHub where all developments, ideas, data, files, progress, information, results, problems, reports, actions, logs, changes to the code, etc. done while working with Claude are stored in their original chronological flow of events.
+<table>
+<tr>
+<td width="80" align="center">
+<img src="https://img.icons8.com/fluency/96/synchronize.png" width="48"/>
+</td>
+<td>
 
-### 2. ON TRACK - Always Focused on the Current Task
+### SESSION CONTINUITY
+
+**Never lose information again.**
+
+No more losing information and details every time the session is **COMPACTED**. A hook and a team of agents will automatically align Claude with the thread on GitHub where all developments, ideas, data, files, progress, information, results, problems, reports, actions, logs, changes to the code are stored in their original chronological flow of events.
+
+</td>
+</tr>
+<tr>
+<td width="80" align="center">
+<img src="https://img.icons8.com/fluency/96/goal.png" width="48"/>
+</td>
+<td>
+
+### ON TRACK
+
+**Always focused on the current task.**
 
 Each GitHub Issue thread keeps Claude **always focused on the current task**. No more context drift or mixing different problems together.
 
-### 3. ALIGNED TEAM WORK - Easy Collaboration
+</td>
+</tr>
+<tr>
+<td width="80" align="center">
+<img src="https://img.icons8.com/fluency/96/conference-call.png" width="48"/>
+</td>
+<td>
+
+### ALIGNED TEAM WORK
+
+**Easy collaboration across humans and AI.**
 
 Other collaborators that have installed the GHE plugin will be able to **collaborate easily and be always up to date** following the thread and commenting in it.
 
-### 4. PERFECT MEMORY - Nothing Gets Forgotten
+</td>
+</tr>
+<tr>
+<td width="80" align="center">
+<img src="https://img.icons8.com/fluency/96/brain.png" width="48"/>
+</td>
+<td>
+
+### PERFECT MEMORY
+
+**Nothing gets forgotten.**
 
 Both Claude and the user will have **all the information stored in the thread**. No word will be forgotten. Specialized agents will find any information from the thread and will provide it to Claude or the user.
 
-### 5. EPIC THREADS - Big Implementation Plans with WAVES
+</td>
+</tr>
+<tr>
+<td width="80" align="center">
+<img src="https://img.icons8.com/fluency/96/parallel-tasks.png" width="48"/>
+</td>
+<td>
+
+### EPIC THREADS
+
+**Big implementation plans with WAVES.**
 
 Not only single issues, but **big implementation plans** will be conducted via Epic threads. Every time a set of changes is defined, the Epic thread will launch automatically a **WAVE**. A WAVE will be composed by many new threads, each one focusing on developing a functionality.
+
+</td>
+</tr>
+</table>
+
+<details>
+<summary><b>Example: Epic Thread with Waves</b></summary>
 
 ```
 EPIC THREAD: "Implement Authentication System"
     │
-    └── WAVE 1
-        ├── Issue #101: User registration
-        ├── Issue #102: Login/logout flow
-        ├── Issue #103: Password reset
-        └── Issue #104: Session management
+    ├── WAVE 1
+    │   ├── Issue #101: User registration
+    │   ├── Issue #102: Login/logout flow
+    │   ├── Issue #103: Password reset
+    │   └── Issue #104: Session management
     │
     └── WAVE 2
         ├── Issue #105: OAuth integration
         ├── Issue #106: Two-factor auth
         └── Issue #107: API tokens
 ```
+
+</details>
+
+---
 
 ## Installation
 
