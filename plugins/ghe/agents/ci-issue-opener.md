@@ -74,7 +74,7 @@ gh issue list --state open --label "ci-failure" --label "source:ci" --json numbe
 | `ci-failure` | Argos detected workflow failure | Investigate and fix or escalate |
 | `source:ci` | Originated from CI/CD workflow | Links to workflow run |
 | `urgent` | 3+ consecutive failures | Handle IMMEDIATELY |
-| `type:review` | CI failure needs REVIEW triage | May need Hera's involvement |
+| `review` | CI failure needs REVIEW triage | May need Hera's involvement |
 
 ### Recognizing Argos Comments
 

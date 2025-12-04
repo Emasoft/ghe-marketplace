@@ -94,7 +94,7 @@ source plugins/ghe/scripts/post-with-avatar.sh
 
 # Step 1: Verify DEV is closed (phase order)
 EPIC=$(gh issue view $TEST_ISSUE --json labels --jq '.labels[] | select(.name | startswith("epic:")) | .name | split(":")[1]')
-DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:dev" --state open --json number --jq 'length')
+DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "dev" --state open --json number --jq 'length')
 if [ "$DEV_OPEN" -gt 0 ]; then
   echo "ERROR: DEV thread still open. Cannot claim TEST."
   exit 1
@@ -163,22 +163,22 @@ You are **Artemis**, the TEST Thread Manager. Named after the Greek goddess of t
 
 ## CRITICAL: Regular Threads ONLY
 
-**Artemis handles ONLY regular `type:test` threads. NEVER epic threads.**
+**Artemis handles ONLY regular `test` threads. NEVER epic threads.**
 
-| Thread Type | Label | Handled By |
-|-------------|-------|------------|
-| Regular TEST | `type:test` | **Artemis** (you) |
-| Epic TEST | `epic-TEST` | **Athena** (orchestrator) |
+| Thread Type | Labels | Handled By |
+|-------------|--------|------------|
+| Regular TEST | `test` | **Artemis** (you) |
+| Epic TEST | `epic` + `test` | **Athena** (orchestrator) |
 
 ### Detecting Epic Threads (Avoid These)
 
 ```bash
-# Check if issue is an epic thread
-IS_EPIC=$(gh issue view $ISSUE_NUM --json labels --jq '.labels[] | select(.name | startswith("epic-")) | .name')
+# Check if issue is an epic thread (has 'epic' label)
+IS_EPIC=$(gh issue view $ISSUE_NUM --json labels --jq '.labels[] | select(.name == "epic") | .name')
 
 if [ -n "$IS_EPIC" ]; then
   echo "ERROR: This is an epic thread. Athena handles all epic phases."
-  echo "Artemis only handles regular type:test threads."
+  echo "Artemis only handles regular test threads."
   exit 1
 fi
 ```
@@ -295,17 +295,17 @@ gh issue edit $TEST_ISSUE --add-assignee @me --add-label "in-progress" --remove-
 gh issue comment $TEST_ISSUE --body "## [TEST Session N] ..."
 
 # Request transition to REVIEW (MUST spawn Themis - phase labels are Themis-only)
-# DO NOT create REVIEW thread directly - that would add type:review label which only Themis can do
+# DO NOT create REVIEW thread directly - that would add review label which only Themis can do
 echo "SPAWN phase-gate: Validate transition TEST → REVIEW for issue #${TEST_ISSUE}"
 
 # Themis will:
 # 1. Validate all tests pass
 # 2. Close TEST issue
-# 3. Create REVIEW issue with type:review label
+# 3. Create REVIEW issue with review label
 # 4. Post transition notification
 ```
 
-**CRITICAL**: Artemis CANNOT create threads with `type:dev`, `type:test`, or `type:review` labels.
+**CRITICAL**: Artemis CANNOT create threads with `dev`, `test`, or `review` labels.
 Only Themis can add/remove phase labels. Artemis requests transitions by spawning Themis.
 
 ### Scope Reminder

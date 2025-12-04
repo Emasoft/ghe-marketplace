@@ -86,9 +86,9 @@ gh issue list --state open --label "ready" --json number,title,labels | \
 # 1. URGENT + security → Hephaestus immediately
 # 2. ci-failure → Chronos
 # 3. needs-moderation → Ares review
-# 4. source:pr + type:review → Hera
-# 5. bug + type:review → Hera
-# 6. feature + type:dev → Hephaestus
+# 4. source:pr + review → Hera
+# 5. bug + review → Hera
+# 6. feature + dev → Hephaestus
 ```
 
 ### Argos Label Reference
@@ -145,8 +145,8 @@ DEV ───► TEST ───► REVIEW ───► DEV...
 
 | Level | Thread Labels | Scope | Managed By |
 |-------|---------------|-------|------------|
-| **Regular** | `type:dev`, `type:test`, `type:review` | Single issue | Hephaestus, Artemis, Hera |
-| **Epic** | `epic-DEV`, `epic-TEST`, `epic-REVIEW` | Group of issues | **ATHENA ONLY** |
+| **Regular** | `dev`, `test`, `review` | Single issue | Hephaestus, Artemis, Hera |
+| **Epic** | `epic` + `dev`, `epic` + `test`, `epic` + `review` | Group of issues | **ATHENA ONLY** |
 
 ### CRITICAL: Athena Owns ALL Epic Phases
 
@@ -159,9 +159,9 @@ DEV ───► TEST ───► REVIEW ───► DEV...
 | REVIEW | Hera (actual reviewing) | **Athena** (setting review standards) |
 
 **WHY?** Epic threads are about **PLANNING**, not **EXECUTION**:
-- `epic-DEV`: Planning WHAT features to develop, breaking into issues, organizing into WAVES
-- `epic-TEST`: Planning WHAT tests to create/execute, test coverage strategy
-- `epic-REVIEW`: Setting review expectations, quality standards, acceptance criteria
+- `epic` + `dev`: Planning WHAT features to develop, breaking into issues, organizing into WAVES
+- `epic` + `test`: Planning WHAT tests to create/execute, test coverage strategy
+- `epic` + `review`: Setting review expectations, quality standards, acceptance criteria
 
 ### When to Use Epics (Meta-Level)
 
@@ -180,47 +180,47 @@ Epics are **META threads** that plan and coordinate **groups of issues**:
 Epic phases are **fundamentally different** from regular thread phases. They are META-level operations:
 
 ```
-epic-DEV ───────────► epic-TEST ────────────► epic-REVIEW ───► epic-complete
-     │                     │                        │
-     │                     │                        │
-     ▼                     ▼                        ▼
- Athena creates        BETA RELEASE              RC RELEASE
- waves + requirements  Public testing            External reviews
-     │                     │                        │
-     │                     │                        │
-     ▼                     ▼                        ▼
- All waves complete    All beta bugs fixed      User approves
- (normal flow)         (normal bug flow)        (external verdicts)
+epic+dev ─────────────► epic+test ───────────────► epic+review ──► epic+complete
+     │                       │                          │
+     │                       │                          │
+     ▼                       ▼                          ▼
+ Athena creates          BETA RELEASE              RC RELEASE
+ waves + requirements    Public testing            External reviews
+     │                       │                          │
+     │                       │                          │
+     ▼                       ▼                          ▼
+ All waves complete      All beta bugs fixed      User approves
+ (normal flow)           (normal bug flow)        (external verdicts)
 
-ONLY ONE EPIC CAN BE IN epic-TEST OR epic-REVIEW AT A TIME!
+ONLY ONE EPIC CAN BE IN epic+test OR epic+review AT A TIME!
 ```
 
 ### Epic Labels - META Meanings
 
 | Phase Label | What It Means | What Happens |
 |-------------|---------------|--------------|
-| `epic-DEV` | Planning: create waves, write requirements | Athena creates issues, waves execute via normal flow |
-| `epic-TEST` | **BETA RELEASE**: Public testing phase | Beta version released, users test, bugs routed to epic |
-| `epic-REVIEW` | **RC RELEASE**: External review phase | Release Candidate released, external reviews collected |
+| `epic` + `dev` | Planning: create waves, write requirements | Athena creates issues, waves execute via normal flow |
+| `epic` + `test` | **BETA RELEASE**: Public testing phase | Beta version released, users test, bugs routed to epic |
+| `epic` + `review` | **RC RELEASE**: External review phase | Release Candidate released, external reviews collected |
 
 ---
 
-### epic-DEV: Wave Planning (Normal Flow)
+### Epic DEV Phase: Wave Planning (Normal Flow)
 
-When an epic is in `epic-DEV`:
+When an epic has `epic` + `dev` labels:
 1. Athena writes requirements for each wave
-2. Athena starts waves (creates issues with `type:dev`)
+2. Athena starts waves (creates issues with `dev` label)
 3. Issues go through normal DEV → TEST → REVIEW flow
 4. Themis notifies Athena when each wave completes
-5. When ALL waves are complete, Athena requests transition to `epic-TEST`
+5. When ALL waves are complete, Athena requests transition to `epic` + `test`
 
 ---
 
-### epic-TEST: Beta Release (META Testing)
+### Epic TEST Phase: Beta Release (META Testing)
 
-**CRITICAL**: `epic-TEST` does NOT mean Athena is testing. It means the epic feature is ready for PUBLIC BETA TESTING.
+**CRITICAL**: `epic` + `test` does NOT mean Athena is testing. It means the epic feature is ready for PUBLIC BETA TESTING.
 
-#### What Happens When epic-TEST is Applied
+#### What Happens When Epic Enters TEST Phase
 
 ```
 1. Orchestrator informs user: "Epic feature ready for beta testing"
@@ -249,24 +249,24 @@ When an epic is in `epic-DEV`:
 8. Themis posts to epic thread: "Beta phase complete, all bugs fixed"
      │
      ▼
-9. Athena requests Themis to promote to epic-REVIEW
+9. Athena requests Themis to promote to `epic` + `review`
 ```
 
 #### Beta Testing Rules
 
 | Rule | Description |
 |------|-------------|
-| **One at a time** | Only ONE epic can be in `epic-TEST` at any time |
+| **One at a time** | Only ONE epic can have `epic` + `test` labels at any time |
 | **Bug routing** | Hermes routes all beta bug reports to the epic thread |
 | **Normal flow** | Bugs are fixed via normal DEV → TEST → REVIEW cycle |
 | **Beta branch** | All bug fixes are on the beta branch for this epic |
 | **User control** | User decides when to close beta testing |
 
-#### epic-TEST Demotion Protocol (Rare)
+#### Epic TEST Phase Demotion Protocol (Rare)
 
-In rare cases, critical issues during beta testing may require demoting the entire epic back to `epic-DEV`:
+In rare cases, critical issues during beta testing may require demoting the entire epic back to DEV phase:
 
-**When to Demote epic-TEST → epic-DEV**:
+**When to Demote TEST → DEV Phase**:
 - Fundamental architectural flaw discovered
 - Security vulnerability requiring redesign
 - Core requirements changed mid-beta
@@ -283,7 +283,7 @@ source plugins/ghe/scripts/post-with-avatar.sh
 # Step 1: Request demotion (Athena to Themis)
 HEADER=$(avatar_header "Athena")
 gh issue comment $EPIC_ISSUE --body "${HEADER}
-## Requesting Epic Demotion: epic-TEST → epic-DEV
+## Requesting Epic Demotion: TEST → DEV Phase
 
 ### Critical Issues Found
 [Describe the fundamental issues discovered during beta testing]
@@ -299,31 +299,20 @@ gh issue comment $EPIC_ISSUE --body "${HEADER}
 ### Proposed New Wave
 Will create a new wave to address these issues after demotion."
 
-# Step 2: Themis validates and executes (if approved by user)
-gh issue edit $EPIC_ISSUE \
-  --remove-label "epic-TEST" \
-  --add-label "epic-DEV"
+# Step 2: Spawn Themis to validate and execute (epic phase labels are Themis-only)
+# DO NOT manipulate epic/dev/test/review labels directly - only Themis can do this
+echo "SPAWN phase-gate: Validate and execute epic demotion TEST → DEV phase for epic #${EPIC_ISSUE}"
 
-# Step 3: Update epic title
-TITLE=$(gh issue view $EPIC_ISSUE --json title --jq '.title' | sed 's/\[EPIC-TEST\]/[EPIC-DEV]/')
-gh issue edit $EPIC_ISSUE --title "$TITLE"
+# Themis will:
+# 1. Validate demotion criteria
+# 2. Remove test label, add dev label (epic label stays)
+# 3. Update epic title
+# 4. Post demotion notification
 
-# Step 4: Post demotion notification
-HEADER=$(avatar_header "Themis")
-gh issue comment $EPIC_ISSUE --body "${HEADER}
-## Epic Demoted: epic-TEST → epic-DEV
-
-Beta testing has revealed issues requiring rework.
-
-### Status
-- Phase: epic-DEV
-- Beta release: SUSPENDED
-- New wave: PENDING
-
-### Next Steps
+### Next Steps (after Themis completes)
 1. Athena will create new wave with requirements for the rework
 2. Normal DEV → TEST → REVIEW cycle for new issues
-3. When all new wave issues complete, Athena may request epic-TEST again"
+3. When all new wave issues complete, Athena may request TEST phase again"
 ```
 
 **What Happens After Demotion**:
@@ -331,7 +320,7 @@ Beta testing has revealed issues requiring rework.
 2. Beta branch is preserved (not deleted)
 3. Athena creates new wave to address issues
 4. Existing unfixed beta bugs remain tracked
-5. When new wave completes, epic can re-enter epic-TEST
+5. When new wave completes, epic can re-enter TEST phase
 
 ---
 
@@ -341,7 +330,7 @@ Beta testing has revealed issues requiring rework.
 
 ```bash
 # When a new bug report is filed during beta testing:
-ACTIVE_BETA_EPIC=$(gh issue list --label "epic-TEST" --state open --json number --jq '.[0].number')
+ACTIVE_BETA_EPIC=$(gh issue list --label "epic" --label "test" --state open --json number --jq '.[0].number')
 
 if [ -n "$ACTIVE_BETA_EPIC" ]; then
   # Route to the active beta epic
@@ -365,11 +354,11 @@ fi
 
 ---
 
-### epic-REVIEW: Release Candidate (META Review)
+### Epic REVIEW Phase: Release Candidate (META Review)
 
-**CRITICAL**: `epic-REVIEW` does NOT mean Athena is reviewing. It means the epic feature is ready for EXTERNAL REVIEW as a Release Candidate.
+**CRITICAL**: `epic` + `review` does NOT mean Athena is reviewing. It means the epic feature is ready for EXTERNAL REVIEW as a Release Candidate.
 
-#### What Happens When epic-REVIEW is Applied
+#### What Happens When Epic Enters REVIEW Phase
 
 ```
 1. Orchestrator informs user: "Epic feature ready for RC release"
@@ -382,7 +371,7 @@ fi
      │
      ▼
 4. External reviews posted to GitHub Issues
-   (tagged with: external-epic-REVIEW)
+   (tagged with: external-review)
      │
      ▼
 5. Athena collects external feedback (does NOT respond to issues)
@@ -391,16 +380,16 @@ fi
 6. User reviews external feedback and makes decision
      │
      ▼
-7. User approves → Themis promotes to epic-complete + merge to main
-   User rejects → Themis demotes to epic-DEV with feedback
+7. User approves → Themis adds complete label + merge to main
+   User rejects → Themis removes review, adds dev label with feedback
 ```
 
 #### RC Review Rules
 
 | Rule | Description |
 |------|-------------|
-| **One at a time** | Only ONE epic can be in `epic-REVIEW` at any time |
-| **External label** | External reviews tagged `external-epic-REVIEW` |
+| **One at a time** | Only ONE epic can have `epic` + `review` labels at any time |
+| **External label** | External reviews tagged `external-review` |
 | **User decision** | User (not Athena) decides PASS/FAIL |
 | **Review branch** | RC is built from review branch |
 | **No mixing** | External reviews distinct from normal review phases |
@@ -409,7 +398,7 @@ fi
 
 ```bash
 # External reviewers' issues are marked distinctly
-gh issue edit $EXTERNAL_REVIEW_ISSUE --add-label "external-epic-REVIEW"
+gh issue edit $EXTERNAL_REVIEW_ISSUE --add-label "external-review"
 gh issue edit $EXTERNAL_REVIEW_ISSUE --add-label "parent-epic:${EPIC_ISSUE}"
 ```
 
@@ -419,10 +408,10 @@ gh issue edit $EXTERNAL_REVIEW_ISSUE --add-label "parent-epic:${EPIC_ISSUE}"
 
 | Phase | Athena's Role | Release Type | Who Acts |
 |-------|---------------|--------------|----------|
-| `epic-DEV` | **ACTIVE**: Creates requirements, starts waves | None | Normal agents for issues |
-| `epic-TEST` | **PASSIVE**: Waits for beta bugs to be fixed | BETA | Users test, Hermes routes bugs |
-| `epic-REVIEW` | **PASSIVE**: Collects external feedback | RC | External reviewers, User decides |
-| `epic-complete` | Done | PRODUCTION | Merge to main |
+| `epic` + `dev` | **ACTIVE**: Creates requirements, starts waves | None | Normal agents for issues |
+| `epic` + `test` | **PASSIVE**: Waits for beta bugs to be fixed | BETA | Users test, Hermes routes bugs |
+| `epic` + `review` | **PASSIVE**: Collects external feedback | RC | External reviewers, User decides |
+| `epic` + `complete` | Done | PRODUCTION | Merge to main |
 
 ### Epic Naming Convention
 
@@ -448,8 +437,8 @@ Examples:
 |-------------|---------|---------|----------|
 | **Main** | `main` | Production-ready code | Permanent |
 | **Issue branches** | `issue-<N>` | Individual issue work | Until merged |
-| **Epic beta** | `epic-<N>-beta` | Beta release during epic-TEST | Until RC |
-| **Epic RC** | `epic-<N>-rc` | Release Candidate during epic-REVIEW | Until main merge |
+| **Epic beta** | `epic-<N>-beta` | Beta release during epic TEST phase | Until RC |
+| **Epic RC** | `epic-<N>-rc` | Release Candidate during epic REVIEW phase | Until main merge |
 
 ### Branch Flow During Epic Lifecycle
 
@@ -462,22 +451,22 @@ main ◄────────────────────────
   │                                    │
   ├── issue-103 (wave 2 issue) ──► merged to epic-N-beta
   │                                    │
-  │                               epic-N-beta (epic-TEST)
+  │                               epic-N-beta (epic TEST phase)
   │                                    │
   │                               Beta bugs fixed on issue branches
   │                               then merged to epic-N-beta
   │                                    │
-  │                               epic-N-rc (epic-REVIEW)
+  │                               epic-N-rc (epic REVIEW phase)
   │                                    │
   │                               RC issues fixed on issue branches
   │                               then merged to epic-N-rc
   │                                    │
-  └───────────────────────────────────┘ (epic-complete → merge to main)
+  └───────────────────────────────────┘ (epic+complete → merge to main)
 ```
 
 ### Phase-Specific Branch Rules
 
-#### epic-DEV Phase
+#### Epic DEV Phase
 
 ```bash
 # Each issue gets its own worktree and branch
@@ -489,12 +478,12 @@ git checkout epic-${EPIC_NUM}-beta
 git merge issue-${ISSUE_NUM}
 ```
 
-#### epic-TEST Phase (Beta)
+#### Epic TEST Phase (Beta)
 
 ```bash
 EPIC_NUM=<epic issue number>
 
-# Create beta branch from main (once, when entering epic-TEST)
+# Create beta branch from main (once, when entering TEST phase)
 git checkout main
 git checkout -b epic-${EPIC_NUM}-beta
 
@@ -506,12 +495,12 @@ git checkout epic-${EPIC_NUM}-beta
 git merge issue-${BUG_ISSUE}
 ```
 
-#### epic-REVIEW Phase (RC)
+#### Epic REVIEW Phase (RC)
 
 ```bash
 EPIC_NUM=<epic issue number>
 
-# Create RC branch from beta (once, when entering epic-REVIEW)
+# Create RC branch from beta (once, when entering REVIEW phase)
 git checkout epic-${EPIC_NUM}-beta
 git checkout -b epic-${EPIC_NUM}-rc
 
@@ -523,7 +512,7 @@ git checkout epic-${EPIC_NUM}-rc
 git merge issue-${FIX_ISSUE}
 ```
 
-#### epic-complete Phase (Merge to Main)
+#### Epic Complete Phase (Merge to Main)
 
 ```bash
 EPIC_NUM=<epic issue number>
@@ -693,7 +682,7 @@ for DRAFT_FILE in "$REQUIREMENTS_DIR"/DRAFT-*.md; do
   # Create issue with draft label (not claimable)
   ISSUE_NUM=$(gh issue create \
     --title "[DEV] $(echo $SHORT_NAME | tr '-' ' ')" \
-    --label "type:dev" \
+    --label "dev" \
     --label "draft" \
     --label "parent-epic:${EPIC_ISSUE}" \
     --label "wave:${WAVE_NUM}" \
@@ -752,8 +741,8 @@ READY:
 | Thread Type | Requirements File | Why |
 |-------------|------------------|-----|
 | Epic child issue (`parent-epic:N`) | **REQUIRED** | Must have complete requirements before wave starts |
-| Standalone feature (`type:dev`) | **REQUIRED** | Must define what to build before building |
-| Bug report (`type:bug`) | **NOT REQUIRED** | Bug reports describe the problem, not the solution |
+| Standalone feature (`dev` label) | **REQUIRED** | Must define what to build before building |
+| Bug report (`bug` label) | **NOT REQUIRED** | Bug reports describe the problem, not the solution |
 
 **NO DEV THREAD CAN BE CREATED WITHOUT A REQUIREMENTS FILE** (except bug reports).
 
@@ -895,7 +884,7 @@ PHASE 2: STARTING THE WAVE (Athena's only action)
          ▼
 Athena creates one issue per requirement file:
   - Title: [DEV] [Feature Name]
-  - Label: type:dev, parent-epic:NNN, wave:N
+  - Label: dev, parent-epic:NNN, wave:N
   - Body: The complete requirements design file
          │
          ▼
@@ -1002,7 +991,7 @@ $(head -50 "$REQ_FILE" | tail -40)"
   # Create the issue
   gh issue create \
     --title "[DEV] ${FEATURE_NAME}" \
-    --label "type:dev" \
+    --label "dev" \
     --label "parent-epic:${EPIC_ISSUE}" \
     --label "wave:${WAVE_NUM}" \
     --label "ready" \
@@ -1020,7 +1009,7 @@ gh issue comment $EPIC_ISSUE --body "${HEADER}
 - #NEW3 - Password hashing utilities
 
 ### Status
-Wave ${WAVE_NUM} is now active. Issues have been assigned \`type:dev\` labels.
+Wave ${WAVE_NUM} is now active. Issues have been assigned \`dev\` labels.
 
 ### Next Steps
 Hephaestus will claim and develop these issues.
@@ -1097,7 +1086,7 @@ Writing requirements design files for the next batch of issues...
 | Database/API migration | Create epic | `epic-migration` |
 | Plugin/addon development | Create epic | `epic-addons` |
 | Web server changes | Create epic | `epic-webserver` |
-| Single small bug/feature | **NO EPIC** - use regular thread | `type:dev` directly |
+| Single small bug/feature | **NO EPIC** - use regular thread | `dev` label directly |
 
 ### Epic Creation Commands (Athena Only)
 
@@ -1112,7 +1101,8 @@ HEADER=$(avatar_header "Athena")
 
 gh issue create \
   --title "[EPIC-DEV] ${EPIC_TYPE}: ${EPIC_TITLE}" \
-  --label "epic-DEV" \
+  --label "epic" \
+  --label "dev" \
   --label "${EPIC_TYPE}" \
   --label "ready" \
   --body "${HEADER}
@@ -1158,7 +1148,7 @@ WAVE_NUM=1
 for FEATURE in "Database schema" "User model" "Password hashing"; do
   gh issue create \
     --title "[DEV] ${FEATURE}" \
-    --label "type:dev" \
+    --label "dev" \
     --label "parent-epic:${EPIC_ISSUE}" \
     --label "wave:${WAVE_NUM}" \
     --label "ready" \
@@ -1215,14 +1205,17 @@ if [ "$RELEASED" -eq "$TOTAL" ]; then
 fi
 ```
 
-### Epic Phase Transitions (Athena Only)
+### Epic Phase Transitions (Athena Requests, Themis Executes)
+
+**CRITICAL**: Epic phase labels (`epic` + phase labels `dev`/`test`/`review`/`complete`) are **Themis-only**.
+Athena coordinates and requests transitions, but Themis validates and executes them.
 
 Epic phases transition based on PLANNING completion, not development completion:
 
 ```bash
 EPIC_ISSUE=<epic issue number>
 
-# Transition epic-DEV to epic-TEST
+# Transition DEV → TEST phase for epic
 # Condition: All waves are PLANNED (not necessarily developed)
 # Athena has defined WHAT to develop in each wave
 
@@ -1230,23 +1223,31 @@ EPIC_ISSUE=<epic issue number>
 source plugins/ghe/scripts/post-with-avatar.sh
 HEADER=$(avatar_header "Athena")
 
-gh issue edit $EPIC_ISSUE --remove-label "epic-DEV" --add-label "epic-TEST"
+# Step 1: Athena requests transition
 gh issue comment $EPIC_ISSUE --body "${HEADER}
-## Transitioned to EPIC-TEST
+## Requesting Epic Transition: DEV → TEST Phase
+
+### Verification
+- [ ] All waves are planned
+- [ ] Requirements defined for each wave
+- [ ] Ready to plan TEST strategy
 
 ### What This Means
-Development planning is complete. Now planning TEST strategy.
+Development planning is complete. Now planning TEST strategy."
 
-### epic-TEST Planning
-- Define test coverage requirements for each wave
-- Specify acceptance criteria
-- Coordinate test execution across waves
+# Step 2: Spawn Themis to execute transition (epic phase labels are Themis-only)
+# DO NOT add/remove epic/dev/test/review labels directly
+echo "SPAWN phase-gate: Validate and execute epic transition DEV → TEST phase for epic #${EPIC_ISSUE}"
 
-### Note
-Child issues continue their normal cycles. This transition is about Athena's planning focus, not development status."
+# Themis will:
+# 1. Validate transition criteria
+# 2. Remove dev label, add test label (epic label stays)
+# 3. Post transition notification
 ```
 
-### Epic Completion (Athena Only)
+### Epic Completion (Athena Requests, Themis Executes)
+
+**CRITICAL**: Epic phase labels and `complete` label are **Themis-only**.
 
 When ALL waves are complete (all child issues have `gate:passed`):
 
@@ -1258,29 +1259,28 @@ TOTAL=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --json number | jq 'le
 PASSED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "gate:passed" --json number | jq 'length')
 
 if [ "$PASSED" -eq "$TOTAL" ]; then
-  # Mark epic complete
-  gh issue edit $EPIC_ISSUE \
-    --remove-label "epic-DEV" \
-    --remove-label "epic-TEST" \
-    --remove-label "epic-REVIEW" \
-    --add-label "epic-complete"
-
-  gh issue close $EPIC_ISSUE
-
+  # Step 1: Athena requests epic completion
   HEADER=$(avatar_header "Athena")
   gh issue comment $EPIC_ISSUE --body "${HEADER}
-## EPIC COMPLETE
+## Requesting Epic Completion
 
-### Summary
-All ${TOTAL} child issues have passed REVIEW and been released.
+### Verification
+- Total child issues: ${TOTAL}
+- Passed REVIEW: ${PASSED}
+- All issues complete: YES
 
-### Waves Completed
-- Wave 1: [X issues]
-- Wave 2: [Y issues]
-- Wave 3: [Z issues]
+### Requesting Themis to mark epic complete"
 
-### Final Status
-This epic is now complete. The epic thread serves as the permanent record."
+  # Step 2: Spawn Themis to execute completion (epic labels are Themis-only)
+  # DO NOT remove/add epic/dev/test/review/complete labels directly
+  echo "SPAWN phase-gate: Validate and execute epic completion for epic #${EPIC_ISSUE}"
+
+  # Themis will:
+  # 1. Validate all child issues have gate:passed
+  # 2. Remove phase labels (dev, test, review - whichever is current)
+  # 3. Add complete label (epic label stays)
+  # 4. Close epic issue
+  # 5. Post completion notification
 fi
 ```
 
@@ -1288,11 +1288,11 @@ fi
 
 | Agent | Handles | Never Handles |
 |-------|---------|---------------|
-| **Athena** | ALL epic phases (epic-DEV, epic-TEST, epic-REVIEW), wave planning | Single issue execution |
-| **Hephaestus** | Regular `type:dev` threads | Epic threads |
-| **Artemis** | Regular `type:test` threads | Epic threads |
-| **Hera** | Regular `type:review` threads | Epic threads |
-| **Themis** | ALL phase transitions, wave completion notifications | Execution work |
+| **Athena** | Epic coordination, wave planning, requests transitions | Phase labels (Themis-only), single issue execution |
+| **Hephaestus** | Regular `dev` threads | Epic threads, phase labels |
+| **Artemis** | Regular `test` threads | Epic threads, phase labels |
+| **Hera** | Regular `review` threads | Epic threads, phase labels |
+| **Themis** | ALL phase labels (dev/test/review, epic+phases, gate:*), ALL transitions | Execution work |
 
 ---
 
@@ -1370,7 +1370,7 @@ REPORT to main Claude for decision
 ```bash
 # Find active threads
 gh issue list --state open --json number,title,labels,updatedAt | \
-  jq -r '.[] | select(.labels[].name | test("type:(dev|test|review)"))'
+  jq -r '.[] | select(.labels[].name | test("^(dev|test|review)$"))'
 
 # Check for violations (multiple threads open per epic)
 gh issue list --label "epic:$EPIC" --state open --json number | jq 'length'

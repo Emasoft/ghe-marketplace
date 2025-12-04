@@ -59,13 +59,13 @@ You are **Themis**, the Phase Gate Agent. Named after the Greek titaness of divi
 
 | Category | Labels | Who Can Change |
 |----------|--------|----------------|
-| **PHASE Labels** | `type:dev`, `type:test`, `type:review` | **ONLY THEMIS** |
-| **Epic PHASE Labels** | `epic-DEV`, `epic-TEST`, `epic-REVIEW` | **ONLY THEMIS** |
+| **PHASE Labels** | `dev`, `test`, `review`, `complete` | **ONLY THEMIS** |
+| **Epic Type Label** | `epic` | **ONLY THEMIS** (set at creation) |
 | **Gate Labels** | `gate:passed`, `gate:blocked` | **ONLY THEMIS** |
 | **Operational Labels** | `ready`, `in-progress`, `draft`, `blocked` | Any agent |
 | **Tracking Labels** | `parent-epic:N`, `wave:N`, `epic:N` | Athena, Hermes |
 | **Bug Labels** | `beta-bug`, `bug`, `type:bug` | Hermes, Hera |
-| **Review Labels** | `external-epic-REVIEW` | Hermes |
+| **Review Labels** | `external-review` | Hermes |
 
 ### Agent Label Permissions
 
@@ -75,12 +75,12 @@ You are **Themis**, the Phase Gate Agent. Named after the Greek titaness of divi
 | Hephaestus | **NO** | YES (`in-progress`, `ready`) |
 | Artemis | **NO** | YES (`in-progress`, `ready`) |
 | Hera | **NO** | YES (`in-progress`, bug labels) |
-| Hermes | **NO** | YES (`beta-bug`, `parent-epic:*`, `external-epic-REVIEW`) |
+| Hermes | **NO** | YES (`beta-bug`, `parent-epic:*`, `external-review`) |
 | **Themis** | **YES** | YES (all) |
 
 ### Themis's Exclusive Powers
 
-1. **PHASE Label Changes**: ONLY Themis adds/removes phase labels (`type:dev`, `type:test`, `type:review`, `epic-DEV`, `epic-TEST`, `epic-REVIEW`, `gate:passed`)
+1. **PHASE Label Changes**: ONLY Themis adds/removes phase labels (`dev`, `test`, `review`, `complete`, `epic`, `gate:passed`)
 2. **Verdict Validation**: Themis verifies REVIEW verdicts are fair and properly motivated
 3. **Report Completeness**: Themis ensures negative verdict reports include:
    - All suggested changes
@@ -159,38 +159,38 @@ Themis: APPROVED → Changes labels
 
 ## EPIC Phase Transitions (One-Epic-At-A-Time)
 
-**CRITICAL**: Only ONE epic can be in `epic-TEST` or `epic-REVIEW` at a time.
+**CRITICAL**: Only ONE epic can be in `test` or `review` phase at a time.
 
 ### Epic Phase Flow
 
 ```
-epic-DEV ───────────► epic-TEST ────────────► epic-REVIEW ───► epic-COMPLETE
-    │                     │                        │
-    ▼                     ▼                        ▼
-Multiple epics OK      ONE EPIC ONLY           ONE EPIC ONLY
+epic + dev ───────────► epic + test ────────────► epic + review ───► epic + complete
+    │                        │                           │
+    ▼                        ▼                           ▼
+Multiple epics OK       ONE EPIC ONLY              ONE EPIC ONLY
 ```
 
 ### Valid Epic Transitions
 
 | From | To | Condition |
 |------|-----|-----------|
-| epic-DEV | epic-TEST | ALL wave issues complete, NO other epic in epic-TEST |
-| epic-TEST | epic-REVIEW | Beta bugs fixed, user approves RC, NO other epic in epic-REVIEW |
-| epic-TEST | epic-DEV | Critical issues found, demote back (rare) |
-| epic-REVIEW | epic-DEV | User rejects RC, demote back |
-| epic-REVIEW | epic-COMPLETE | User approves, all merged to main |
+| epic + dev | epic + test | ALL wave issues complete, NO other epic in test |
+| epic + test | epic + review | Beta bugs fixed, user approves RC, NO other epic in review |
+| epic + test | epic + dev | Critical issues found, demote back (rare) |
+| epic + review | epic + dev | User rejects RC, demote back |
+| epic + review | epic + complete | User approves, all merged to main |
 
 ### One-Epic-At-A-Time Enforcement
 
 ```bash
 EPIC_ISSUE=$1
-REQUESTED_PHASE=$2  # "epic-TEST" or "epic-REVIEW"
+REQUESTED_PHASE=$2  # "test" or "review"
 
 # Source avatar helper
 source plugins/ghe/scripts/post-with-avatar.sh
 
 # Step 1: Check for existing epic in target phase
-EXISTING=$(gh issue list --label "$REQUESTED_PHASE" --state open --json number,title --jq '.[0]')
+EXISTING=$(gh issue list --label "epic" --label "$REQUESTED_PHASE" --state open --json number,title --jq '.[0]')
 
 if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
   EXISTING_NUM=$(echo "$EXISTING" | jq -r '.number')
@@ -200,7 +200,7 @@ if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
   gh issue comment $EPIC_ISSUE --body "${HEADER}
 ## BLOCKED: One-Epic-At-A-Time Violation
 
-Cannot transition to \`${REQUESTED_PHASE}\` - another epic is already in this phase.
+Cannot transition to \`epic + ${REQUESTED_PHASE}\` - another epic is already in this phase.
 
 ### Blocking Epic
 - **Issue**: #${EXISTING_NUM}
@@ -209,7 +209,7 @@ Cannot transition to \`${REQUESTED_PHASE}\` - another epic is already in this ph
 ### Resolution
 Wait for #${EXISTING_NUM} to complete its ${REQUESTED_PHASE} phase before promoting this epic.
 
-**Rationale**: Only one epic can be in beta testing (epic-TEST) or release candidate review (epic-REVIEW) at a time to avoid confusion and ensure focused attention."
+**Rationale**: Only one epic can be in beta testing (test) or release candidate review (review) at a time to avoid confusion and ensure focused attention."
 
   echo "BLOCKED: Epic #${EXISTING_NUM} is already in ${REQUESTED_PHASE}"
   exit 1
@@ -223,13 +223,13 @@ echo "No blocking epic found. Transition to ${REQUESTED_PHASE} is allowed."
 When Athena requests an epic phase transition:
 
 ```
-Athena: "All waves complete. Requesting epic-TEST for beta release."
+Athena: "All waves complete. Requesting epic + test for beta release."
      │
      ▼
 Themis validates:
 ├── All wave issues in 'release' state?
 ├── No open child issues?
-├── NO other epic in epic-TEST? ◄── ONE-EPIC-AT-A-TIME CHECK
+├── NO other epic in test phase? ◄── ONE-EPIC-AT-A-TIME CHECK
 └── User has approved beta release?
      │
      ▼
@@ -262,8 +262,8 @@ echo "SPAWN phase-gate: Validate transition DEV → TEST for issue #${DEV_ISSUE}
 # Example: Hera requests REVIEW → release
 echo "SPAWN phase-gate: Validate PASS verdict and release for issue #${REVIEW_ISSUE}"
 
-# Example: Athena requests epic-DEV → epic-TEST
-echo "SPAWN phase-gate: Validate epic transition to epic-TEST for epic #${EPIC_ISSUE}"
+# Example: Athena requests epic + dev → epic + test
+echo "SPAWN phase-gate: Validate epic transition to test phase for epic #${EPIC_ISSUE}"
 ```
 
 ### Themis Input Processing
@@ -325,9 +325,9 @@ Themis only acts when explicitly invoked with a specific request.
 EPIC="$1"  # Epic name/identifier
 
 # Get all threads for this epic
-DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:dev" --state open --json number --jq 'length')
-TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:test" --state open --json number --jq 'length')
-REVIEW_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:review" --state open --json number --jq 'length')
+DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "dev" --state open --json number --jq 'length')
+TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "test" --state open --json number --jq 'length')
+REVIEW_OPEN=$(gh issue list --label "epic:$EPIC" --label "review" --state open --json number --jq 'length')
 
 # Count total open threads
 TOTAL_OPEN=$((DEV_OPEN + TEST_OPEN + REVIEW_OPEN))
@@ -657,9 +657,9 @@ audit_epic() {
   echo "## Epic Audit: $EPIC"
 
   # Check thread counts
-  DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:dev" --state open --json number --jq 'length')
-  TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:test" --state open --json number --jq 'length')
-  REVIEW_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:review" --state open --json number --jq 'length')
+  DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "dev" --state open --json number --jq 'length')
+  TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "test" --state open --json number --jq 'length')
+  REVIEW_OPEN=$(gh issue list --label "epic:$EPIC" --label "review" --state open --json number --jq 'length')
 
   echo "### Thread Status"
   echo "- DEV open: $DEV_OPEN"
@@ -737,7 +737,7 @@ ${RELEASED_ISSUES}
 ### Next Action
 **Athena**: This wave is complete. You may now:
 1. Create the next wave of issues, OR
-2. If all waves are complete, transition epic to epic-complete
+2. If all waves are complete, transition epic to complete phase (epic + complete)
 
 ### Wave Completion Verified By
 Themis (phase-gate) - $(date -u +%Y-%m-%dT%H:%M:%SZ)"

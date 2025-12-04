@@ -106,11 +106,11 @@ ISSUE_NUMBER=$(echo "$LINKED_ISSUES" | jq -r '.[0].number')
 ISSUE_LABELS=$(gh issue view $ISSUE_NUMBER --json labels --jq '.labels[].name')
 
 # Check if in REVIEW phase
-if ! echo "$ISSUE_LABELS" | grep -q "type:review"; then
+if ! echo "$ISSUE_LABELS" | grep -q "review"; then
   # Check what phase it's in
-  if echo "$ISSUE_LABELS" | grep -q "type:dev"; then
+  if echo "$ISSUE_LABELS" | grep -q "dev"; then
     echo "FAIL: Issue is in DEV phase. Cannot merge until REVIEW."
-  elif echo "$ISSUE_LABELS" | grep -q "type:test"; then
+  elif echo "$ISSUE_LABELS" | grep -q "test"; then
     echo "FAIL: Issue is in TEST phase. Cannot merge until REVIEW passes."
   else
     echo "WARN: Issue phase unclear. Check labels."

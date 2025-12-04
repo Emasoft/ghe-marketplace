@@ -164,8 +164,8 @@ gh issue list --label "epic:jwt-auth" --state open --json number,title,labels | 
 # Step 1: Check specific issue labels (individual command)
 gh issue view 203 --json labels --jq '.labels[].name'
 
-# Step 2: If type:review, extract epic and check for TEST
-gh issue list --label "epic:jwt-auth" --label "type:test" --json number | jq 'length'
+# Step 2: If review, extract epic and check for TEST
+gh issue list --label "epic:jwt-auth" --label "test" --json number | jq 'length'
 
 # Step 3: If count = 0, violation detected
 ```
@@ -188,7 +188,7 @@ gh issue list --state open --json number,labels | jq -r '
 # Issues with 50+ engagements - check for unresolved problems
 gh issue list --state open --json number,comments,reactions,labels | \
   jq -r '.[] |
-    select(.labels[].name | test("type:(dev|test|review)")) |
+    select(.labels[].name | test("^(dev|test|review)$")) |
     select((.comments | length) + ([.reactions[].content] | length) >= 50) |
     "#\(.number) - \((.comments | length) + ([.reactions[].content] | length)) engagements"'
 ```
@@ -212,7 +212,7 @@ gh issue view 203 --comments --jq '.comments[].body' | grep -E "VERDICT:|PASS|FA
 # Get all open DEV and TEST threads, then check each individually
 gh issue list --state open --json number,labels | jq -r '
   .[] |
-  select(.labels[].name | test("type:(dev|test)")) |
+  select(.labels[].name | test("^(dev|test)$")) |
   .number'
 
 # For EACH issue number returned, run individual check:
