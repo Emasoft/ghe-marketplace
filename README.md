@@ -84,7 +84,7 @@ A message containing **evaluation and feedback** - assessment of what exists:
 - Code reviews, test results
 - Performance issues, security concerns
 - Quality assessments, critiques
-- Any verdict on code or behavior
+- Any analysis of code or behavior
 
 > "The Verdict" - Evaluation of the work done.
 
