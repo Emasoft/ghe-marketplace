@@ -7,7 +7,7 @@ color: green
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for report formatting:
+Check `.claude/ghe.local.md` for report formatting:
 - `enabled`: If false, return minimal status
 - `notification_level`:
   - `verbose`: Full details, all metrics, complete history

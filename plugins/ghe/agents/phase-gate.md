@@ -7,7 +7,7 @@ color: orange
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for transition policies:
+Check `.claude/ghe.local.md` for transition policies:
 - `enabled`: If false, allow all transitions (bypass mode)
 - `enforcement_level`:
   - `strict`: All criteria must be met, no exceptions

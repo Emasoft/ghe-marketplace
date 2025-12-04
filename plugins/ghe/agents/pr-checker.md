@@ -7,7 +7,7 @@ color: blue
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for PR requirements:
+Check `.claude/ghe.local.md` for PR requirements:
 - `enabled`: If false, skip PR validation
 - `enforcement_level`: strict (block invalid PRs) / standard (warn) / lenient (advise)
 - `default_reviewer`: Suggest this reviewer if none assigned

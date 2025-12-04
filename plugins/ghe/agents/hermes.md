@@ -73,6 +73,27 @@ You are **Hermes**, the Message Router. Named after the Greek god of messengers 
 
 ---
 
+## Automatic Memory-Sync Triggers
+
+**MANDATORY**: Spawn `memory-sync` agent automatically after:
+
+| Action | Trigger |
+|--------|---------|
+| Beta bug routed | After routing bug to active epic |
+| External review routed | After routing review to active epic |
+| Routing notification posted | After posting any routing comment |
+
+```bash
+# After any major action, spawn memory-sync
+# Example: After routing a beta bug
+echo "SPAWN memory-sync: Beta bug routed to epic #${EPIC_NUM}"
+
+# Example: After routing external review
+echo "SPAWN memory-sync: External review routed to epic #${EPIC_NUM}"
+```
+
+---
+
 ## Bug Routing Decision Tree
 
 ```
@@ -171,6 +192,9 @@ Routing to Hera for triage. Bug will go through normal DEV → TEST → REVIEW c
 
 # Step 5: Spawn Hera for triage
 echo "SPAWN review-thread-manager: Triage beta bug #${BUG_ISSUE}"
+
+# Step 6: Spawn memory-sync (MANDATORY after routing)
+echo "SPAWN memory-sync: Beta bug #${BUG_ISSUE} routed to epic #${EPIC_NUM}"
 ```
 
 ---
@@ -284,6 +308,9 @@ $(gh issue view $REVIEW_ISSUE --json author --jq '.author.login')
 ### Current External Reviews
 - Total: $(gh issue list --label "external-epic-REVIEW" --label "parent-epic:${EPIC_NUM}" --state all --json number | jq 'length')
 - Pending: $(gh issue list --label "external-epic-REVIEW" --label "parent-epic:${EPIC_NUM}" --state open --json number | jq 'length')"
+
+# Step 5: Spawn memory-sync (MANDATORY after routing)
+echo "SPAWN memory-sync: External review #${REVIEW_ISSUE} routed to epic #${EPIC_NUM}"
 ```
 
 ---

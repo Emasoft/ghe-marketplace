@@ -288,16 +288,25 @@ DEMOTE TO DEV (never to TEST)
 # Verify DEV is closed before claiming
 gh issue view $DEV_ISSUE --json state --jq '.state'
 
-# Claim TEST thread
+# Claim TEST thread (operational labels only - allowed)
 gh issue edit $TEST_ISSUE --add-assignee @me --add-label "in-progress" --remove-label "ready"
 
 # Post checkpoint (on state changes)
 gh issue comment $TEST_ISSUE --body "## [TEST Session N] ..."
 
-# Close TEST, create REVIEW
-gh issue close $TEST_ISSUE
-gh issue create --title "$FEATURE - REVIEW" --label "type:review" ...
+# Request transition to REVIEW (MUST spawn Themis - phase labels are Themis-only)
+# DO NOT create REVIEW thread directly - that would add type:review label which only Themis can do
+echo "SPAWN phase-gate: Validate transition TEST → REVIEW for issue #${TEST_ISSUE}"
+
+# Themis will:
+# 1. Validate all tests pass
+# 2. Close TEST issue
+# 3. Create REVIEW issue with type:review label
+# 4. Post transition notification
 ```
+
+**CRITICAL**: Artemis CANNOT create threads with `type:dev`, `type:test`, or `type:review` labels.
+Only Themis can add/remove phase labels. Artemis requests transitions by spawning Themis.
 
 ### Scope Reminder
 

@@ -7,7 +7,7 @@ color: blue
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for project settings:
+Check `.claude/ghe.local.md` for project settings:
 - `enabled`: If false, skip all GitHub Elements operations
 - `enforcement_level`: strict (block) / standard (warn) / lenient (advise)
 - `serena_sync`: Whether to spawn memory-sync agent
@@ -86,9 +86,9 @@ gh issue list --state open --label "ready" --json number,title,labels | \
 # 1. URGENT + security → Hephaestus immediately
 # 2. ci-failure → Chronos
 # 3. needs-moderation → Ares review
-# 4. source:pr + phase:review → Hera
-# 5. bug + phase:review → Hera
-# 6. feature + phase:dev → Hephaestus
+# 4. source:pr + type:review → Hera
+# 5. bug + type:review → Hera
+# 6. feature + type:dev → Hephaestus
 ```
 
 ### Argos Label Reference

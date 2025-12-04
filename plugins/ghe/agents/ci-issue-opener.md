@@ -7,7 +7,7 @@ color: yellow
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` before creating issues:
+Check `.claude/ghe.local.md` before creating issues:
 - `enabled`: If false, skip issue creation
 - `notification_level`: Controls issue verbosity (verbose=full logs, normal=summary, quiet=minimal)
 - `epic_label_prefix`: Use this prefix for epic labels (default: "epic:")
@@ -74,7 +74,7 @@ gh issue list --state open --label "ci-failure" --label "source:ci" --json numbe
 | `ci-failure` | Argos detected workflow failure | Investigate and fix or escalate |
 | `source:ci` | Originated from CI/CD workflow | Links to workflow run |
 | `urgent` | 3+ consecutive failures | Handle IMMEDIATELY |
-| `phase:review` | CI failure needs REVIEW triage | May need Hera's involvement |
+| `type:review` | CI failure needs REVIEW triage | May need Hera's involvement |
 
 ### Recognizing Argos Comments
 

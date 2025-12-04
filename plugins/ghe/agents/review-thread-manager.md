@@ -199,7 +199,7 @@ Hera (ghe:review-thread-manager)
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for review settings:
+Check `.claude/ghe.local.md` for review settings:
 - `enabled`: If false, skip GitHub Elements operations
 - `enforcement_level`: Affects verdict strictness
 - `default_reviewer`: Suggest for assignment if set
@@ -250,23 +250,23 @@ If an issue has `parent-epic:NNN` and `wave:N` labels, it IS a regular issue (ch
 
 ```bash
 # Find all REVIEW work queued by Argos
-gh issue list --state open --label "ready" --label "phase:review" --json number,title,labels | \
+gh issue list --state open --label "ready" --label "type:review" --json number,title,labels | \
   jq -r '.[] | "\(.number): \(.title)"'
 
 # Find PR reviews queued by Argos
-gh issue list --state open --label "source:pr" --label "phase:review" --json number,title
+gh issue list --state open --label "source:pr" --label "type:review" --json number,title
 
 # Find bug reports triaged by Argos and ready for REVIEW
-gh issue list --state open --label "bug" --label "phase:review" --label "ready" --json number,title
+gh issue list --state open --label "bug" --label "type:review" --label "ready" --json number,title
 ```
 
 ### Argos Label Meanings for REVIEW
 
 | Label | Meaning | Your Action |
 |-------|---------|-------------|
-| `phase:review` + `ready` | Argos validated, ready for you | Claim and start REVIEW |
+| `type:review` + `ready` | Argos validated, ready for you | Claim and start REVIEW |
 | `source:pr` | Originated from a PR | Review the linked PR |
-| `bug` + `phase:review` | Bug report validated by Argos | Triage and evaluate |
+| `bug` + `type:review` | Bug report validated by Argos | Triage and evaluate |
 | `bot-pr` | PR from Dependabot | May fast-track if low risk |
 | `needs-info` | Argos asked for more details | Wait for user response |
 
@@ -959,10 +959,12 @@ When a bug IS successfully reproduced and validated, the action depends on WHERE
 **CRITICAL**: A validated bug from a separate GitHub issue ALWAYS becomes a NEW branch with its own DEV→TEST→REVIEW cycle.
 
 ```bash
-# Step 1: Create new branch for the bug fix (individual command)
-gh issue edit 215 --add-label "type:dev" --add-label "epic:fix-215"
+# Step 1: Report validated bug to orchestrator (DO NOT add phase labels directly)
+# Phase labels (type:dev, type:test, type:review) are Themis-only
+# Hera validates bugs, but Athena/Themis creates the DEV thread
 
-# Step 2: Report to orchestrator for new branch creation
+# Step 2: Spawn orchestrator to create the new DEV thread
+echo "SPAWN github-elements-orchestrator: Create DEV thread for validated bug #215"
 ```
 
 **Report to Orchestrator**:
@@ -1461,9 +1463,13 @@ PR has been created for merge to main.
 VERDICT
 )"
 
-# Step 6: Close REVIEW thread
+# Step 6: Close REVIEW thread (close + operational labels = allowed)
 gh issue close $REVIEW_ISSUE
-gh issue edit $REVIEW_ISSUE --remove-label "in-progress" --add-label "gate:passed"
+gh issue edit $REVIEW_ISSUE --remove-label "in-progress"
+
+# Step 6b: Request Themis to add gate:passed (GATE labels are Themis-only)
+# DO NOT add gate:passed directly - only Themis can add GATE labels
+echo "SPAWN phase-gate: Validate PASS verdict and add gate:passed for issue #${REVIEW_ISSUE}"
 
 # Step 7: Approve and merge PR
 PR_NUM=$(gh pr list --head issue-${ISSUE_NUM} --json number --jq '.[0].number')

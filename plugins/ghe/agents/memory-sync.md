@@ -7,7 +7,7 @@ color: cyan
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for sync configuration:
+Check `.claude/ghe.local.md` for sync configuration:
 - `enabled`: If false, skip all operations
 - `serena_sync`: If false, skip memory sync entirely (GitHub-only mode)
 - `notification_level`: Controls sync report verbosity

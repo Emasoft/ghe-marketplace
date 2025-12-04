@@ -285,12 +285,12 @@ If an issue has `parent-epic:NNN` and `wave:N` labels, it IS a regular issue (ch
 
 ```bash
 # Find all DEV work queued by Argos
-gh issue list --state open --label "ready" --label "phase:dev" --json number,title,labels | \
+gh issue list --state open --label "ready" --label "type:dev" --json number,title,labels | \
   jq -r '.[] | "\(.number): \(.title)"'
 
 # Find feature requests triaged by Argos
-gh issue list --state open --label "enhancement" --label "phase:dev" --label "ready" --json number,title
-gh issue list --state open --label "feature" --label "phase:dev" --label "ready" --json number,title
+gh issue list --state open --label "enhancement" --label "type:dev" --label "ready" --json number,title
+gh issue list --state open --label "feature" --label "type:dev" --label "ready" --json number,title
 
 # Find URGENT security issues queued by Argos (HIGHEST PRIORITY)
 gh issue list --state open --label "security" --label "urgent" --json number,title
@@ -300,7 +300,7 @@ gh issue list --state open --label "security" --label "urgent" --json number,tit
 
 | Label | Meaning | Your Action |
 |-------|---------|-------------|
-| `phase:dev` + `ready` | Argos validated, ready for you | Claim and start DEV |
+| `type:dev` + `ready` | Argos validated, ready for you | Claim and start DEV |
 | `security` + `urgent` | Security vulnerability! | Handle IMMEDIATELY |
 | `feature` / `enhancement` | Feature request validated | Claim and implement |
 | `needs-info` | Argos asked for more details | Wait for user response |
@@ -389,19 +389,25 @@ REVIEW (evaluate, verdict)
 ### Essential Commands
 
 ```bash
-# Create DEV thread
-gh issue create --title "$FEATURE - DEV" --label "type:dev" --label "epic:$EPIC" --label "ready"
-
-# Claim DEV thread
+# Claim DEV thread (operational labels only - allowed)
 gh issue edit $DEV_ISSUE --add-assignee @me --add-label "in-progress" --remove-label "ready"
 
 # Post checkpoint
 gh issue comment $DEV_ISSUE --body "## [DEV Session N] ..."
 
-# Close DEV, create TEST
-gh issue close $DEV_ISSUE
-gh issue create --title "$FEATURE - TEST" --label "type:test" ...
+# Request transition to TEST (MUST spawn Themis - phase labels are Themis-only)
+# DO NOT create TEST thread directly - that would add type:test label which only Themis can do
+echo "SPAWN phase-gate: Validate transition DEV → TEST for issue #${DEV_ISSUE}"
+
+# Themis will:
+# 1. Validate all prerequisites
+# 2. Close DEV issue
+# 3. Create TEST issue with type:test label
+# 4. Post transition notification
 ```
+
+**CRITICAL**: Hephaestus CANNOT create threads with `type:dev`, `type:test`, or `type:review` labels.
+Only Themis can add/remove phase labels. Hephaestus requests transitions by spawning Themis.
 
 ### Pre-Transition Checklist
 

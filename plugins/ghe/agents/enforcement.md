@@ -7,7 +7,7 @@ color: red
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for enforcement policy:
+Check `.claude/ghe.local.md` for enforcement policy:
 - `enabled`: If false, skip enforcement checks
 - `enforcement_level`:
   - `strict`: Block violations immediately, require all criteria
