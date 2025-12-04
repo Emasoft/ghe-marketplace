@@ -177,8 +177,44 @@ classify_element() {
         badges="$BADGE_KNOWLEDGE"
     fi
 
-    # Check for ACTION indicators (code, implementation)
-    if echo "$content" | grep -qE '(```|diff|patch|function |class |def |const |let |var |import |export |<[a-z]+>|\.py|\.js|\.ts|\.md|\.yml|\.yaml|\.json|create|implement|write|add|modify|edit|fix|update|refactor)'; then
+    # Check for ACTION indicators (code, assets, any concrete project artifacts)
+    # ACTION = tangible changes to the project: code, images, sounds, video, 3D, stylesheets, configs
+    if echo "$content" | grep -qE '(```|diff|patch|function |class |def |const |let |var |import |export |<[a-z]+>)'; then
+        if [[ -n "$badges" ]]; then
+            badges="$badges $BADGE_ACTION"
+        else
+            badges="$BADGE_ACTION"
+        fi
+    # Code/config file extensions
+    elif echo "$content" | grep -qiE '\.(py|js|ts|jsx|tsx|md|yml|yaml|json|xml|html|css|scss|sass|less|sh|bash|zsh|rb|go|rs|java|kt|swift|c|cpp|h|hpp)'; then
+        if [[ -n "$badges" ]]; then
+            badges="$badges $BADGE_ACTION"
+        else
+            badges="$BADGE_ACTION"
+        fi
+    # Asset file extensions (images, audio, video, 3D, fonts)
+    elif echo "$content" | grep -qiE '\.(png|jpg|jpeg|gif|svg|ico|webp|avif|bmp|tiff|mp3|wav|ogg|flac|aac|m4a|mp4|webm|avi|mov|mkv|glb|gltf|obj|fbx|blend|dae|3ds|ttf|otf|woff|woff2|eot)'; then
+        if [[ -n "$badges" ]]; then
+            badges="$badges $BADGE_ACTION"
+        else
+            badges="$BADGE_ACTION"
+        fi
+    # URLs to raw files/assets (GitHub raw, CDN, etc.)
+    elif echo "$content" | grep -qiE '(raw\.githubusercontent\.com|github\.com/.*/blob/|cdn\.|assets/|images/|sprites/|textures/|sounds/|audio/|video/|models/|fonts/)'; then
+        if [[ -n "$badges" ]]; then
+            badges="$badges $BADGE_ACTION"
+        else
+            badges="$BADGE_ACTION"
+        fi
+    # Action verbs indicating concrete changes
+    elif echo "$content" | grep -qiE '(create[d]?|implement|writ(e|ten)|add(ed)?|modif(y|ied)|edit(ed)?|fix(ed)?|update[d]?|refactor|upload(ed)?|commit(ted)?|push(ed)?|deploy(ed)?|built|generat(e|ed)|render(ed)?|compil(e|ed)|export(ed)?|import(ed)?)'; then
+        if [[ -n "$badges" ]]; then
+            badges="$badges $BADGE_ACTION"
+        else
+            badges="$BADGE_ACTION"
+        fi
+    # Asset-related keywords
+    elif echo "$content" | grep -qiE '(asset[s]?|sprite[s]?|icon[s]?|graphic[s]?|image[s]?|texture[s]?|sound[s]?|audio|video|model[s]?|animation[s]?|stylesheet|font[s]?|avatar[s]?|logo|banner|thumbnail|screenshot)'; then
         if [[ -n "$badges" ]]; then
             badges="$badges $BADGE_ACTION"
         else

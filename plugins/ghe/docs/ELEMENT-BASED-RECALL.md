@@ -10,30 +10,42 @@
 The three element badges are not decorative - they form a **semantic triple-store indexing system** for memory recall:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        ELEMENT CLASSIFICATION SYSTEM                        │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐           │
-│  │   KNOWLEDGE     │   │     ACTION      │   │    JUDGEMENT    │           │
-│  │   (blue)        │   │    (green)      │   │    (orange)     │           │
-│  ├─────────────────┤   ├─────────────────┤   ├─────────────────┤           │
-│  │ - Requirements  │   │ - Code          │   │ - Bug reports   │           │
-│  │ - Specs         │   │ - Diffs         │   │ - Reviews       │           │
-│  │ - Design docs   │   │ - Commits       │   │ - Test results  │           │
-│  │ - Architecture  │   │ - File changes  │   │ - Feedback      │           │
-│  │ - Algorithms    │   │ - Implementations│  │ - Verdicts      │           │
-│  │ - Explanations  │   │ - Refactors     │   │ - Critiques     │           │
-│  │ - Protocols     │   │ - Patches       │   │ - Issues found  │           │
-│  │ - Definitions   │   │ - Edits         │   │ - Concerns      │           │
-│  └─────────────────┘   └─────────────────┘   └─────────────────┘           │
-│                                                                             │
-│  Badge Format (searchable):                                                 │
-│  ![knowledge](https://img.shields.io/badge/element-knowledge-blue)          │
-│  ![action](https://img.shields.io/badge/element-action-green)               │
-│  ![judgement](https://img.shields.io/badge/element-judgement-orange)        │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                          ELEMENT CLASSIFICATION SYSTEM                            │
+├───────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                   │
+│  ┌───────────────────┐   ┌───────────────────┐   ┌───────────────────┐           │
+│  │    KNOWLEDGE      │   │      ACTION       │   │     JUDGEMENT     │           │
+│  │    (blue)         │   │     (green)       │   │     (orange)      │           │
+│  │    "The Talk"     │   │   "The Reality"   │   │   "The Verdict"   │           │
+│  ├───────────────────┤   ├───────────────────┤   ├───────────────────┤           │
+│  │ - Requirements    │   │ CODE:             │   │ - Bug reports     │           │
+│  │ - Specs           │   │  - Functions      │   │ - Reviews         │           │
+│  │ - Design docs     │   │  - Classes        │   │ - Test results    │           │
+│  │ - Architecture    │   │  - Scripts        │   │ - Feedback        │           │
+│  │ - Algorithms      │   │  - Configs        │   │ - Verdicts        │           │
+│  │ - Explanations    │   │                   │   │ - Critiques       │           │
+│  │ - Protocols       │   │ ASSETS:           │   │ - Issues found    │           │
+│  │ - Definitions     │   │  - Images/Sprites │   │ - Concerns        │           │
+│  │ - Theory          │   │  - Icons/Graphics │   │ - Questions       │           │
+│  │                   │   │  - Audio/Sound FX │   │                   │           │
+│  │ (Plans/Ideas)     │   │  - Video/Animation│   │ (Evaluation)      │           │
+│  │                   │   │  - 3D Models      │   │                   │           │
+│  │                   │   │  - Stylesheets    │   │                   │           │
+│  │                   │   │  - Fonts          │   │                   │           │
+│  │                   │   │                   │   │                   │           │
+│  │                   │   │ (Tangible Change) │   │                   │           │
+│  └───────────────────┘   └───────────────────┘   └───────────────────┘           │
+│                                                                                   │
+│  KEY INSIGHT: Only ACTION elements change the project. KNOWLEDGE and JUDGEMENT   │
+│  are discussion/evaluation - they inform but don't alter artifacts.              │
+│                                                                                   │
+│  Badge Format (searchable):                                                       │
+│  ![knowledge](https://img.shields.io/badge/element-knowledge-blue)                │
+│  ![action](https://img.shields.io/badge/element-action-green)                     │
+│  ![judgement](https://img.shields.io/badge/element-judgement-orange)              │
+│                                                                                   │
+└───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -45,15 +57,28 @@ The three element badges are not decorative - they form a **semantic triple-stor
 | What User Wants to Recall | Element Type | Search Pattern |
 |---------------------------|--------------|----------------|
 | "What code did we write?" | **ACTION** | `element-action` |
+| "What assets were created?" | **ACTION** | `element-action` |
+| "What images/sprites were added?" | **ACTION** | `element-action` |
+| "Show the new icons/graphics" | **ACTION** | `element-action` |
+| "What files changed?" | **ACTION** | `element-action` |
+| "Show me the implementation" | **ACTION** | `element-action` |
 | "What were the requirements?" | **KNOWLEDGE** | `element-knowledge` |
+| "What was the design?" | **KNOWLEDGE** | `element-knowledge` |
 | "What bugs did we find?" | **JUDGEMENT** | `element-judgement` |
 | "What issues/problems exist?" | **JUDGEMENT** | `element-judgement` |
-| "What files changed?" | **ACTION** | `element-action` |
-| "What was the design?" | **KNOWLEDGE** | `element-knowledge` |
 | "What tests failed?" | **JUDGEMENT** | `element-judgement` |
-| "What decisions were made?" | **KNOWLEDGE** + **JUDGEMENT** | Both |
-| "Show me the implementation" | **ACTION** | `element-action` |
 | "What feedback was given?" | **JUDGEMENT** | `element-judgement` |
+| "What decisions were made?" | **KNOWLEDGE** + **JUDGEMENT** | Both |
+
+### Element Semantics
+
+| Element | Nature | Examples |
+|---------|--------|----------|
+| **KNOWLEDGE** | "The Talk" - Plans, ideas, theory | Requirements, specs, architecture docs, algorithms |
+| **ACTION** | "The Reality" - Tangible changes | Code, assets, images, sounds, video, configs, stylesheets |
+| **JUDGEMENT** | "The Verdict" - Evaluation | Bug reports, reviews, test failures, critiques, feedback |
+
+**Key Insight**: Only ACTION elements actually change the project. In a video game project, 90% of ACTION elements might be asset uploads (sprites, 3D models, sounds) rather than code.
 
 ### Compound Queries
 

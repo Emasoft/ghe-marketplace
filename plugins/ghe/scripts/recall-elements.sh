@@ -9,9 +9,11 @@
 #   recall-elements.sh --issue NUM --compound "knowledge+action"
 #
 # Element Types:
-#   knowledge - Requirements, specs, design, algorithms, explanations
-#   action    - Code, diffs, implementations, file changes
-#   judgement - Bugs, reviews, feedback, issues, verdicts
+#   knowledge - Requirements, specs, design, algorithms, explanations ("The Talk")
+#   action    - Code, assets, images, sounds, video, 3D models, configs ("The Reality")
+#   judgement - Bugs, reviews, feedback, test results, critiques ("The Verdict")
+#
+# KEY INSIGHT: Only ACTION elements change the project. KNOWLEDGE and JUDGEMENT are discussion.
 
 set -euo pipefail
 
@@ -51,9 +53,11 @@ USAGE:
   recall-elements.sh --issue NUM --compound "type1+type2"
 
 ELEMENT TYPES:
-  knowledge   Requirements, specs, design, algorithms, explanations (blue)
-  action      Code, diffs, implementations, file changes (green)
-  judgement   Bugs, reviews, feedback, issues, verdicts (orange)
+  knowledge   "The Talk" - Requirements, specs, design, algorithms (blue)
+  action      "The Reality" - Code, assets, images, sounds, video, configs (green)
+  judgement   "The Verdict" - Bugs, reviews, feedback, critiques (orange)
+
+  KEY: Only ACTION changes the project. KNOWLEDGE/JUDGEMENT are discussion.
 
 OPTIONS:
   --issue NUM       Issue number to query (required)
@@ -86,11 +90,13 @@ EXAMPLES:
 
 RECALL DECISION GUIDE:
   "What code did we write?"        → --type action
+  "What assets were created?"      → --type action
+  "Show the new images/sprites"    → --type action
+  "What files changed?"            → --type action
   "What were the requirements?"    → --type knowledge
+  "What was the design?"           → --type knowledge
   "What bugs did we find?"         → --type judgement
   "What issues remain?"            → --type judgement
-  "What was the design?"           → --type knowledge
-  "Show implementation"            → --type action
   "What feedback was given?"       → --type judgement
   "Full context"                   → --recover
 EOF
