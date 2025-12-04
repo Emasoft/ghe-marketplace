@@ -25,7 +25,7 @@ Check `.claude/ghe.local.md` for enforcement policy:
 ### Loading Avatar Helper
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar

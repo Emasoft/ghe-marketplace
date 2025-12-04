@@ -23,7 +23,7 @@ Check `.claude/ghe.local.md` before creating issues:
 ### Loading Avatar Helper
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar

@@ -13,7 +13,7 @@ color: magenta
 
 ```bash
 # Source safeguards at the beginning of any operation
-source plugins/ghe/scripts/safeguards.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 
 # Or with full path (CLAUDE_PLUGIN_ROOT = plugin directory)
 source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
@@ -36,7 +36,7 @@ fi
 If a previous operation crashed or was interrupted:
 
 ```bash
-source plugins/ghe/scripts/safeguards.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 recover_from_merge_crash "$ISSUE_NUM"
 ```
 
@@ -63,7 +63,7 @@ recover_from_merge_crash "$ISSUE_NUM"
 
 ```bash
 # Source avatar helper (ALWAYS at the beginning of operations)
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Or with full path (CLAUDE_PLUGIN_ROOT = plugin directory)
 source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
@@ -110,7 +110,7 @@ This agent posts as **Hera** - the REVIEW phase evaluator who renders verdicts.
 **CRITICAL**: Before any REVIEW work, verify you are in the correct worktree/branch.
 
 ```bash
-source plugins/ghe/scripts/safeguards.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 
 REVIEW_ISSUE=<issue number>
 WORKTREE_PATH="../ghe-worktrees/issue-$REVIEW_ISSUE"
@@ -368,7 +368,7 @@ echo "SPAWN memory-sync: PR merged to main"
 REVIEW_ISSUE=<issue number>
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Verify phase order first (see above)
 
@@ -1228,7 +1228,7 @@ echo "Pre-merge checks complete. Proceeding with merge."
 **Use safeguards.sh for robust lock management with TTL and race condition detection.**
 
 ```bash
-source plugins/ghe/scripts/safeguards.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 ISSUE_NUM=<issue number>
 
 # Option 1: Try to acquire lock immediately
@@ -1271,7 +1271,7 @@ fi
 ### Complete Merge Workflow with Safeguards
 
 ```bash
-source plugins/ghe/scripts/safeguards.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 ISSUE_NUM=<issue number>
 
 # Step 1: Pre-flight check

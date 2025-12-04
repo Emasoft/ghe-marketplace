@@ -23,7 +23,7 @@ Check `.claude/ghe.local.md` for moderation settings:
 ### Loading Avatar Helper
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar
@@ -135,7 +135,7 @@ For **spam** (`possible-spam`), check:
 ### Step 3: Make Recommendation
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 HEADER=$(avatar_header "Ares")
 
 # For policy violation - HIGH confidence

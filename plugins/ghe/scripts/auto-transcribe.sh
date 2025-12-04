@@ -393,6 +393,45 @@ post_assistant_message() {
 }
 
 #######################################
+# Inject issue reminder into project CLAUDE.md
+#######################################
+inject_claude_md_reminder() {
+    local issue_num="$1"
+    local claude_md="CLAUDE.md"
+    local marker="<!-- GHE-CURRENT-ISSUE -->"
+    local instruction="\n${marker}\n## GHE Active Transcription\n\n**CRITICAL**: All conversation is being transcribed to GitHub.\n\n\`\`\`\nCurrently discussing issue n.${issue_num}\n\`\`\`\n\n**You MUST include this line in your responses when referencing the current work.**\n${marker}\n"
+
+    if [[ -f "$claude_md" ]]; then
+        # Remove any existing GHE section
+        if grep -q "$marker" "$claude_md"; then
+            # Remove existing block (between markers)
+            sed -i.bak "/${marker}/,/${marker}/d" "$claude_md" && rm -f "${claude_md}.bak"
+        fi
+
+        # Append new instruction at the end
+        echo -e "$instruction" >> "$claude_md"
+        echo "Injected issue reminder into CLAUDE.md"
+    else
+        # Create minimal CLAUDE.md with instruction
+        echo -e "# Project Instructions\n$instruction" > "$claude_md"
+        echo "Created CLAUDE.md with issue reminder"
+    fi
+}
+
+#######################################
+# Remove issue reminder from CLAUDE.md
+#######################################
+remove_claude_md_reminder() {
+    local claude_md="CLAUDE.md"
+    local marker="<!-- GHE-CURRENT-ISSUE -->"
+
+    if [[ -f "$claude_md" ]] && grep -q "$marker" "$claude_md"; then
+        sed -i.bak "/${marker}/,/${marker}/d" "$claude_md" && rm -f "${claude_md}.bak"
+        echo "Removed issue reminder from CLAUDE.md"
+    fi
+}
+
+#######################################
 # Set current issue explicitly
 #######################################
 set_current_issue() {
@@ -407,7 +446,17 @@ set_current_issue() {
     # Verify issue exists
     if gh issue view "$issue_num" --json number --jq '.number' 2>/dev/null | grep -q "$issue_num"; then
         set_config "current_issue" "$issue_num"
-        echo "Current issue set to #$issue_num"
+
+        # Inject reminder into CLAUDE.md
+        inject_claude_md_reminder "$issue_num"
+
+        echo -e "${GREEN}Current issue set to #$issue_num${NC}"
+        echo ""
+        echo "TRANSCRIPTION IS NOW ACTIVE"
+        echo "All conversation will be posted to issue #$issue_num"
+        echo ""
+        echo "Include in your responses:"
+        echo "  Currently discussing issue n.$issue_num"
         return 0
     else
         echo "Issue #$issue_num not found" >&2
@@ -422,10 +471,32 @@ get_current_issue() {
     ensure_config
     local issue=$(get_config "current_issue" "")
     if [[ -n "$issue" && "$issue" != "null" ]]; then
+        echo -e "${GREEN}TRANSCRIPTION ACTIVE${NC}"
         echo "Current issue: #$issue"
+        echo ""
+        echo "Include in responses: Currently discussing issue n.$issue"
     else
+        echo -e "${YELLOW}TRANSCRIPTION INACTIVE${NC}"
         echo "No current issue set"
+        echo ""
+        echo "To activate: set-issue <NUMBER>"
     fi
+}
+
+#######################################
+# Clear current issue (stop transcription)
+#######################################
+clear_current_issue() {
+    ensure_config
+
+    # Remove from config
+    set_config "current_issue" "null"
+
+    # Remove CLAUDE.md reminder
+    remove_claude_md_reminder
+
+    echo -e "${YELLOW}TRANSCRIPTION STOPPED${NC}"
+    echo "No issue is now active for transcription"
 }
 
 #######################################
@@ -447,21 +518,27 @@ case "${1:-}" in
     "get-issue")
         get_current_issue
         ;;
+    "clear-issue")
+        clear_current_issue
+        ;;
     "check")
         check_github_repo && echo "GitHub repo OK" || echo "No GitHub repo"
         ;;
     *)
-        echo "Usage: $0 {user|assistant|find-issue|set-issue|get-issue|check} [message] [agent]"
+        echo "Usage: $0 {user|assistant|find-issue|set-issue|get-issue|clear-issue|check} [message] [agent]"
         echo ""
         echo "Commands:"
         echo "  user <message>              Post user message to current issue"
         echo "  assistant <message> [agent] Post assistant message (default: Athena)"
         echo "  find-issue <topic>          Find or create issue for topic"
-        echo "  set-issue <number>          Set current issue explicitly"
-        echo "  get-issue                   Show current issue"
+        echo "  set-issue <number>          Set current issue and activate transcription"
+        echo "  get-issue                   Show current issue status"
+        echo "  clear-issue                 Stop transcription and clear current issue"
         echo "  check                       Verify GitHub repo is configured"
         echo ""
-        echo "Explicit issue patterns in messages:"
+        echo "IMPORTANT: Transcription only happens AFTER set-issue is called!"
+        echo ""
+        echo "Issue patterns recognized in messages:"
         echo "  [Currently discussing issue n.123]"
         echo "  [issue #123]"
         echo "  working on issue #123"

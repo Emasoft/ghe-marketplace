@@ -24,7 +24,7 @@ Check `.claude/ghe.local.md` for project settings:
 ### Loading Avatar Helper
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar
@@ -278,7 +278,7 @@ In rare cases, critical issues during beta testing may require demoting the enti
 EPIC_ISSUE=<epic issue number>
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Step 1: Request demotion (Athena to Themis)
 HEADER=$(avatar_header "Athena")
@@ -933,7 +933,7 @@ WAVE_NUM=1
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Step 1: Verify requirements folder exists
 REQUIREMENTS_DIR="${PROJECT_ROOT}/REQUIREMENTS/epic-${EPIC_ISSUE}/wave-${WAVE_NUM}"
@@ -1096,7 +1096,7 @@ EPIC_TYPE="epic-feature"
 EPIC_TITLE="User Authentication System"
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 HEADER=$(avatar_header "Athena")
 
 gh issue create \
@@ -1220,7 +1220,7 @@ EPIC_ISSUE=<epic issue number>
 # Athena has defined WHAT to develop in each wave
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 HEADER=$(avatar_header "Athena")
 
 # Step 1: Athena requests transition

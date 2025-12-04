@@ -25,7 +25,7 @@ Check `.claude/ghe.local.md` for transition policies:
 ### Loading Avatar Helper
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar
@@ -193,7 +193,7 @@ EPIC_ISSUE=$1
 REQUESTED_PHASE=$2  # "test" or "review"
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Step 1: Check for existing epic in target phase
 EXISTING=$(gh issue list --label "epic" --label "$REQUESTED_PHASE" --state open --json number,title --jq '.[0]')
@@ -720,7 +720,7 @@ notify_wave_complete() {
   WAVE_NUM=$2
 
   # Source avatar helper
-  source plugins/ghe/scripts/post-with-avatar.sh
+  source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
   HEADER=$(avatar_header "Themis")
 
   # Get all released issues in this wave

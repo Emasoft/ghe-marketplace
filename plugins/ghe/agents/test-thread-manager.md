@@ -23,7 +23,7 @@ Check `.claude/ghe.local.md` for test settings:
 ### Loading Avatar Helper
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar
@@ -90,7 +90,7 @@ When TEST is complete:
 TEST_ISSUE=<issue number>
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Step 1: Verify DEV is closed (phase order)
 EPIC_ISSUE=$(gh issue view $TEST_ISSUE --json labels --jq '.labels[] | select(.name | startswith("parent-epic:")) | .name | split(":")[1]')

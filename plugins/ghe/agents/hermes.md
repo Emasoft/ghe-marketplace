@@ -22,7 +22,7 @@ Check `.claude/ghe.local.md` for routing settings:
 ### Loading Avatar Helper
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar
@@ -124,7 +124,7 @@ When a bug report is filed during active epic with `test` phase:
 BUG_ISSUE=<new bug issue number>
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Step 1: Check for active epic with test phase
 ACTIVE_BETA_EPIC=$(gh issue list --label "epic" --label "test" --state open --json number,title --jq '.[0]')
@@ -207,7 +207,7 @@ When no epic has `test` phase:
 BUG_ISSUE=<new bug issue number>
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 route_to_normal_triage() {
   local ISSUE=$1
@@ -242,7 +242,7 @@ When an external review is posted during epic with `review` phase:
 REVIEW_ISSUE=<external review issue number>
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Step 1: Check for active epic with review phase
 ACTIVE_RC_EPIC=$(gh issue list --label "epic" --label "review" --state open --json number,title --jq '.[0]')

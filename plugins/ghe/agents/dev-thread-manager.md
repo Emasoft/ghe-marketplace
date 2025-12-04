@@ -24,7 +24,7 @@ Check `.claude/ghe.local.md` for project settings:
 ### Loading Avatar Helper
 
 ```bash
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar
@@ -184,7 +184,7 @@ fi
 DEV_ISSUE=<issue number>
 
 # Source avatar helper
-source plugins/ghe/scripts/post-with-avatar.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Step 0: VERIFY REQUIREMENTS FILE FIRST (see above)
 # (Run Requirements Check Protocol before proceeding)
