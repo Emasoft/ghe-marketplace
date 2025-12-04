@@ -1,0 +1,39 @@
+# GHE Automation: Event F - Security Alert → URGENT DEV Issue
+# Creates urgent issue for Hephaestus when security vulnerabilities detected.
+# SECURITY: Only system-generated inputs used (alert numbers, not user content).
+
+name: "GHE: Security Alert"
+
+on:
+  dependabot_alert:
+    types: [created]
+  code_scanning_alert:
+    types: [created, reopened]
+  secret_scanning_alert:
+    types: [created]
+
+jobs:
+  create-security-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      security-events: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create security issue
+        uses: anthropics/claude-code-action@v1
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Security alert detected (event: $EVENT_NAME).
+            1. Get alert details via gh api
+            2. Check for existing issue
+            3. Create issue: [SECURITY] title, labels phase:dev,urgent,security
+            4. If critical: add blocked label
+            Use Hephaestus avatar for the comment.

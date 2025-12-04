@@ -1,0 +1,43 @@
+# GHE Automation: Event D - Comment Moderation
+# SECURITY: User inputs via env vars only. Conservative moderation.
+
+name: "GHE: Comment Moderation"
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: ghe-mod-${{ github.event.comment.id }}
+  cancel-in-progress: false
+
+jobs:
+  check-comment:
+    if: |
+      github.event.comment.author_association != 'OWNER' &&
+      github.event.comment.author_association != 'MEMBER' &&
+      !contains(github.actor, '[bot]')
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze comment
+        uses: anthropics/claude-code-action@v1
+        env:
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Check comment $COMMENT_ID on issue $ISSUE_NUM for policy violations.
+            Violations: harassment, threats, spam links, discrimination.
+            NOT violations: mentioning other tools, disagreements, questions.
+            If clear violation: warn (max 3), then add needs-moderation label.
+            If uncertain: do NOTHING. Be very conservative.
+            Use Ares avatar: https://robohash.org/ares.png?size=77x77&set=set3

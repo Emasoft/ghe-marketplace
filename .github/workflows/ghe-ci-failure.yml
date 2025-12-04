@@ -1,0 +1,34 @@
+# GHE Automation: Event G - CI/CD Failure → Issue for Chronos
+# SECURITY: System-generated inputs only, passed via env vars.
+
+name: "GHE: CI Failure"
+
+on:
+  workflow_run:
+    types: [completed]
+
+jobs:
+  handle-failure:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create CI failure issue
+        uses: anthropics/claude-code-action@v1
+        env:
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            CI workflow failed (run $RUN_ID).
+            1. Check for existing issue for this workflow
+            2. Create or update issue with labels phase:review,ci-failure,source:ci
+            3. If repeated failures: add urgent label
+            Use Chronos avatar: https://robohash.org/chronos.png?size=77x77&set=set3

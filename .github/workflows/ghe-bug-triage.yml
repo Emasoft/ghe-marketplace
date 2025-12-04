@@ -1,0 +1,86 @@
+# GHE Automation: Event B - Bug Report → Validate + REVIEW
+#
+# When a bug issue is opened, this workflow validates the bug report template
+# and queues it for Hera (review-thread-manager) to triage.
+#
+# SECURITY NOTE: All user-controlled inputs (issue body, title, author) are
+# passed through environment variables, never directly interpolated in run: commands.
+# The Claude action receives these via env: blocks which is the secure pattern.
+
+name: "GHE: Bug Triage"
+
+on:
+  issues:
+    types: [opened, edited]
+
+concurrency:
+  group: ghe-bug-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-bug-report:
+    if: |
+      contains(github.event.issue.labels.*.name, 'bug') &&
+      !contains(github.actor, '[bot]')
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check if already processed
+        id: check-processed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          labels=$(gh issue view "$ISSUE_NUMBER" --json labels --jq '.labels[].name' | tr '\n' ',')
+          if echo "$labels" | grep -q "phase:review"; then
+            echo "status=processed" >> $GITHUB_OUTPUT
+          elif echo "$labels" | grep -q "needs-info"; then
+            echo "status=revalidate" >> $GITHUB_OUTPUT
+          else
+            echo "status=new" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate and triage bug report
+        if: steps.check-processed.outputs.status != 'processed'
+        uses: anthropics/claude-code-action@v1
+        env:
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_USER: ${{ github.event.issue.user.login }}
+          EVENT_ACTION: ${{ github.event.action }}
+          PREV_STATUS: ${{ steps.check-processed.outputs.status }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            # Task: Validate Bug Report and Queue for Review
+
+            You are preparing work for **Hera** (the REVIEW agent).
+
+            ## Instructions
+
+            1. Read the issue using: gh issue view "$ISSUE_NUM" --json body,title
+            2. Validate it contains: Description, Steps to Reproduce, Expected/Actual Behavior, Environment
+            3. If valid: add labels phase:review,ready and post confirmation with Hera avatar
+            4. If invalid: add needs-info label and politely list what is missing
+            5. Always use heredocs for comment bodies to avoid injection
+
+            Environment variables contain the issue details. Use gh cli for all operations.
+            Be welcoming and helpful. Never close issues, only label and comment.
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "An error occurred. A maintainer will review manually."

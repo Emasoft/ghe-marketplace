@@ -1,0 +1,210 @@
+# GHE Automation: Event A - PR Opened → REVIEW Issue
+#
+# When a pull request is opened, this workflow creates a REVIEW issue
+# so that Hera (review-thread-manager) can process it when the owner connects.
+#
+# This does NOT auto-merge or approve - it only queues for human review.
+#
+# SECURITY: All user-controlled inputs are passed via environment variables
+# to prevent command injection attacks.
+
+name: "GHE: PR Review Queue"
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+# Prevent duplicate runs for same PR
+concurrency:
+  group: ghe-pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  create-review-issue:
+    # Skip if:
+    # - PR is from a bot (except Dependabot which we still review)
+    # - PR is still a draft
+    if: |
+      github.event.pull_request.draft == false &&
+      !contains(github.actor, '[bot]') ||
+      github.actor == 'dependabot[bot]'
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+
+    # Pass all user-controlled data through environment variables
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      PR_ACTOR: ${{ github.actor }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check for existing review issue
+        id: check-existing
+        run: |
+          # Look for an existing issue linked to this PR
+          existing=$(gh issue list \
+            --label "source:pr" \
+            --search "PR #${PR_NUMBER}" \
+            --json number,title \
+            --jq '.[0].number // empty')
+
+          if [ -n "$existing" ]; then
+            echo "existing_issue=$existing" >> $GITHUB_OUTPUT
+            echo "Found existing review issue #$existing for PR #$PR_NUMBER"
+          else
+            echo "existing_issue=" >> $GITHUB_OUTPUT
+            echo "No existing review issue found for PR #$PR_NUMBER"
+          fi
+
+      - name: Create review issue for PR
+        if: steps.check-existing.outputs.existing_issue == ''
+        id: create-issue
+        uses: anthropics/claude-code-action@v1
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          IS_BOT_PR: ${{ github.actor == 'dependabot[bot]' }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            # Task: Create REVIEW Issue for Pull Request
+
+            You are preparing work for **Hera** (the REVIEW agent) to process later.
+
+            ## Context
+
+            A new pull request has been opened and needs to be queued for review.
+            All PR details are available in environment variables for security.
+
+            Read the environment variables:
+            - PR_NUMBER: The PR number
+            - PR_TITLE: The PR title
+            - PR_AUTHOR: The PR author username
+            - PR_URL: The PR URL
+            - PR_BASE_REF: The target branch
+            - PR_HEAD_REF: The source branch
+            - IS_BOT_PR: Whether this is from a bot
+
+            ## Your Task
+
+            ### Step 1: Read Environment Variables
+
+            First, read and display the PR details from environment:
+
+            ```bash
+            echo "PR Number: $PR_NUMBER"
+            echo "PR Title: $PR_TITLE"
+            echo "PR Author: $PR_AUTHOR"
+            echo "Is Bot PR: $IS_BOT_PR"
+            ```
+
+            ### Step 2: Gather PR Information
+
+            Run these commands to understand the PR:
+
+            ```bash
+            # Get the PR diff summary
+            gh pr diff "$PR_NUMBER" --stat
+
+            # Get the list of changed files
+            gh pr view "$PR_NUMBER" --json files --jq '.files[].path'
+
+            # Get the PR body/description
+            gh pr view "$PR_NUMBER" --json body --jq '.body'
+            ```
+
+            ### Step 3: Create Review Issue
+
+            Create an issue with these specifications:
+
+            **Title Format**: `[REVIEW] PR #<number>: <sanitized title>`
+            - Sanitize the title by removing any shell metacharacters
+
+            **Labels** (add all that apply):
+            - `phase:review` (always)
+            - `source:pr` (always)
+            - `ready` (always - it's ready for Hera to review)
+            - `bot-pr` (only if IS_BOT_PR is true)
+
+            **Body**: Write a markdown body that includes:
+            1. Header section with PR link, author, and branch info
+            2. A 2-3 sentence summary of what this PR does
+            3. List of changed files (grouped if many)
+            4. Review checklist for Hera
+            5. Direct links to PR and diff
+            6. Footer noting this was auto-created
+
+            Create the issue using a heredoc for safety:
+
+            ```bash
+            gh issue create \
+              --title "[REVIEW] PR #$PR_NUMBER: $(echo "$PR_TITLE" | tr -cd '[:alnum:] [:space:]-_')" \
+              --label "phase:review,source:pr,ready" \
+              --body "$(cat <<'ISSUE_BODY'
+            ## Pull Request Review Queue
+
+            **Linked PR**: #$PR_NUMBER
+            **Author**: @$PR_AUTHOR
+            **Branch**: ... → ...
+
+            [rest of body here - use the actual values you gathered]
+            ISSUE_BODY
+            )"
+            ```
+
+            ### Step 4: Link Issue to PR
+
+            After creating the issue, comment on the PR to link them:
+
+            ```bash
+            gh pr comment "$PR_NUMBER" --body "Review queued. Hera will process this when the maintainer connects."
+            ```
+
+            ### Step 5: Report
+
+            Output the created issue number and a brief summary.
+
+            ## Important Notes
+
+            - Do NOT approve or merge the PR
+            - Do NOT request changes on the PR
+            - Only create the review queue issue and link it
+            - Always quote variable expansions in shell commands
+            - If anything fails, report the error clearly
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          gh issue create \
+            --title "[URGENT] GHE Automation failed: PR Review Queue" \
+            --label "urgent,needs-moderation,ci-failure" \
+            --body "$(cat <<'FAILURE_BODY'
+          ## Automation Failure
+
+          The PR review queue automation failed.
+
+          Please investigate the workflow run and manually create a review issue if needed.
+
+          ---
+          *Auto-created by GHE failure handler*
+          FAILURE_BODY
+          )"

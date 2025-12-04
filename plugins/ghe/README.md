@@ -202,17 +202,63 @@ github-elements-plugin/
 
 ## GitHub Actions Integration (24/7 Automation)
 
-In addition to the local Claude Code plugin, you can install GitHub Actions workflows that run 24/7 on GitHub for automated monitoring and assistance.
+In addition to the local Claude Code plugin, GHE provides GitHub Actions workflows that run 24/7 for automated event handling. These workflows triage incoming events and prepare work for the appropriate GHE agent.
 
-### Available Workflows
+### Automated Event Handling
 
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| `ghe-stale-monitor.yml` | Daily (cron) | Detect threads inactive >24h |
-| `ghe-label-validator.yml` | Label changes | Validate GHE label combinations |
-| `ghe-pr-checker.yml` | PR events | Verify PRs link to GHE threads |
-| `ghe-ci-opener.yml` | CI failures | Auto-open issues on test failures |
-| `ghe-assistant.yml` | @claude mentions | Interactive GHE help in comments |
+When you're offline, these events are automatically processed and queued for your next session:
+
+| Event | Trigger | Action | Agent |
+|-------|---------|--------|-------|
+| **A: PR Opened** | Someone opens a pull request | Creates a REVIEW issue linking to the PR, adds `phase:review` label | Hera |
+| **B: Bug Report** | Someone opens a bug issue | Validates bug template, asks for missing info or adds `phase:review` label | Hera |
+| **C: Feature Request** | Someone opens a feature request | Validates feature template, asks for missing info or adds `phase:dev` label | Hephaestus |
+| **D: Policy Violation** | Someone posts an inappropriate comment | Issues warnings (max 3), then adds `needs-moderation` label | Ares |
+| **E: SPAM Detected** | Someone posts obvious spam | Closes issue with `spam` label (very conservative to avoid false positives) | Auto |
+| **F: Security Alert** | GitHub detects a vulnerability | Creates URGENT issue with `phase:dev` and `security` labels | Hephaestus |
+| **G: CI/CD Failure** | A workflow fails | Creates REVIEW issue with `ci-failure` label for investigation | Chronos |
+
+### Agent Responsibilities
+
+When you connect with Claude Code, the queued work is processed by specialized agents:
+
+| Agent | Identity | Handles |
+|-------|----------|---------|
+| **Hera** | Queen of the Gods | PR reviews, bug triage, quality evaluation |
+| **Hephaestus** | God of the Forge | Feature development, security fixes |
+| **Ares** | God of War | Moderation decisions (only reports to you) |
+| **Chronos** | God of Time | CI/CD failures, workflow issues |
+
+### Workflow Files
+
+| Workflow | Purpose |
+|----------|---------|
+| `ghe-pr-review.yml` | Event A - Queue PRs for review |
+| `ghe-bug-triage.yml` | Event B - Validate and triage bug reports |
+| `ghe-feature-triage.yml` | Event C - Validate and triage feature requests |
+| `ghe-moderation.yml` | Event D - Detect policy violations |
+| `ghe-spam-detection.yml` | Event E - Conservative spam detection |
+| `ghe-security-alert.yml` | Event F - Security vulnerability handling |
+| `ghe-ci-failure.yml` | Event G - CI/CD failure tracking |
+
+### Design Principles
+
+1. **Conservative by Default**: When uncertain, create an URGENT issue and wait for human decision
+2. **No False Positives**: Especially for SPAM/moderation - better to miss spam than block legitimate users
+3. **Respect User Autonomy**: Only the repo owner makes final decisions
+4. **Prevent Infinite Loops**: Bot actions never trigger other bot workflows
+5. **No Deletions**: Issues are closed/labeled, never deleted (preserves audit trail)
+
+### What is NOT a Violation
+
+To avoid false positives, these are explicitly NOT flagged:
+
+- Mentioning other tools/projects positively
+- Technical disagreements (even heated ones)
+- Asking questions repeatedly
+- Non-English comments
+- Sarcasm or humor
+- Respectful criticism of the project
 
 ### Division of Labor
 
