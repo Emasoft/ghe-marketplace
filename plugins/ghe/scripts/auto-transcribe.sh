@@ -179,10 +179,50 @@ classify_element() {
 }
 
 #######################################
+# Extract explicit issue number from text
+# Patterns: [Currently discussing issue n.X], issue #X, #X
+#######################################
+extract_explicit_issue() {
+    local text="$1"
+    local issue_num=""
+
+    # Pattern 1: [Currently discussing issue n.123]
+    if [[ "$text" =~ \[Currently\ discussing\ issue\ n\.([0-9]+)\] ]]; then
+        issue_num="${BASH_REMATCH[1]}"
+    # Pattern 2: [issue #123] or [Issue #123]
+    elif [[ "$text" =~ \[[Ii]ssue\ \#([0-9]+)\] ]]; then
+        issue_num="${BASH_REMATCH[1]}"
+    # Pattern 3: working on issue #123 or work on #123
+    elif [[ "$text" =~ [Ww]ork(ing)?\ on\ (issue\ )?\#([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[3]}"
+    # Pattern 4: lets work on issue #123
+    elif [[ "$text" =~ [Ll]ets?\ work\ on\ (issue\ )?\#([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[2]}"
+    # Pattern 5: claim issue #123 or claim #123
+    elif [[ "$text" =~ [Cc]laim\ (issue\ )?\#([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[2]}"
+    fi
+
+    echo "$issue_num"
+}
+
+#######################################
 # Find or create issue for conversation
 #######################################
 find_or_create_issue() {
     local topic="$1"
+
+    # FIRST: Check for explicit issue mention in the message
+    local explicit_issue=$(extract_explicit_issue "$topic")
+    if [[ -n "$explicit_issue" ]]; then
+        # Verify it exists (open or closed - we can still post to closed issues)
+        if gh issue view "$explicit_issue" --json number --jq '.number' 2>/dev/null | grep -q "$explicit_issue"; then
+            set_config "current_issue" "$explicit_issue"
+            echo "$explicit_issue"
+            return 0
+        fi
+    fi
+
     local current_issue=$(get_config "current_issue" "")
 
     # If we have an active issue, use it
@@ -353,6 +393,42 @@ post_assistant_message() {
 }
 
 #######################################
+# Set current issue explicitly
+#######################################
+set_current_issue() {
+    local issue_num="$1"
+
+    if ! check_github_repo; then
+        return 1
+    fi
+
+    ensure_config
+
+    # Verify issue exists
+    if gh issue view "$issue_num" --json number --jq '.number' 2>/dev/null | grep -q "$issue_num"; then
+        set_config "current_issue" "$issue_num"
+        echo "Current issue set to #$issue_num"
+        return 0
+    else
+        echo "Issue #$issue_num not found" >&2
+        return 1
+    fi
+}
+
+#######################################
+# Get current issue
+#######################################
+get_current_issue() {
+    ensure_config
+    local issue=$(get_config "current_issue" "")
+    if [[ -n "$issue" && "$issue" != "null" ]]; then
+        echo "Current issue: #$issue"
+    else
+        echo "No current issue set"
+    fi
+}
+
+#######################################
 # CLI interface
 #######################################
 case "${1:-}" in
@@ -365,11 +441,32 @@ case "${1:-}" in
     "find-issue")
         find_or_create_issue "$2"
         ;;
+    "set-issue")
+        set_current_issue "$2"
+        ;;
+    "get-issue")
+        get_current_issue
+        ;;
     "check")
         check_github_repo && echo "GitHub repo OK" || echo "No GitHub repo"
         ;;
     *)
-        echo "Usage: $0 {user|assistant|find-issue|check} [message] [agent]"
+        echo "Usage: $0 {user|assistant|find-issue|set-issue|get-issue|check} [message] [agent]"
+        echo ""
+        echo "Commands:"
+        echo "  user <message>              Post user message to current issue"
+        echo "  assistant <message> [agent] Post assistant message (default: Athena)"
+        echo "  find-issue <topic>          Find or create issue for topic"
+        echo "  set-issue <number>          Set current issue explicitly"
+        echo "  get-issue                   Show current issue"
+        echo "  check                       Verify GitHub repo is configured"
+        echo ""
+        echo "Explicit issue patterns in messages:"
+        echo "  [Currently discussing issue n.123]"
+        echo "  [issue #123]"
+        echo "  working on issue #123"
+        echo "  lets work on #123"
+        echo "  claim #123"
         exit 1
         ;;
 esac
