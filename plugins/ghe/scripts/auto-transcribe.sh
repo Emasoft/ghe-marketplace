@@ -14,11 +14,12 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# Avatar URLs - hosted locally in plugin assets (served via raw GitHub)
-# Local path: plugins/ghe/assets/avatars/{name}.png
+# Avatar URLs - Agent avatars are hosted locally in plugin assets
+# User avatars are fetched dynamically from GitHub
 AVATAR_BASE="https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars"
+
+# Agent avatars (bundled with plugin)
 declare -A AVATARS=(
-    ["Emasoft"]="${AVATAR_BASE}/emasoft.png"
     ["Athena"]="${AVATAR_BASE}/athena.png"
     ["Hephaestus"]="${AVATAR_BASE}/hephaestus.png"
     ["Artemis"]="${AVATAR_BASE}/artemis.png"
@@ -31,6 +32,26 @@ declare -A AVATARS=(
     ["Cerberus"]="${AVATAR_BASE}/cerberus.png"
     ["Argos"]="${AVATAR_BASE}/argos.png"
 )
+
+# Get avatar for a GitHub user (dynamically fetched)
+get_user_avatar() {
+    local username="$1"
+    local size="${2:-77}"
+    # GitHub provides avatars at: https://avatars.githubusercontent.com/{username}?s={size}
+    echo "https://avatars.githubusercontent.com/${username}?s=${size}"
+}
+
+# Get avatar URL - checks agents first, then falls back to GitHub user avatar
+get_avatar_url() {
+    local name="$1"
+    # Check if it's a known agent
+    if [[ -n "${AVATARS[$name]}" ]]; then
+        echo "${AVATARS[$name]}"
+    else
+        # Assume it's a GitHub username, fetch their avatar dynamically
+        get_user_avatar "$name" 77
+    fi
+}
 
 # Element type badges (GitHub-friendly markdown)
 BADGE_KNOWLEDGE="![knowledge](https://img.shields.io/badge/element-knowledge-blue)"

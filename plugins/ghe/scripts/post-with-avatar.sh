@@ -2,11 +2,11 @@
 # post-with-avatar.sh - Helper for posting GitHub comments with avatar banners
 # Usage: source this file, then call post_comment or get_avatar_url
 
-# Avatar URLs - hosted locally in plugin assets (served via raw GitHub)
-# Local path: plugins/ghe/assets/avatars/{name}.png
+# Avatar URLs - Agent avatars hosted locally, user avatars fetched from GitHub
 AVATAR_BASE="https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars"
+
+# Agent avatars (bundled with plugin)
 declare -A AVATAR_URLS=(
-    ["Emasoft"]="${AVATAR_BASE}/emasoft.png"
     ["Claude"]="${AVATAR_BASE}/claude.png"
     ["Hephaestus"]="${AVATAR_BASE}/hephaestus.png"
     ["Artemis"]="${AVATAR_BASE}/artemis.png"
@@ -19,7 +19,15 @@ declare -A AVATAR_URLS=(
     ["Chronos"]="${AVATAR_BASE}/chronos.png"
     ["Cerberus"]="${AVATAR_BASE}/cerberus.png"
     ["Argos"]="${AVATAR_BASE}/argos.png"
+    ["Argos-Panoptes"]="${AVATAR_BASE}/argos-panoptes.png"
 )
+
+# Get GitHub user avatar URL dynamically
+get_github_user_avatar() {
+    local username="$1"
+    local size="${2:-77}"
+    echo "https://avatars.githubusercontent.com/${username}?s=${size}"
+}
 
 # Agent name to display name mapping
 declare -A AGENT_NAMES=(
