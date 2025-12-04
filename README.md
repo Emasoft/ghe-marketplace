@@ -39,6 +39,10 @@ GHE is a Claude Code plugin that transforms GitHub Issues into a **persistent me
 
 An **Element** is a unit of information stored as a single message/reply to a GitHub Issue in the issue tracker. Every piece of information in GHE is an Element.
 
+<p align="center">
+  <img src="plugins/ghe/assets/element-classification.svg" alt="Element Classification System" width="900"/>
+</p>
+
 **The power of this system**: GitHub threads allow you to **isolate and preserve the context of each task**. Human developers and AI agents can discuss progress while keeping the conversation focused and on track, instead of mixing different issues together.
 
 At any moment, you can tell Claude: *"Let's switch to working on issue #42"* - and Claude instantly gets up to speed by reading that issue's thread. It spawns a subagent to read and summarize the thread, so it won't waste your tokens or context memory. Each issue is a self-contained knowledge base for its task.
@@ -47,32 +51,42 @@ There are **3 types of Elements**:
 
 ### Element of Knowledge
 
-A message describing **objective information ABOUT the code**:
-- Files, signatures, incompatibilities, errors, results
-- Algorithm pseudocode, quotes from papers, ideas
-- Architectures, design, requirements, formats
-- APIs, features, functionalities, data structures
-- Configurations, databases, dev stack, compilers, dependencies
+A message describing **plans, ideas, and theory** - discussion that informs but doesn't change the project:
+- Requirements, specifications, design documents
+- Architecture decisions, algorithms, protocols
+- APIs, data structures, formats
+- Explanations, documentation, theory
+
+> "The Talk" - Plans and ideas before they become reality.
 
 ### Element of Action
 
-A message containing or linking **actual source code**:
-- Code snippets showing an issue in the codebase
-- Proposed patches or fixes
-- Summarized changes with diffs
-- Contributions to the project (linked PRs, forks)
-- Proposed variations to parts of the code
+A message containing or linking **tangible project artifacts** - the only element type that actually changes the project:
 
-> Must be actual code, not pseudocode - a snippet, diff, or patch.
+**CODE:**
+- Code snippets, patches, diffs
+- Functions, classes, scripts
+- Configuration files
+
+**ASSETS:**
+- Images, sprites, icons, graphics
+- Audio, sound effects, music
+- Video, animations
+- 3D models, textures
+- Stylesheets, fonts
+
+> "The Reality" - If it ships with the project, it's an ACTION.
 
 ### Element of Judgement
 
-A message containing **criticism or evaluation** about the code:
-- Bug reports and descriptions
-- Performance issues
-- Incompatibilities, security issues
-- Code quality assessments
-- Any positive or negative evaluation of code or program behavior
+A message containing **evaluation and feedback** - assessment of what exists:
+- Bug reports, error descriptions
+- Code reviews, test results
+- Performance issues, security concerns
+- Quality assessments, critiques
+- Any verdict on code or behavior
+
+> "The Verdict" - Evaluation of the work done.
 
 ---
 
