@@ -220,6 +220,65 @@ Examples:
 
 **CRITICAL**: Athena produces **REQUIREMENTS DESIGN FILES**, not code.
 
+### ONLY Athena Creates Requirements
+
+**No other agent creates requirements files. Only Athena.**
+
+| Agent | Creates Requirements? | Role |
+|-------|----------------------|------|
+| **Athena** | **YES - ONLY ATHENA** | Translates user intent into precise specifications |
+| Hephaestus | NO | Reads requirements, writes code |
+| Artemis | NO | Tests against requirements |
+| Hera | NO | Reviews against requirements |
+| Themis | NO | Validates requirements exist |
+
+### WHEN Athena Creates Requirements
+
+Athena creates requirements in **exactly two circumstances**:
+
+#### Circumstance 1: User Requests a Feature
+
+When the user asks Claude to implement a feature or make a change:
+
+```
+User: "Add dark mode to the app"
+     │
+     ▼
+Claude delegates to Athena
+     │
+     ▼
+Athena translates vague user request into:
+├── Precise, verifiable requirements
+├── Acceptance criteria checklists
+├── Technical specifications
+├── Links to relevant documentation
+└── Saves to REQUIREMENTS/standalone/REQ-XXX-dark-mode.md
+     │
+     ▼
+DEV thread created with requirements linked
+```
+
+#### Circumstance 2: Breaking Down an Epic
+
+When Athena plans waves for an epic:
+
+```
+User: "Build a complete authentication system"
+     │
+     ▼
+Athena creates epic thread
+     │
+     ▼
+Athena breaks down into single functionalities:
+├── REQ-101-user-schema_EPIC00123.md
+├── REQ-102-user-model_EPIC00123.md
+├── REQ-103-password-hash_EPIC00123.md
+└── (each can be developed in parallel)
+     │
+     ▼
+Wave started with all requirements ready
+```
+
 ### REQUIREMENTS Folder Structure
 
 All requirements files MUST be saved to the `REQUIREMENTS/` folder in the repository root:
@@ -229,14 +288,14 @@ project-root/
 ├── REQUIREMENTS/
 │   ├── epic-123/                    # Epic-specific folder
 │   │   ├── wave-1/
-│   │   │   ├── REQ-101-user-schema.md
-│   │   │   ├── REQ-102-user-model.md
-│   │   │   └── REQ-103-password-hash.md
+│   │   │   ├── REQ-101-user-schema_EPIC00123.md
+│   │   │   ├── REQ-102-user-model_EPIC00123.md
+│   │   │   └── REQ-103-password-hash_EPIC00123.md
 │   │   ├── wave-2/
-│   │   │   ├── REQ-104-login-endpoint.md
-│   │   │   └── REQ-105-logout-endpoint.md
+│   │   │   ├── REQ-104-login-endpoint_EPIC00123.md
+│   │   │   └── REQ-105-logout-endpoint_EPIC00123.md
 │   │   └── epic-overview.md         # Epic summary
-│   ├── standalone/                  # Non-epic features
+│   ├── standalone/                  # Non-epic features (no suffix)
 │   │   ├── REQ-201-dark-mode.md
 │   │   └── REQ-202-export-csv.md
 │   └── README.md                    # Index of all requirements
@@ -246,13 +305,19 @@ project-root/
 ### File Naming Convention
 
 ```
+Standalone features (user request → single DEV issue):
 REQ-<issue-number>-<short-name>.md
 
+Epic child issues (epic breakdown → wave issues):
+REQ-<issue-number>-<short-name>_EPIC<epic-issue-number>.md
+
 Examples:
-- REQ-101-user-schema.md
-- REQ-102-user-model.md
-- REQ-201-dark-mode.md
+- REQ-201-dark-mode.md                    (standalone)
+- REQ-101-user-schema_EPIC00123.md        (epic #123, wave 1)
+- REQ-104-login-endpoint_EPIC00123.md     (epic #123, wave 2)
 ```
+
+**The `_EPIC` suffix** links the requirements file to its parent epic GitHub issue number (zero-padded to 5 digits).
 
 ### CRITICAL: Requirements File is MANDATORY
 
@@ -461,19 +526,22 @@ if [ ! -d "$REQUIREMENTS_DIR" ]; then
   exit 1
 fi
 
-# Step 2: Count requirements files
-REQ_COUNT=$(ls -1 "$REQUIREMENTS_DIR"/REQ-*.md 2>/dev/null | wc -l)
+# Step 2: Count requirements files (must have _EPIC suffix for epic issues)
+EPIC_PADDED=$(printf "%05d" $EPIC_ISSUE)
+REQ_COUNT=$(ls -1 "$REQUIREMENTS_DIR"/REQ-*_EPIC${EPIC_PADDED}.md 2>/dev/null | wc -l)
 if [ "$REQ_COUNT" -eq 0 ]; then
   echo "ERROR: No requirements files found in $REQUIREMENTS_DIR"
+  echo "Expected format: REQ-NNN-name_EPIC${EPIC_PADDED}.md"
   exit 1
 fi
 
-echo "Found $REQ_COUNT requirements files. Starting wave..."
+echo "Found $REQ_COUNT requirements files for epic #${EPIC_ISSUE}. Starting wave..."
 
 # Step 3: For EACH requirements file, create an issue
-for REQ_FILE in "$REQUIREMENTS_DIR"/REQ-*.md; do
-  # Extract feature name from filename (REQ-NNN-feature-name.md -> feature-name)
-  FEATURE_NAME=$(basename "$REQ_FILE" .md | sed 's/REQ-[0-9]*-//' | tr '-' ' ')
+for REQ_FILE in "$REQUIREMENTS_DIR"/REQ-*_EPIC${EPIC_PADDED}.md; do
+  # Extract feature name from filename
+  # REQ-101-user-schema_EPIC00123.md -> user schema
+  FEATURE_NAME=$(basename "$REQ_FILE" .md | sed "s/REQ-[0-9]*-//" | sed "s/_EPIC[0-9]*//" | tr '-' ' ')
 
   # Read requirements content
   REQ_CONTENT=$(cat "$REQ_FILE")
