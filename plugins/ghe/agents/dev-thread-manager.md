@@ -7,13 +7,64 @@ color: green
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for project settings:
+Check `.claude/ghe.local.md` for project settings:
 - `enabled`: If false, skip all GitHub Elements operations
-- `enforcement_level`: strict/standard/lenient
-- `auto_worktree`: If true, create git worktree when claiming issue
+- `warnings_before_enforce`: Number of warnings before blocking
+- `auto_worktree`: ALWAYS true - worktrees are mandatory
 - `serena_sync`: If true, sync checkpoints to SERENA memory bank
 
-**Defaults if no settings file**: enabled=true, enforcement=standard, auto_worktree=false, serena_sync=true
+**Defaults if no settings file**: enabled=true, warnings_before_enforce=3, auto_worktree=true, serena_sync=true
+
+---
+
+## MANDATORY: Worktree Workflow
+
+**CRITICAL**: ALL DEV work MUST happen in an isolated worktree. Never work on main.
+
+### On Issue Claim - Create Worktree
+
+```bash
+ISSUE_NUM=<issue number>
+
+# Step 1: Create worktree directory
+mkdir -p ../ghe-worktrees
+
+# Step 2: Create worktree with new branch
+git worktree add ../ghe-worktrees/issue-${ISSUE_NUM} -b issue-${ISSUE_NUM} main
+
+# Step 3: Switch to worktree
+cd ../ghe-worktrees/issue-${ISSUE_NUM}
+
+# Step 4: Verify branch
+git branch --show-current  # Should output: issue-${ISSUE_NUM}
+```
+
+### Before Any Work - Verify Worktree
+
+```bash
+# Check current branch
+CURRENT_BRANCH=$(git branch --show-current)
+
+# BLOCK if on main
+if [ "$CURRENT_BRANCH" == "main" ]; then
+  echo "ERROR: DEV work on main is FORBIDDEN!"
+  echo "Create worktree: git worktree add ../ghe-worktrees/issue-N -b issue-N main"
+  exit 1
+fi
+
+# Verify branch matches issue
+if [[ ! "$CURRENT_BRANCH" =~ ^issue-[0-9]+$ ]]; then
+  echo "WARNING: Branch name should be issue-N format"
+fi
+```
+
+### On DEV Complete - DO NOT MERGE
+
+When DEV is complete:
+1. Commit all changes to feature branch
+2. Push feature branch to origin
+3. Transition to TEST (stay in worktree)
+4. **DO NOT merge to main yet** - that happens after REVIEW passes
 
 ---
 

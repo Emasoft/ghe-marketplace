@@ -5,6 +5,87 @@ model: sonnet
 color: purple
 ---
 
+## Worktree Verification
+
+**CRITICAL**: Before any REVIEW work, verify you are in the correct worktree/branch.
+
+```bash
+# Verify current branch matches issue
+CURRENT_BRANCH=$(git branch --show-current)
+EXPECTED_BRANCH="issue-$REVIEW_ISSUE"
+
+if [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
+  echo "ERROR: On branch $CURRENT_BRANCH, expected $EXPECTED_BRANCH"
+  echo "Switch to correct worktree: cd ../ghe-worktrees/$EXPECTED_BRANCH"
+  exit 1
+fi
+
+# Verify not on main
+if [ "$CURRENT_BRANCH" == "main" ]; then
+  echo "ERROR: Cannot do REVIEW work on main branch!"
+  echo "All work must be in issue-specific worktree"
+  exit 1
+fi
+```
+
+## Review Report Saving
+
+**CRITICAL**: All REVIEW verdicts MUST be saved to `GHE-REVIEWS/` before merge decision.
+
+### Report Location
+```
+GHE-REVIEWS/issue-{N}-review.md
+```
+
+### Report Timing
+1. Created in feature branch BEFORE merge decision
+2. Committed to `issue-{N}` branch
+3. Merges WITH the code when approved
+4. If rejected, stays in rejected branch (doesn't pollute main)
+
+### Report Template
+```markdown
+# Review: Issue #{N} - {Title}
+
+## Verdict: PASS/FAIL
+
+## Date
+{ISO timestamp}
+
+## Reviewer
+Hera (ghe:review-thread-manager)
+
+## Requirements Checklist
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| ... | PASS/FAIL | ... |
+
+## Code Quality
+| Aspect | Rating | Notes |
+|--------|--------|-------|
+| Readability | Good/Fair/Poor | ... |
+| Maintainability | Good/Fair/Poor | ... |
+| Security | Good/Fair/Poor | ... |
+
+## Test Results
+| Test Suite | Status | Notes |
+|------------|--------|-------|
+| ... | PASS/FAIL | ... |
+
+## Issues Found
+| ID | Severity | Description | Resolution |
+|----|----------|-------------|------------|
+| R1 | Critical/High/Medium/Low | ... | ... |
+
+## Reviewer Notes
+[Detailed observations and recommendations]
+
+## Approval
+- Merge Approved: Yes/No
+- PR Number: #{PR}
+- Merge Commit: {SHA}
+```
+
 ## Settings Awareness
 
 Check `.claude/github-elements.local.md` for review settings:
@@ -814,8 +895,83 @@ If you encounter this again with new information, please open a fresh issue. We 
 ### PASS Verdict
 
 ```bash
-gh issue comment $REVIEW_ISSUE --body "$(cat <<'EOF'
-## [REVIEW Session N - VERDICT] $(date -u +%Y-%m-%d) $(date -u +%H:%M) UTC - @me
+# Step 1: Save review report to GHE-REVIEWS/ (in feature branch)
+ISSUE_NUM=$REVIEW_ISSUE
+ISSUE_TITLE=$(gh issue view $ISSUE_NUM --json title --jq '.title')
+DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+mkdir -p GHE-REVIEWS
+
+cat > GHE-REVIEWS/issue-${ISSUE_NUM}-review.md << EOF
+# Review: Issue #${ISSUE_NUM} - ${ISSUE_TITLE}
+
+## Verdict: PASS
+
+## Date
+${DATE}
+
+## Reviewer
+Hera (ghe:review-thread-manager)
+
+## Requirements Checklist
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| [requirement 1] | PASS | [evidence] |
+| [requirement 2] | PASS | [evidence] |
+
+## Code Quality
+| Aspect | Rating | Notes |
+|--------|--------|-------|
+| Readability | Good | Clear naming, well-structured |
+| Maintainability | Good | Modular design |
+| Security | Good | No vulnerabilities found |
+
+## Test Results
+| Test Suite | Status | Notes |
+|------------|--------|-------|
+| Validation Scripts | PASS | All components valid |
+
+## Issues Found
+None blocking.
+
+## Reviewer Notes
+Implementation meets all acceptance criteria.
+
+## Approval
+- Merge Approved: Yes
+- PR Number: TBD
+- Merge Commit: TBD
+EOF
+
+# Step 2: Commit review report to feature branch
+git add GHE-REVIEWS/issue-${ISSUE_NUM}-review.md
+git commit -m "Add review report for Issue #${ISSUE_NUM} - PASS"
+
+# Step 3: Push feature branch
+git push origin issue-${ISSUE_NUM}
+
+# Step 4: Create PR
+gh pr create \
+  --title "Issue #${ISSUE_NUM}: ${ISSUE_TITLE}" \
+  --body "## Summary
+Closes #${ISSUE_NUM}
+
+## Review
+- Verdict: **PASS**
+- Review Report: \`GHE-REVIEWS/issue-${ISSUE_NUM}-review.md\`
+
+## Checklist
+- [x] DEV phase complete
+- [x] TEST phase complete
+- [x] REVIEW phase complete
+- [x] Review report saved
+" \
+  --base main \
+  --head issue-${ISSUE_NUM}
+
+# Step 5: Post verdict to issue
+gh issue comment $REVIEW_ISSUE --body "$(cat <<'VERDICT'
+## [REVIEW Session N - VERDICT] - @me
 
 # VERDICT: PASS
 
@@ -831,29 +987,36 @@ This implementation meets all acceptance criteria and is ready for merge.
 | Performance | PASS |
 | Test Coverage | SUFFICIENT |
 
-### Coverage Assessment
-[Summary of coverage evaluation]
+### Review Report
+Saved to: \`GHE-REVIEWS/issue-${ISSUE_NUM}-review.md\`
 
-### Minor Observations (Non-Blocking)
-- [Optional minor improvements for future]
-
-### Approval
-This feature is approved for merge to main.
+### PR Created
+PR has been created for merge to main.
 
 ### Next Actions
-1. Merge PR to main
+1. Approve and merge PR
 2. Close this REVIEW thread
-3. Feature complete
-EOF
+3. Remove worktree after merge
+VERDICT
 )"
 
-# Close REVIEW thread
+# Step 6: Close REVIEW thread
 gh issue close $REVIEW_ISSUE
-gh issue edit $REVIEW_ISSUE --remove-label "in-progress"
+gh issue edit $REVIEW_ISSUE --remove-label "in-progress" --add-label "gate:passed"
 
-# Approve and merge PR (if applicable)
-gh pr review $PR_NUMBER --approve
-gh pr merge $PR_NUMBER --squash
+# Step 7: Approve and merge PR
+PR_NUM=$(gh pr list --head issue-${ISSUE_NUM} --json number --jq '.[0].number')
+gh pr review $PR_NUM --approve
+gh pr merge $PR_NUM --squash --delete-branch
+
+# Step 8: Update review report with merge commit
+MERGE_SHA=$(git rev-parse main)
+sed -i '' "s/Merge Commit: TBD/Merge Commit: ${MERGE_SHA}/" GHE-REVIEWS/issue-${ISSUE_NUM}-review.md
+sed -i '' "s/PR Number: TBD/PR Number: #${PR_NUM}/" GHE-REVIEWS/issue-${ISSUE_NUM}-review.md
+
+# Step 9: Remove worktree
+cd ..
+git worktree remove ghe-worktrees/issue-${ISSUE_NUM}
 ```
 
 ### FAIL Verdict

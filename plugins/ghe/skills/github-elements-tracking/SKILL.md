@@ -331,9 +331,11 @@ gh auth status
 
 ---
 
-## Git Worktrees for Parallel Thread Work
+## MANDATORY: Git Worktrees for All Phase Work
 
-### Why Worktrees?
+### Why Worktrees Are REQUIRED
+
+**CRITICAL**: ALL phase work (DEV, TEST, REVIEW) MUST happen in isolated git worktrees. Working on main is FORBIDDEN.
 
 When multiple agents work on different phases (DEV, TEST, REVIEW), they need **separate working directories** to avoid conflicts. Git worktrees allow multiple checkouts from a single repository.
 
@@ -355,6 +357,49 @@ main-repo/           ← Main repository (can be on main branch)
 ```
 
 ### Worktree Setup for Threads
+
+**Standard Worktree Location**: `../ghe-worktrees/issue-{N}/`
+
+```bash
+ISSUE_NUM=<issue number>
+
+# Step 1: Create worktree directory
+mkdir -p ../ghe-worktrees
+
+# Step 2: Create worktree with new branch
+git worktree add ../ghe-worktrees/issue-${ISSUE_NUM} -b issue-${ISSUE_NUM} main
+
+# Step 3: Switch to worktree
+cd ../ghe-worktrees/issue-${ISSUE_NUM}
+
+# Step 4: Verify branch
+git branch --show-current  # Should output: issue-${ISSUE_NUM}
+```
+
+### MANDATORY: Verify Worktree Before Any Work
+
+**Every agent MUST run this check before starting any work:**
+
+```bash
+# Check current branch
+CURRENT_BRANCH=$(git branch --show-current)
+
+# BLOCK if on main
+if [ "$CURRENT_BRANCH" == "main" ]; then
+  echo "ERROR: Work on main is FORBIDDEN!"
+  echo "Create worktree: git worktree add ../ghe-worktrees/issue-N -b issue-N main"
+  exit 1
+fi
+
+# Verify we're in a worktree
+if [ ! -f .git ]; then
+  echo "WARNING: Not in a worktree. Should be in ../ghe-worktrees/issue-N/"
+fi
+
+echo "Phase work running in branch: $CURRENT_BRANCH"
+```
+
+### Legacy Worktree Setup (Alternative)
 
 ```bash
 # Initial setup: Create worktrees directory
@@ -432,11 +477,13 @@ cd worktrees/review-$FEATURE
 
 | Phase Transition | Worktree Action |
 |------------------|-----------------|
-| Claim DEV | `git worktree add worktrees/dev-X feature/X` |
-| DEV → TEST | Remove dev worktree, add test worktree |
-| TEST → REVIEW | Remove test worktree, add review worktree |
-| REVIEW PASS | Remove review worktree, merge to main |
-| REVIEW FAIL | Remove review worktree, re-add dev worktree |
+| Claim DEV | `git worktree add ../ghe-worktrees/issue-N -b issue-N main` |
+| DEV → TEST | Stay in same worktree (same branch) |
+| TEST → REVIEW | Stay in same worktree (same branch) |
+| REVIEW PASS | 1. Save review to `GHE-REVIEWS/` 2. Commit 3. Create PR 4. Merge 5. Remove worktree |
+| REVIEW FAIL | 1. Save review to `GHE-REVIEWS/` 2. Commit 3. Stay in worktree 4. Back to DEV |
+
+**Key insight**: All phases (DEV, TEST, REVIEW) work in the SAME worktree/branch. The worktree is only removed after REVIEW PASS and successful merge to main.
 
 ### Cleanup Commands
 
@@ -451,6 +498,152 @@ git worktree remove --force worktrees/dev-$FEATURE
 for wt in dev test review; do
   git worktree remove worktrees/${wt}-$FEATURE 2>/dev/null
 done
+```
+
+---
+
+## GHE-REVIEWS Directory
+
+### Purpose
+
+The `GHE-REVIEWS/` directory stores all REVIEW phase verdict reports. These reports:
+- Document the quality evaluation process
+- Travel with the code (committed to feature branch)
+- Provide audit trail for approvals/rejections
+- Merge with approved code or stay in rejected branches
+
+### Directory Location
+
+```
+project-root/
+├── GHE-REVIEWS/
+│   ├── README.md
+│   ├── issue-1-review.md
+│   ├── issue-2-review.md
+│   └── ...
+```
+
+### Report Naming Convention
+
+```
+issue-{N}-review.md
+```
+
+Where `{N}` is the original issue number being reviewed.
+
+### Report Template
+
+```markdown
+# REVIEW Report: Issue #{N}
+
+## Metadata
+- **Issue**: #{N} - {Title}
+- **Reviewer**: {Agent/User}
+- **Date**: {YYYY-MM-DD}
+- **Branch**: issue-{N}
+
+## Verdict: {PASS | FAIL}
+
+## Requirements Checklist
+- [x] Requirement 1
+- [x] Requirement 2
+- [ ] Requirement 3 (if FAIL)
+
+## Code Quality Assessment
+
+### Architecture
+{Assessment}
+
+### Testing
+{Assessment}
+
+### Security
+{Assessment}
+
+### Performance
+{Assessment}
+
+## Test Results Summary
+| Suite | Passed | Failed | Coverage |
+|-------|--------|--------|----------|
+| Unit | X | Y | Z% |
+| Integration | X | Y | Z% |
+
+## Issues Found
+{If FAIL: List all issues requiring attention}
+
+## Reviewer Notes
+{Any additional observations}
+
+## Approval Status
+{If PASS: Approved for merge}
+{If FAIL: Requires return to DEV with issues listed above}
+```
+
+### Report Timing (Critical)
+
+**IMPORTANT**: Reviews are created **BEFORE** the merge decision:
+
+1. **Create report** in feature branch (`issue-{N}`)
+2. **Commit report** to the feature branch
+3. **Push branch** to remote
+4. **If PASS**: Create PR, merge to main (report travels with code)
+5. **If FAIL**: Report stays in rejected branch (doesn't pollute main)
+
+### Why Before Merge?
+
+| Timing | Pros | Cons |
+|--------|------|------|
+| **Before merge (in feature branch)** | Report travels with code; rejected reports don't pollute main; complete audit trail | Requires commit before merge |
+| After merge (in main) | Simpler workflow | Rejected reviews pollute main; breaks audit trail |
+
+**Decision**: Save reviews **in feature branch BEFORE merge**. This ensures:
+- Only approved code AND its review reach main
+- Rejected code's review stays with the rejected branch
+- Complete traceability of what was approved and why
+
+### REVIEW PASS Workflow with Report
+
+```bash
+ISSUE_NUM=<issue number>
+REVIEW_DATE=$(date +%Y-%m-%d)
+
+# 1. Verify in correct worktree
+cd ../ghe-worktrees/issue-${ISSUE_NUM}
+
+# 2. Create GHE-REVIEWS directory if needed
+mkdir -p GHE-REVIEWS
+
+# 3. Write review report
+cat > GHE-REVIEWS/issue-${ISSUE_NUM}-review.md << 'EOF'
+# REVIEW Report: Issue #${ISSUE_NUM}
+...
+## Verdict: PASS
+...
+EOF
+
+# 4. Commit the review
+git add GHE-REVIEWS/issue-${ISSUE_NUM}-review.md
+git commit -m "Add REVIEW report for issue #${ISSUE_NUM} - PASS"
+
+# 5. Push feature branch
+git push origin issue-${ISSUE_NUM}
+
+# 6. Create PR
+gh pr create --title "Issue #${ISSUE_NUM} - Feature Implementation" \
+  --body "Closes #${ISSUE_NUM}
+
+## Review Report
+See: GHE-REVIEWS/issue-${ISSUE_NUM}-review.md
+
+## Verdict: PASS"
+
+# 7. Merge PR
+gh pr merge --squash
+
+# 8. Clean up worktree
+cd ..
+git worktree remove issue-${ISSUE_NUM}
 ```
 
 ---
@@ -1599,6 +1792,11 @@ Note: No priority labels. No time-based labels. Order is determined by wave memb
 | **Bloat first message with work logs** | Unreadable index | Work logs go in replies, index stays clean |
 | **Edit index without announcing** | Silent change, subscribers miss it | Always post reply explaining index changes |
 | **Make any change without reply** | Breaks thread as record | Every change gets announced in a reply |
+| **Work on main branch** | Breaks isolation, pollutes main | ALL work in worktrees: `../ghe-worktrees/issue-N/` |
+| **Skip worktree verification** | Risk of main pollution | Always verify branch before any work |
+| **Merge before REVIEW PASS** | Unreviewed code in main | Only merge after REVIEW verdict = PASS |
+| **Skip review report creation** | No audit trail | Save review to `GHE-REVIEWS/` BEFORE merge |
+| **Save review after merge** | Rejected reviews pollute main | Commit review to feature branch first |
 
 ---
 
