@@ -46,6 +46,7 @@ jobs:
       pull-requests: write  # Create/update PRs, post comments
       issues: write         # Create/update issues, post comments
       actions: read         # Read workflow runs for CI status
+      id-token: write       # Required for OIDC authentication
 
     steps:
       - name: Checkout repository
@@ -63,32 +64,3 @@ jobs:
           # The plugin provides GitHub Elements workflow management
           plugins: |
             ./plugins/ghe
-
-          # Model configuration (uses default claude-sonnet-4-20250514)
-          # Uncomment to use a specific model:
-          # model: claude-sonnet-4-20250514
-
-          # Timeout for long-running operations (default: 10 minutes)
-          timeout_minutes: 30
-
-          # Allow Claude to run multiple tool calls in parallel
-          # Useful for efficiency but may need to be disabled for sequential operations
-          # allowed_tools: ''  # Empty means all tools allowed
-
-          # Custom settings for the Claude Code environment
-          # These override any CLAUDE.md settings for this action
-          settings: |
-            # GHE Plugin Settings
-            hooks:
-              enabled: true
-
-            # Safety settings
-            permissions:
-              allow_shell_commands: true
-              allow_file_write: true
-              allow_git_operations: true
-
-            # Model behavior
-            behavior:
-              auto_compact: true
-              show_cost: false
