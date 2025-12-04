@@ -1,5 +1,47 @@
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
 
-# GHE plugin settings (user-local, per-machine)
-.claude/*.local.md
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-*
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.temp
+.cache/
+
+# Node (if any)
+node_modules/
+npm-debug.log*
+
+# Python (if any)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Build artifacts
 dist/
+build/
+*.egg-info/
+
+# GHE plugin settings (user-local, per-project)
+.claude/*.local.md
