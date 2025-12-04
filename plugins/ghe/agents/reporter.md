@@ -180,6 +180,26 @@ TEST_COUNT=$(gh issue list --label "test" --state open --json number | jq 'lengt
 REVIEW_COUNT=$(gh issue list --label "review" --state open --json number | jq 'length')
 ```
 
+### Element Statistics (Semantic Recall)
+
+Use `recall-elements.sh` for element-based statistics on any issue:
+
+```bash
+# Get element distribution for an issue
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/recall-elements.sh --issue $ISSUE --stats
+
+# Output shows:
+# - KNOWLEDGE count (plans, specs, design)
+# - ACTION count (code, assets, configs)
+# - JUDGEMENT count (bugs, reviews, feedback)
+# - Compound elements (multi-badge)
+```
+
+Include element stats in reports to show work composition:
+- High ACTION = lots of tangible output (code/assets)
+- High KNOWLEDGE = lots of planning/design
+- High JUDGEMENT = lots of review/debugging
+
 ## Status Report Format
 
 ```markdown

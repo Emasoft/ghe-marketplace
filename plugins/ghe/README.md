@@ -417,7 +417,8 @@ ghe/
 │   ├── avatars/              # Robot avatar PNGs (13 agents)
 │   └── element-triangle.svg  # Workflow diagram
 ├── scripts/
-│   ├── auto-transcribe.sh    # Issue auto-transcription
+│   ├── auto-transcribe.sh    # Issue auto-transcription with element classification
+│   ├── recall-elements.sh    # Element-based memory recall CLI
 │   ├── post-with-avatar.sh   # Avatar comment helper
 │   ├── parse-settings.sh     # Settings parser
 │   ├── safeguards.sh         # Safety checks
