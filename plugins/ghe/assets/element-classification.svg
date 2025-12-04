@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420">
   <defs>
-    <!-- Column gradients -->
     <linearGradient id="knowledgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#1f6feb;stop-opacity:0.3"/>
       <stop offset="100%" style="stop-color:#1f6feb;stop-opacity:0.1"/>
@@ -13,46 +12,20 @@
       <stop offset="0%" style="stop-color:#d29922;stop-opacity:0.3"/>
       <stop offset="100%" style="stop-color:#d29922;stop-opacity:0.1"/>
     </linearGradient>
-
-    <!-- Glow effects -->
-    <filter id="glowBlue" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="2" result="blur"/>
-      <feFlood flood-color="#58a6ff" flood-opacity="0.5"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="glowGreen" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="2" result="blur"/>
-      <feFlood flood-color="#3fb950" flood-opacity="0.5"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="glowOrange" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="2" result="blur"/>
-      <feFlood flood-color="#d29922" flood-opacity="0.5"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-
-    <!-- Drop shadow -->
     <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
       <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
     </filter>
   </defs>
 
-  <!-- Background -->
   <rect width="900" height="420" fill="#0d1117" rx="12"/>
 
-  <!-- Title -->
   <text x="450" y="35" text-anchor="middle" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700">ELEMENT CLASSIFICATION SYSTEM</text>
   <text x="450" y="55" text-anchor="middle" fill="#8b949e" font-family="system-ui, -apple-system, sans-serif" font-size="12">Semantic Triple-Store for Memory Recall</text>
 
-  <!-- Column backgrounds -->
   <rect x="20" y="70" width="280" height="330" rx="8" fill="url(#knowledgeGrad)" stroke="#1f6feb" stroke-width="2"/>
   <rect x="310" y="70" width="280" height="330" rx="8" fill="url(#actionGrad)" stroke="#238636" stroke-width="2"/>
   <rect x="600" y="70" width="280" height="330" rx="8" fill="url(#judgementGrad)" stroke="#d29922" stroke-width="2"/>
 
-  <!-- Column Headers -->
   <rect x="20" y="70" width="280" height="50" rx="8" fill="#1f6feb"/>
   <rect x="20" y="112" width="280" height="8" fill="#0d1117"/>
   <text x="160" y="100" text-anchor="middle" fill="#fff" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700">KNOWLEDGE</text>
@@ -65,12 +38,10 @@
   <rect x="600" y="112" width="280" height="8" fill="#0d1117"/>
   <text x="740" y="100" text-anchor="middle" fill="#fff" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700">JUDGEMENT</text>
 
-  <!-- Subtitles -->
   <text x="160" y="145" text-anchor="middle" fill="#58a6ff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" font-style="italic">"The Talk"</text>
   <text x="450" y="145" text-anchor="middle" fill="#3fb950" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" font-style="italic">"The Reality"</text>
   <text x="740" y="145" text-anchor="middle" fill="#d29922" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" font-style="italic">"The Verdict"</text>
 
-  <!-- KNOWLEDGE items -->
   <text x="40" y="175" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Requirements</text>
   <text x="40" y="198" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Specifications</text>
   <text x="40" y="221" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Design Documents</text>
@@ -81,12 +52,10 @@
   <text x="40" y="336" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Theory</text>
   <text x="160" y="375" text-anchor="middle" fill="#8b949e" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-style="italic">(Plans and Ideas)</text>
 
-  <!-- ACTION items - CODE section -->
   <text x="330" y="175" fill="#3fb950" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600">CODE:</text>
   <text x="340" y="195" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Functions / Classes</text>
   <text x="340" y="215" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Scripts / Configs</text>
 
-  <!-- ACTION items - ASSETS section -->
   <text x="330" y="245" fill="#3fb950" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600">ASSETS:</text>
   <text x="340" y="265" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Images / Sprites</text>
   <text x="340" y="285" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Icons / Graphics</text>
@@ -95,18 +64,16 @@
   <text x="340" y="345" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- 3D Models / Fonts</text>
   <text x="450" y="375" text-anchor="middle" fill="#8b949e" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-style="italic">(Tangible Changes)</text>
 
-  <!-- JUDGEMENT items -->
   <text x="620" y="175" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Bug Reports</text>
   <text x="620" y="198" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Code Reviews</text>
   <text x="620" y="221" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Test Results</text>
   <text x="620" y="244" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Feedback</text>
-  <text x="620" y="267" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Verdicts</text>
+  <text x="620" y="267" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Benchmarks</text>
   <text x="620" y="290" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Critiques</text>
   <text x="620" y="313" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Issues Found</text>
   <text x="620" y="336" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Concerns</text>
   <text x="740" y="375" text-anchor="middle" fill="#8b949e" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-style="italic">(Evaluation)</text>
 
-  <!-- Key insight box -->
   <rect x="100" y="395" width="700" height="20" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1"/>
   <text x="450" y="409" text-anchor="middle" fill="#8b949e" font-family="system-ui, -apple-system, sans-serif" font-size="11">
     <tspan fill="#3fb950" font-weight="600">KEY:</tspan> Only ACTION changes the project. KNOWLEDGE and JUDGEMENT are discussion.
