@@ -34,13 +34,13 @@ GHE is a Claude Code plugin that transforms GitHub Issues into a **persistent me
 ## The Element
 
 <p align="center">
-  <img src="plugins/ghe/assets/element-triangle.svg" alt="The Element Triangle" width="400"/>
+  <img src="assets/element-triangle.svg" alt="The Element Triangle" width="400"/>
 </p>
 
 An **Element** is a unit of information stored as a single message/reply to a GitHub Issue in the issue tracker. Every piece of information in GHE is an Element.
 
 <p align="center">
-  <img src="plugins/ghe/assets/element-classification.svg" alt="Element Classification System" width="900"/>
+  <img src="assets/element-classification.svg" alt="Element Classification System" width="900"/>
 </p>
 
 **The power of this system**: GitHub threads allow you to **isolate and preserve the context of each task**. Human developers and AI agents can discuss progress while keeping the conversation focused and on track, instead of mixing different issues together.

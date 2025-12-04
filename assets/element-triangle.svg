@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 380" width="400" height="380">
+  <defs>
+    <!-- Gradient for triangle fill -->
+    <linearGradient id="triangleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Drop shadow -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="380" fill="#0d1117" rx="8"/>
+
+  <!-- Title -->
+  <text x="200" y="35" text-anchor="middle" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600">THE ELEMENT</text>
+
+  <!-- Main Triangle -->
+  <polygon
+    points="200,70 60,290 340,290"
+    fill="url(#triangleGradient)"
+    stroke="#58a6ff"
+    stroke-width="2"
+    filter="url(#shadow)"/>
+
+  <!-- Inner triangle lines connecting to center -->
+  <line x1="200" y1="70" x2="200" y2="200" stroke="#30363d" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="60" y1="290" x2="200" y2="200" stroke="#30363d" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="340" y1="290" x2="200" y2="200" stroke="#30363d" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- Center circle -->
+  <circle cx="200" cy="200" r="25" fill="#1a1a2e" stroke="#58a6ff" stroke-width="2"/>
+  <text x="200" y="205" text-anchor="middle" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="500">ELEMENT</text>
+
+  <!-- Vertex circles - CORRECT COLORS: Knowledge=Blue, Action=Green, Judgement=Orange -->
+  <circle cx="200" cy="70" r="12" fill="#1f6feb" filter="url(#glow)"/>
+  <circle cx="60" cy="290" r="12" fill="#238636" filter="url(#glow)"/>
+  <circle cx="340" cy="290" r="12" fill="#d29922" filter="url(#glow)"/>
+
+  <!-- Vertex Labels - CORRECT COLORS -->
+  <text x="200" y="50" text-anchor="middle" fill="#58a6ff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">KNOWLEDGE</text>
+
+  <text x="60" y="320" text-anchor="middle" fill="#3fb950" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">ACTION</text>
+
+  <text x="340" y="320" text-anchor="middle" fill="#d29922" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">JUDGEMENT</text>
+
+  <!-- Icons/Symbols at vertices -->
+  <text x="200" y="75" text-anchor="middle" fill="#fff" font-size="12">📘</text>
+  <text x="60" y="295" text-anchor="middle" fill="#fff" font-size="12">⚡</text>
+  <text x="340" y="295" text-anchor="middle" fill="#fff" font-size="12">⚖️</text>
+
+  <!-- Subtitle -->
+  <text x="200" y="355" text-anchor="middle" fill="#8b949e" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-style="italic">A unit of information stored as a message in a GitHub Issue</text>
+  <text x="200" y="372" text-anchor="middle" fill="#6e7681" font-family="system-ui, -apple-system, sans-serif" font-size="9">GHE (GitHub-Elements)</text>
+</svg>
