@@ -15,8 +15,8 @@ color: purple
 # Source safeguards at the beginning of any operation
 source plugins/ghe/scripts/safeguards.sh
 
-# Or with full path
-source "${CLAUDE_PLUGIN_ROOT}/plugins/ghe/scripts/safeguards.sh"
+# Or with full path (CLAUDE_PLUGIN_ROOT = plugin directory)
+source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 ```
 
 ### Pre-Flight Check (Required Before Any Work)
@@ -65,8 +65,8 @@ recover_from_merge_crash "$ISSUE_NUM"
 # Source avatar helper (ALWAYS at the beginning of operations)
 source plugins/ghe/scripts/post-with-avatar.sh
 
-# Or with full path
-source "${CLAUDE_PLUGIN_ROOT}/plugins/ghe/scripts/post-with-avatar.sh"
+# Or with full path (CLAUDE_PLUGIN_ROOT = plugin directory)
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 ```
 
 ### Posting with Avatar

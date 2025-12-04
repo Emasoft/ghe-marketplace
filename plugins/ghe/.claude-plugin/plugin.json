@@ -1,6 +1,6 @@
 {
   "name": "ghe",
-  "version": "0.1.12-alpha",
+  "version": "0.2.0",
   "description": "GHE (GitHub-Elements) - Automated project management for Claude Code using GitHub Issues as persistent memory with orchestrated DEV/TEST/REVIEW workflow.",
   "author": {
     "name": "Emasoft",
@@ -22,5 +22,8 @@
     "TEST",
     "REVIEW"
   ],
-  "commands": ["./commands"]
+  "commands": ["./commands"],
+  "agents": ["./agents"],
+  "skills": ["./skills"],
+  "hooks": "./hooks/hooks.json"
 }

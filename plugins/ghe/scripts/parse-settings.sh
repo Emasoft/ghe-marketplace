@@ -1,13 +1,13 @@
 #!/bin/bash
 # GitHub Elements Settings Parser
-# Extracts settings from .claude/github-elements.local.md
+# Extracts settings from .claude/ghe.local.md
 # Usage: ./parse-settings.sh [field-name]
 # Without field-name: outputs all frontmatter
 # With field-name: outputs that field's value
 
 set -euo pipefail
 
-SETTINGS_FILE=".claude/github-elements.local.md"
+SETTINGS_FILE=".claude/ghe.local.md"
 
 # Check if settings file exists
 if [[ ! -f "$SETTINGS_FILE" ]]; then
@@ -22,7 +22,10 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
       notification_level) echo "normal" ;;
       default_reviewer) echo "" ;;
       stale_threshold_hours) echo "24" ;;
-      epic_label_prefix) echo "epic:" ;;
+      epic_label_prefix) echo "parent-epic:" ;;
+      auto_transcribe) echo "true" ;;
+      auto_create_issue) echo "true" ;;
+      current_issue) echo "" ;;
       *) echo "" ;;
     esac
   fi
@@ -54,7 +57,10 @@ if [[ -z "$VALUE" ]]; then
     notification_level) echo "normal" ;;
     default_reviewer) echo "" ;;
     stale_threshold_hours) echo "24" ;;
-    epic_label_prefix) echo "epic:" ;;
+    epic_label_prefix) echo "parent-epic:" ;;
+    auto_transcribe) echo "true" ;;
+    auto_create_issue) echo "true" ;;
+    current_issue) echo "" ;;
     *) echo "" ;;
   esac
 else
