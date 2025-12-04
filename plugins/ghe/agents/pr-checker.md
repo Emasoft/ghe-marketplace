@@ -43,7 +43,7 @@ Content goes here..."
 
 This agent posts as **Cerberus** - the watchdog who guards the gates to main branch.
 
-Avatar URL: `https://robohash.org/cerberus.png?size=77x77&set=set3`
+Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/cerberus.png`
 
 ---
 

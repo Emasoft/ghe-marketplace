@@ -14,18 +14,22 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# Avatar URLs
+# Avatar URLs - hosted locally in plugin assets (served via raw GitHub)
+# Local path: plugins/ghe/assets/avatars/{name}.png
+AVATAR_BASE="https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars"
 declare -A AVATARS=(
-    ["Emasoft"]="https://avatars.githubusercontent.com/u/713559?v=4&s=77"
-    ["Athena"]="https://robohash.org/athena.png?size=77x77&set=set3"
-    ["Hephaestus"]="https://robohash.org/hephaestus.png?size=77x77&set=set3"
-    ["Artemis"]="https://robohash.org/artemis.png?size=77x77&set=set3"
-    ["Hera"]="https://robohash.org/hera.png?size=77x77&set=set3"
-    ["Themis"]="https://robohash.org/themis.png?size=77x77&set=set3"
-    ["Hermes"]="https://robohash.org/hermes.png?size=77x77&set=set3"
-    ["Ares"]="https://robohash.org/ares.png?size=77x77&set=set3"
-    ["Chronos"]="https://robohash.org/chronos.png?size=77x77&set=set3"
-    ["Mnemosyne"]="https://robohash.org/mnemosyne.png?size=77x77&set=set3"
+    ["Emasoft"]="${AVATAR_BASE}/emasoft.png"
+    ["Athena"]="${AVATAR_BASE}/athena.png"
+    ["Hephaestus"]="${AVATAR_BASE}/hephaestus.png"
+    ["Artemis"]="${AVATAR_BASE}/artemis.png"
+    ["Hera"]="${AVATAR_BASE}/hera.png"
+    ["Themis"]="${AVATAR_BASE}/themis.png"
+    ["Hermes"]="${AVATAR_BASE}/hermes.png"
+    ["Ares"]="${AVATAR_BASE}/ares.png"
+    ["Chronos"]="${AVATAR_BASE}/chronos.png"
+    ["Mnemosyne"]="${AVATAR_BASE}/mnemosyne.png"
+    ["Cerberus"]="${AVATAR_BASE}/cerberus.png"
+    ["Argos"]="${AVATAR_BASE}/argos.png"
 )
 
 # Element type badges (GitHub-friendly markdown)

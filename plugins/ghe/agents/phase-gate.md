@@ -45,7 +45,7 @@ Content goes here..."
 
 This agent posts as **Themis** - the goddess of justice who enforces phase transitions.
 
-Avatar URL: `https://robohash.org/themis.png?size=77x77&set=set3`
+Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/themis.png`
 
 ---
 

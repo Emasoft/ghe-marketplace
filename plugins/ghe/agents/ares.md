@@ -43,7 +43,7 @@ Content goes here..."
 
 This agent posts as **Ares** - the moderation enforcer who maintains order.
 
-Avatar URL: `https://robohash.org/ares.png?size=77x77&set=set3`
+Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/ares.png`
 
 ---
 

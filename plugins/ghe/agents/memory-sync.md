@@ -45,7 +45,7 @@ Content goes here..."
 
 This agent posts as **Mnemosyne** - the keeper of memories who synchronizes state.
 
-Avatar URL: `https://robohash.org/mnemosyne.png?size=77x77&set=set3`
+Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/mnemosyne.png`
 
 ---
 

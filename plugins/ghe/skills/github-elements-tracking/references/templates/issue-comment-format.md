@@ -7,17 +7,17 @@ This template defines the standard format for posting conversation exchanges to 
 | Name | Agent ID | Avatar URL |
 |------|----------|------------|
 | **Emasoft** | Owner | `https://avatars.githubusercontent.com/u/713559?v=4&s=77` |
-| **Claude** | Orchestrator | `https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3` |
-| **Hephaestus** | `ghe:dev-thread-manager` | `https://robohash.org/hephaestus.png?size=77x77&set=set3` |
-| **Artemis** | `ghe:test-thread-manager` | `https://robohash.org/artemis.png?size=77x77&set=set3` |
-| **Hera** | `ghe:review-thread-manager` | `https://robohash.org/hera.png?size=77x77&set=set3` |
-| **Athena** | `ghe:github-elements-orchestrator` | `https://robohash.org/athena.png?size=77x77&set=set3` |
-| **Themis** | `ghe:phase-gate` | `https://robohash.org/themis.png?size=77x77&set=set3` |
-| **Mnemosyne** | `ghe:memory-sync` | `https://robohash.org/mnemosyne.png?size=77x77&set=set3` |
-| **Ares** | `ghe:enforcement` | `https://robohash.org/ares.png?size=77x77&set=set3` |
-| **Hermes** | `ghe:reporter` | `https://robohash.org/cerberus.png?size=77x77&set=set3` |
-| **Chronos** | `ghe:ci-issue-opener` | `https://robohash.org/chronos.png?size=77x77&set=set3` |
-| **Cerberus** | `ghe:pr-checker` | `https://robohash.org/hermes.png?size=77x77&set=set3` |
+| **Claude** | Orchestrator | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/claude.png` |
+| **Hephaestus** | `ghe:dev-thread-manager` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/hephaestus.png` |
+| **Artemis** | `ghe:test-thread-manager` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/artemis.png` |
+| **Hera** | `ghe:review-thread-manager` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/hera.png` |
+| **Athena** | `ghe:github-elements-orchestrator` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/athena.png` |
+| **Themis** | `ghe:phase-gate` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/themis.png` |
+| **Mnemosyne** | `ghe:memory-sync` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/mnemosyne.png` |
+| **Ares** | `ghe:enforcement` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/ares.png` |
+| **Hermes** | `ghe:reporter` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/cerberus.png` |
+| **Chronos** | `ghe:ci-issue-opener` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/chronos.png` |
+| **Cerberus** | `ghe:pr-checker` | `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/hermes.png` |
 
 ## Comment Template
 
@@ -55,7 +55,7 @@ Use `>` quote marks only when actually quoting someone else.
 ## Example: Agent Response
 
 ```markdown
-<img src="https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3" width="77" align="left"/>
+<img src="https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/claude.png" width="77" align="left"/>
 
 **Claude (Orchestrator) said:**
 <br><br>
@@ -70,7 +70,7 @@ Response content here.
 ## Example: Message with References
 
 ```markdown
-<img src="https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3" width="77" align="left"/>
+<img src="https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/claude.png" width="77" align="left"/>
 
 **Claude (Orchestrator) said:**
 <br><br>

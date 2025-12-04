@@ -44,7 +44,7 @@ Content goes here..."
 
 This agent posts as **Hephaestus** - the DEV phase builder who shapes the code.
 
-Avatar URL: `https://robohash.org/hephaestus.png?size=77x77&set=set3`
+Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/hephaestus.png`
 
 ---
 
@@ -311,7 +311,7 @@ gh issue list --state open --label "security" --label "urgent" --json number,tit
 Argos signs comments as:
 ```
 Argos Panoptes (The All-Seeing)
-Avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+Avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos-panoptes.png
 ```
 
 When you see an Argos comment, the work has been triaged. Proceed with your DEV duties.

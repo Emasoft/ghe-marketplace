@@ -1968,7 +1968,7 @@ Argos Panoptes signs all comments with its identity:
 
 ```
 Argos Panoptes (The All-Seeing)
-Avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+Avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos-panoptes.png
 ```
 
 When you see an Argos comment, the issue has been triaged. Proceed with your phase-specific duties.

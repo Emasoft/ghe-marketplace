@@ -2,20 +2,23 @@
 # post-with-avatar.sh - Helper for posting GitHub comments with avatar banners
 # Usage: source this file, then call post_comment or get_avatar_url
 
-# Avatar URLs for each agent
+# Avatar URLs - hosted locally in plugin assets (served via raw GitHub)
+# Local path: plugins/ghe/assets/avatars/{name}.png
+AVATAR_BASE="https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars"
 declare -A AVATAR_URLS=(
-    ["Emasoft"]="https://avatars.githubusercontent.com/u/713559?v=4&s=77"
-    ["Claude"]="https://robohash.org/claude-code-orchestrator.png?size=77x77&set=set3"
-    ["Hephaestus"]="https://robohash.org/hephaestus.png?size=77x77&set=set3"
-    ["Artemis"]="https://robohash.org/artemis.png?size=77x77&set=set3"
-    ["Hera"]="https://robohash.org/hera.png?size=77x77&set=set3"
-    ["Athena"]="https://robohash.org/athena.png?size=77x77&set=set3"
-    ["Themis"]="https://robohash.org/themis.png?size=77x77&set=set3"
-    ["Mnemosyne"]="https://robohash.org/mnemosyne.png?size=77x77&set=set3"
-    ["Ares"]="https://robohash.org/ares.png?size=77x77&set=set3"
-    ["Hermes"]="https://robohash.org/hermes.png?size=77x77&set=set3"
-    ["Chronos"]="https://robohash.org/chronos.png?size=77x77&set=set3"
-    ["Cerberus"]="https://robohash.org/cerberus.png?size=77x77&set=set3"
+    ["Emasoft"]="${AVATAR_BASE}/emasoft.png"
+    ["Claude"]="${AVATAR_BASE}/claude.png"
+    ["Hephaestus"]="${AVATAR_BASE}/hephaestus.png"
+    ["Artemis"]="${AVATAR_BASE}/artemis.png"
+    ["Hera"]="${AVATAR_BASE}/hera.png"
+    ["Athena"]="${AVATAR_BASE}/athena.png"
+    ["Themis"]="${AVATAR_BASE}/themis.png"
+    ["Mnemosyne"]="${AVATAR_BASE}/mnemosyne.png"
+    ["Ares"]="${AVATAR_BASE}/ares.png"
+    ["Hermes"]="${AVATAR_BASE}/hermes.png"
+    ["Chronos"]="${AVATAR_BASE}/chronos.png"
+    ["Cerberus"]="${AVATAR_BASE}/cerberus.png"
+    ["Argos"]="${AVATAR_BASE}/argos.png"
 )
 
 # Agent name to display name mapping
@@ -42,7 +45,8 @@ get_avatar_url() {
         name="${AGENT_NAMES[$name]:-$name}"
     fi
 
-    echo "${AVATAR_URLS[$name]:-https://robohash.org/${name}.png?size=77x77&set=set3}"
+    # Fallback to base URL with lowercase name (all avatars should be pre-downloaded)
+    echo "${AVATAR_URLS[$name]:-${AVATAR_BASE}/$(echo $name | tr '[:upper:]' '[:lower:]').png}"
 }
 
 # Get display name for an agent

@@ -45,7 +45,7 @@ Content goes here..."
 
 This agent posts as **Ares** - the fierce enforcer who ensures workflow compliance.
 
-Avatar URL: `https://robohash.org/ares.png?size=77x77&set=set3`
+Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/ares.png`
 
 ---
 
@@ -80,7 +80,7 @@ gh issue list --state open --label "needs-moderation" --json number,title,body |
 Argos signs comments as:
 ```
 Argos Panoptes (The All-Seeing)
-Avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+Avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos-panoptes.png
 ```
 
 When you see an Argos comment flagging a violation, verify the violation and apply your enforcement protocol.

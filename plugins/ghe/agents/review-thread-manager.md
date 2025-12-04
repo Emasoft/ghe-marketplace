@@ -91,7 +91,7 @@ Content goes here...
 All posts must start with:
 
 ```markdown
-<img src="https://robohash.org/hera.png?size=77x77&set=set3" width="77" align="left"/>
+<img src="https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/hera.png" width="77" align="left"/>
 
 **Hera said:**
 <br><br>
@@ -275,7 +275,7 @@ gh issue list --state open --label "bug" --label "review" --label "ready" --json
 Argos signs comments as:
 ```
 Argos Panoptes (The All-Seeing)
-Avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+Avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos-panoptes.png
 ```
 
 When you see an Argos comment, the work has been triaged. Proceed with your REVIEW duties.

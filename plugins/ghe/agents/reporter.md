@@ -45,7 +45,7 @@ Content goes here..."
 
 This agent posts as **Hermes** - the messenger who delivers status reports.
 
-Avatar URL: `https://robohash.org/hermes.png?size=77x77&set=set3`
+Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/hermes.png`
 
 ---
 
