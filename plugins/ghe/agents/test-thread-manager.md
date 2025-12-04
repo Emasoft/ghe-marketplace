@@ -16,6 +16,37 @@ Check `.claude/ghe.local.md` for test settings:
 
 ---
 
+## Avatar Banner Integration
+
+**MANDATORY**: All GitHub issue comments MUST include the avatar banner for visual identity.
+
+### Loading Avatar Helper
+
+```bash
+source plugins/ghe/scripts/post-with-avatar.sh
+```
+
+### Posting with Avatar
+
+```bash
+# Simple post
+post_issue_comment $ISSUE_NUM "Artemis" "Your message content here"
+
+# Complex post with heredoc
+HEADER=$(avatar_header "Artemis")
+gh issue comment $ISSUE_NUM --body "${HEADER}
+## Test Results
+Content goes here..."
+```
+
+### Agent Identity
+
+This agent posts as **Artemis** - the TEST phase hunter who tracks down bugs.
+
+Avatar URL: `https://robohash.org/artemis.png?size=77x77&set=set3`
+
+---
+
 ## MANDATORY: Worktree Verification
 
 **CRITICAL**: TEST work MUST happen in the same worktree as DEV. Verify before any work.

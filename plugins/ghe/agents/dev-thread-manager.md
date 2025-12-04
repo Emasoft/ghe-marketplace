@@ -17,6 +17,37 @@ Check `.claude/ghe.local.md` for project settings:
 
 ---
 
+## Avatar Banner Integration
+
+**MANDATORY**: All GitHub issue comments MUST include the avatar banner for visual identity.
+
+### Loading Avatar Helper
+
+```bash
+source plugins/ghe/scripts/post-with-avatar.sh
+```
+
+### Posting with Avatar
+
+```bash
+# Simple post
+post_issue_comment $ISSUE_NUM "Hephaestus" "Your message content here"
+
+# Complex post with heredoc
+HEADER=$(avatar_header "Hephaestus")
+gh issue comment $ISSUE_NUM --body "${HEADER}
+## Your Section Title
+Content goes here..."
+```
+
+### Agent Identity
+
+This agent posts as **Hephaestus** - the DEV phase builder who shapes the code.
+
+Avatar URL: `https://robohash.org/hephaestus.png?size=77x77&set=set3`
+
+---
+
 ## MANDATORY: Worktree Workflow
 
 **CRITICAL**: ALL DEV work MUST happen in an isolated worktree. Never work on main.

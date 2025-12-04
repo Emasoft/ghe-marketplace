@@ -55,6 +55,56 @@ recover_from_merge_crash "$ISSUE_NUM"
 
 ---
 
+## Avatar Banner Integration
+
+**MANDATORY**: All GitHub issue/PR comments MUST include the avatar banner for visual identity.
+
+### Loading Avatar Helper
+
+```bash
+# Source avatar helper (ALWAYS at the beginning of operations)
+source plugins/ghe/scripts/post-with-avatar.sh
+
+# Or with full path
+source "${CLAUDE_PLUGIN_ROOT}/plugins/ghe/scripts/post-with-avatar.sh"
+```
+
+### Posting with Avatar
+
+```bash
+# Method 1: Simple post
+post_issue_comment $ISSUE_NUM "Hera" "Your message content here"
+
+# Method 2: Complex post with heredoc
+HEADER=$(avatar_header "Hera")
+gh issue comment $ISSUE_NUM --body "${HEADER}
+## Your Section Title
+Content goes here...
+
+### More content
+- Item 1
+- Item 2"
+```
+
+### Avatar Format
+
+All posts must start with:
+
+```markdown
+<img src="https://robohash.org/hera.png?size=77x77&set=set3" width="77" align="left"/>
+
+**Hera said:**
+<br><br>
+
+[Your content here]
+```
+
+### Agent Identity
+
+This agent posts as **Hera** - the REVIEW phase evaluator who renders verdicts.
+
+---
+
 ## Worktree Verification
 
 **CRITICAL**: Before any REVIEW work, verify you are in the correct worktree/branch.
@@ -222,6 +272,9 @@ fi
 ```bash
 REVIEW_ISSUE=<issue number>
 
+# Source avatar helper
+source plugins/ghe/scripts/post-with-avatar.sh
+
 # Verify phase order first (see above)
 
 # Verify not already claimed
@@ -234,9 +287,10 @@ if [ "$CURRENT" -eq 0 ]; then
     --add-label "in-progress" \
     --remove-label "ready"
 
-  # Post claim comment
-  gh issue comment $REVIEW_ISSUE --body "$(cat <<'EOF'
-## [REVIEW Session 1] $(date -u +%Y-%m-%d) $(date -u +%H:%M) UTC - @me
+  # Post claim comment WITH AVATAR BANNER
+  HEADER=$(avatar_header "Hera")
+  gh issue comment $REVIEW_ISSUE --body "${HEADER}
+## [REVIEW Session 1] $(date -u +%Y-%m-%d) $(date -u +%H:%M) UTC
 
 ### Claimed
 Starting REVIEW work on this thread.
@@ -268,9 +322,7 @@ I CANNOT:
 - Make fixes
 - Demote to TEST
 
-Starting evaluation now.
-EOF
-)"
+Starting evaluation now."
 fi
 ```
 
