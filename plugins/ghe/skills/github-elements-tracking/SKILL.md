@@ -648,6 +648,167 @@ git worktree remove issue-${ISSUE_NUM}
 
 ---
 
+## Merge Coordination Protocol
+
+### The Problem: Parallel Agents Completing Simultaneously
+
+When multiple agents finish REVIEW with PASS verdicts at similar times, they may all attempt to merge to main simultaneously. This creates:
+
+1. **Race Conditions**: Two agents try to merge at the same moment
+2. **Merge Conflicts**: Agent-B's merge fails because Agent-A just changed main
+3. **Cascading Failures**: Failed merges require rebase, which invalidates the REVIEW PASS
+
+### The Critical Insight
+
+```
+REVIEW PASS (before rebase) ≠ REVIEW PASS (after rebase)
+```
+
+**Why?** Rebasing changes the code context. The code that was reviewed is NOT the same code after rebase. New conflicts may introduce bugs, logic changes, or break assumptions that led to PASS.
+
+**Therefore: Any rebase MUST be followed by re-running TEST validations before merge.**
+
+### Pre-Merge Protocol (MANDATORY)
+
+Before any merge to main, execute this protocol:
+
+```bash
+ISSUE_NUM=<issue number>
+MAX_ATTEMPTS=3
+attempt=0
+
+while [ $attempt -lt $MAX_ATTEMPTS ]; do
+    # Step 1: Fetch latest main
+    git fetch origin main
+
+    # Step 2: Check if behind main
+    BEHIND=$(git rev-list --count HEAD..origin/main)
+
+    if [ "$BEHIND" -eq 0 ]; then
+        echo "Branch is up to date with main - safe to merge"
+        break
+    fi
+
+    echo "Branch is $BEHIND commits behind main - rebasing..."
+
+    # Step 3: Attempt rebase
+    if ! git rebase origin/main; then
+        git rebase --abort
+        echo "REBASE CONFLICT: Manual resolution required"
+        echo "DEMOTE TO DEV: Cannot auto-resolve conflicts"
+        exit 1
+    fi
+
+    echo "Rebase successful - RE-RUNNING TEST validations..."
+
+    # Step 4: RE-RUN TEST (CRITICAL - code context changed!)
+    # Run project-specific tests here
+    if ! ./run-tests.sh; then
+        echo "TESTS FAILED after rebase"
+        echo "DEMOTE TO DEV: Code no longer passes tests after rebase"
+        exit 1
+    fi
+
+    # Step 5: Force push the rebased branch
+    if ! git push origin issue-${ISSUE_NUM} --force-with-lease; then
+        echo "Push failed - another change occurred, retrying..."
+        attempt=$((attempt + 1))
+        continue
+    fi
+
+    echo "Branch rebased and pushed successfully"
+    break
+done
+
+if [ $attempt -ge $MAX_ATTEMPTS ]; then
+    echo "DEMOTE TO DEV: Max rebase attempts ($MAX_ATTEMPTS) exceeded"
+    echo "High contention detected - requires manual coordination"
+    exit 1
+fi
+```
+
+### Merge Lock Mechanism (Optional - For High Contention)
+
+For repositories with frequent parallel merges, use a lock mechanism:
+
+```bash
+# Check if merge lock exists
+check_merge_lock() {
+    gh issue list --label "merge:active" --state open --json number | jq '. | length'
+}
+
+# Wait for lock (with timeout)
+wait_for_lock() {
+    local timeout=900  # 15 minutes
+    local start=$(date +%s)
+
+    while [ $(check_merge_lock) -gt 0 ]; do
+        local now=$(date +%s)
+        local elapsed=$((now - start))
+
+        if [ $elapsed -gt $timeout ]; then
+            echo "Lock timeout exceeded - forcing lock release"
+            release_stale_locks
+            break
+        fi
+
+        echo "Merge in progress by another agent, waiting... ($elapsed/$timeout sec)"
+        sleep 30
+    done
+}
+
+# Acquire lock
+acquire_lock() {
+    gh issue edit $ISSUE_NUM --add-label "merge:active"
+    echo "Merge lock acquired for issue #$ISSUE_NUM"
+}
+
+# Release lock
+release_lock() {
+    gh issue edit $ISSUE_NUM --remove-label "merge:active"
+    echo "Merge lock released for issue #$ISSUE_NUM"
+}
+```
+
+### Priority: First-Come-First-Served (FCFS)
+
+When multiple agents have REVIEW PASS:
+
+1. **Priority = REVIEW PASS timestamp** (first to pass reviews, first to merge)
+2. **No cutting in line** - later PASS waits for earlier PASS to merge
+3. **Timeout protection** - if an agent holds lock > 15 min, lock is force-released
+
+### Merge Coordination Summary
+
+| Scenario | Action |
+|----------|--------|
+| Branch is up-to-date with main | Proceed to merge |
+| Branch is behind main | Rebase → Re-run TEST → Then merge |
+| Rebase has conflicts | DEMOTE TO DEV (cannot auto-resolve) |
+| Tests fail after rebase | DEMOTE TO DEV (rebase broke something) |
+| Max attempts exceeded | DEMOTE TO DEV (high contention) |
+| Another merge in progress | Wait for lock release (max 15 min) |
+
+### Loop Prevention
+
+- **Max 3 rebase attempts** per merge session
+- After 3 failed attempts → DEMOTE TO DEV
+- Prevents infinite rebase loops when main is highly active
+
+### Merge Anti-Patterns
+
+| Anti-Pattern | Problem | Correct Approach |
+|--------------|---------|------------------|
+| **Merge without checking main** | Creates merge conflicts | Always `git fetch` first |
+| **Skip TEST after rebase** | Reviewed code ≠ merged code | RE-RUN TEST after ANY rebase |
+| **Force push without lease** | Can overwrite others' work | Use `--force-with-lease` |
+| **Ignore rebase conflicts** | Broken code reaches main | DEMOTE TO DEV on conflicts |
+| **No merge lock in high traffic** | Race conditions | Use `merge:active` label |
+| **Hold merge lock indefinitely** | Blocks other agents | 15 min timeout max |
+| **Retry forever on conflicts** | Infinite loop | Max 3 attempts then demote |
+
+---
+
 ## Storage Tiering: Where to Store What
 
 Agents need to store information at different scales and lifetimes. Use the appropriate tier:
@@ -1797,6 +1958,12 @@ Note: No priority labels. No time-based labels. Order is determined by wave memb
 | **Merge before REVIEW PASS** | Unreviewed code in main | Only merge after REVIEW verdict = PASS |
 | **Skip review report creation** | No audit trail | Save review to `GHE-REVIEWS/` BEFORE merge |
 | **Save review after merge** | Rejected reviews pollute main | Commit review to feature branch first |
+| **Merge without checking main** | Merge conflicts, race conditions | Always `git fetch origin main` first |
+| **Skip TEST after rebase** | Reviewed code ≠ merged code | RE-RUN TEST after ANY rebase |
+| **Force push without --force-with-lease** | Can overwrite others' work | Always use `--force-with-lease` |
+| **Ignore rebase conflicts** | Broken code reaches main | DEMOTE TO DEV on any conflict |
+| **Retry rebase forever** | Infinite loop, blocks progress | Max 3 attempts then demote to DEV |
+| **Hold merge lock > 15 min** | Blocks all other agents | Release lock, investigate issue |
 
 ---
 

@@ -890,6 +890,244 @@ Despite our best efforts, we cannot reproduce this issue. We're marking it as ca
 If you encounter this again with new information, please open a fresh issue. We value your engagement with the project.
 ```
 
+## Merge Coordination Protocol
+
+**CRITICAL**: When multiple agents complete REVIEW PASS simultaneously, coordination is required to prevent merge conflicts and ensure code integrity.
+
+### The Problem
+
+```
+Agent A (Issue #5) → REVIEW PASS → tries to merge
+Agent B (Issue #7) → REVIEW PASS → tries to merge (same time)
+                           ↓
+                 POTENTIAL CONFLICT
+```
+
+### Key Insight: Rebase Changes Code Context
+
+**CRITICAL**: Rebasing changes the code context. Even a clean rebase means your code now runs alongside different changes from main.
+
+```
+REVIEW PASS (before rebase) ≠ REVIEW PASS (after rebase)
+```
+
+**After ANY rebase, TEST must re-run to revalidate.**
+
+### Pre-Merge Protocol (MANDATORY)
+
+Before ANY merge attempt:
+
+```bash
+ISSUE_NUM=<issue number>
+MAX_ATTEMPTS=3
+attempt=0
+
+while [ $attempt -lt $MAX_ATTEMPTS ]; do
+    # Step 1: Fetch latest main
+    git fetch origin main
+
+    # Step 2: Check if behind main
+    BEHIND=$(git rev-list --count HEAD..origin/main)
+
+    if [ "$BEHIND" -eq 0 ]; then
+        echo "Branch is up to date with main"
+        break
+    fi
+
+    echo "Branch is $BEHIND commits behind main. Rebasing..."
+
+    # Step 3: Attempt rebase
+    if ! git rebase origin/main; then
+        echo "CONFLICT DETECTED during rebase"
+
+        # Step 4: Abort rebase if conflicts
+        git rebase --abort
+
+        # Step 5: Record conflict for manual resolution
+        gh issue comment $ISSUE_NUM --body "## Merge Conflict Detected
+
+Rebase attempt $((attempt + 1)) of $MAX_ATTEMPTS failed due to conflicts.
+
+### Conflicting Files
+$(git diff --name-only --diff-filter=U 2>/dev/null || echo 'Unable to determine')
+
+### Action Required
+Manual conflict resolution needed. Demoting to DEV.
+"
+
+        # Demote to DEV for manual resolution
+        echo "DEMOTE TO DEV: Manual conflict resolution required"
+        exit 1
+    fi
+
+    echo "Rebase successful. Re-running TEST validation..."
+
+    # Step 6: RE-RUN TEST (critical - code context changed)
+    # Run validation scripts
+    ./validation_scripts/validate-agent.sh plugins/ghe/agents/*.md
+    ./validation_scripts/validate-skill.py plugins/ghe/skills/*/
+
+    VALIDATION_RESULT=$?
+
+    if [ $VALIDATION_RESULT -ne 0 ]; then
+        echo "TEST FAILED after rebase"
+        gh issue comment $ISSUE_NUM --body "## TEST Failed After Rebase
+
+Rebase was successful but validation failed after rebase.
+
+### What Happened
+Code that passed before rebase now fails after rebase.
+This means the rebased code has issues in the new context.
+
+### Action Required
+Demoting to DEV to fix issues introduced by rebase context change.
+"
+        echo "DEMOTE TO DEV: Validation failed after rebase"
+        exit 1
+    fi
+
+    echo "Validation passed after rebase"
+
+    # Step 7: Force push rebased branch
+    git push origin issue-${ISSUE_NUM} --force-with-lease
+
+    attempt=$((attempt + 1))
+done
+
+if [ $attempt -ge $MAX_ATTEMPTS ]; then
+    echo "ERROR: Exceeded $MAX_ATTEMPTS rebase attempts"
+    gh issue comment $ISSUE_NUM --body "## High Contention - Merge Blocked
+
+Exceeded maximum rebase attempts ($MAX_ATTEMPTS).
+
+### What This Means
+Multiple agents are completing simultaneously, causing repeated rebase conflicts.
+
+### Action Required
+Demoting to DEV for manual intervention. A human may need to coordinate the merge order.
+"
+    echo "DEMOTE TO DEV: High contention"
+    exit 1
+fi
+
+echo "Pre-merge checks complete. Proceeding with merge."
+```
+
+### Merge Lock (High Contention Scenarios)
+
+When many agents complete simultaneously, use a merge lock:
+
+```bash
+ISSUE_NUM=<issue number>
+LOCK_TIMEOUT=900  # 15 minutes in seconds
+
+# Check for existing merge lock
+check_merge_lock() {
+    LOCK_ISSUE=$(gh issue list --label "merge:active" --state open --json number,createdAt --jq '.[0]')
+    if [ -n "$LOCK_ISSUE" ]; then
+        LOCK_NUM=$(echo "$LOCK_ISSUE" | jq -r '.number')
+        LOCK_TIME=$(echo "$LOCK_ISSUE" | jq -r '.createdAt')
+        LOCK_AGE=$(( $(date +%s) - $(date -d "$LOCK_TIME" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LOCK_TIME" +%s) ))
+
+        if [ $LOCK_AGE -gt $LOCK_TIMEOUT ]; then
+            echo "Stale lock detected (age: ${LOCK_AGE}s). Removing..."
+            gh issue edit $LOCK_NUM --remove-label "merge:active"
+            return 1  # Lock expired, can proceed
+        fi
+
+        echo "Merge lock held by Issue #$LOCK_NUM (age: ${LOCK_AGE}s)"
+        return 0  # Lock active
+    fi
+    return 1  # No lock
+}
+
+# Wait for lock with timeout
+wait_for_lock() {
+    MAX_WAIT=900  # 15 minutes
+    WAIT_INTERVAL=30
+    WAITED=0
+
+    while check_merge_lock; do
+        if [ $WAITED -ge $MAX_WAIT ]; then
+            echo "ERROR: Lock wait timeout exceeded"
+            return 1
+        fi
+        echo "Waiting for merge lock... ($WAITED/$MAX_WAIT seconds)"
+        sleep $WAIT_INTERVAL
+        WAITED=$((WAITED + WAIT_INTERVAL))
+    done
+    return 0
+}
+
+# Acquire merge lock
+acquire_lock() {
+    gh issue edit $ISSUE_NUM --add-label "merge:active"
+    echo "Merge lock acquired by Issue #$ISSUE_NUM"
+}
+
+# Release merge lock
+release_lock() {
+    gh issue edit $ISSUE_NUM --remove-label "merge:active"
+    echo "Merge lock released by Issue #$ISSUE_NUM"
+}
+
+# Usage in merge workflow:
+# 1. Wait for any existing lock
+wait_for_lock || { echo "Lock timeout - retry later"; exit 1; }
+
+# 2. Acquire lock
+acquire_lock
+
+# 3. Perform merge (with pre-merge protocol above)
+# ... merge steps ...
+
+# 4. Release lock (always, even on failure)
+release_lock
+```
+
+### Priority: First-Come-First-Served (FCFS)
+
+When multiple agents are waiting for the merge lock:
+- **Order by REVIEW PASS timestamp**
+- Earliest timestamp gets priority
+- Timestamp is recorded in the REVIEW PASS verdict comment
+
+```bash
+# Record REVIEW PASS timestamp for priority
+PASS_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+gh issue comment $ISSUE_NUM --body "## REVIEW PASS
+Timestamp: $PASS_TIMESTAMP
+..."
+```
+
+### Merge Coordination Summary
+
+| Step | Action | On Failure |
+|------|--------|------------|
+| 1 | Fetch latest main | - |
+| 2 | Check if behind | If behind → rebase |
+| 3 | Rebase on main | If conflicts → demote to DEV |
+| 4 | RE-RUN TEST | If fails → demote to DEV |
+| 5 | Push rebased branch | - |
+| 6 | Repeat (max 3x) | If exceeded → demote to DEV |
+| 7 | Acquire merge lock | If timeout → retry later |
+| 8 | Create PR | - |
+| 9 | Merge (squash) | - |
+| 10 | Release lock | Always release |
+
+### Anti-Patterns
+
+| Anti-Pattern | Problem | Correct Approach |
+|--------------|---------|------------------|
+| Merge without fetching main | May be behind | Always fetch first |
+| Skip TEST after rebase | Code context changed | Always re-run TEST |
+| Exceed 3 rebase attempts | High contention loop | Demote to DEV |
+| Ignore merge lock | Race condition | Wait for lock |
+| Hold lock > 15 min | Blocks other agents | Auto-expire, restart |
+| Force push without lease | May overwrite others' work | Use --force-with-lease |
+
+---
+
 ## Verdict Rendering
 
 ### PASS Verdict
