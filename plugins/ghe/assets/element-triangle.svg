@@ -25,7 +25,7 @@
   <rect width="400" height="380" fill="#0d1117" rx="8"/>
 
   <!-- Title -->
-  <text x="200" y="35" text-anchor="middle" fill="#58a6ff" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600">THE ELEMENT</text>
+  <text x="200" y="35" text-anchor="middle" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600">THE ELEMENT</text>
 
   <!-- Main Triangle -->
   <polygon
@@ -44,20 +44,20 @@
   <circle cx="200" cy="200" r="25" fill="#1a1a2e" stroke="#58a6ff" stroke-width="2"/>
   <text x="200" y="205" text-anchor="middle" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="500">ELEMENT</text>
 
-  <!-- Vertex circles -->
-  <circle cx="200" cy="70" r="12" fill="#238636" filter="url(#glow)"/>
-  <circle cx="60" cy="290" r="12" fill="#1f6feb" filter="url(#glow)"/>
-  <circle cx="340" cy="290" r="12" fill="#da3633" filter="url(#glow)"/>
+  <!-- Vertex circles - CORRECT COLORS: Knowledge=Blue, Action=Green, Judgement=Orange -->
+  <circle cx="200" cy="70" r="12" fill="#1f6feb" filter="url(#glow)"/>
+  <circle cx="60" cy="290" r="12" fill="#238636" filter="url(#glow)"/>
+  <circle cx="340" cy="290" r="12" fill="#d29922" filter="url(#glow)"/>
 
-  <!-- Vertex Labels -->
-  <text x="200" y="50" text-anchor="middle" fill="#3fb950" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">KNOWLEDGE</text>
+  <!-- Vertex Labels - CORRECT COLORS -->
+  <text x="200" y="50" text-anchor="middle" fill="#58a6ff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">KNOWLEDGE</text>
 
-  <text x="60" y="320" text-anchor="middle" fill="#58a6ff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">ACTION</text>
+  <text x="60" y="320" text-anchor="middle" fill="#3fb950" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">ACTION</text>
 
-  <text x="340" y="320" text-anchor="middle" fill="#f85149" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">JUDGEMENT</text>
+  <text x="340" y="320" text-anchor="middle" fill="#d29922" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">JUDGEMENT</text>
 
   <!-- Icons/Symbols at vertices -->
-  <text x="200" y="75" text-anchor="middle" fill="#fff" font-size="12">💡</text>
+  <text x="200" y="75" text-anchor="middle" fill="#fff" font-size="12">📘</text>
   <text x="60" y="295" text-anchor="middle" fill="#fff" font-size="12">⚡</text>
   <text x="340" y="295" text-anchor="middle" fill="#fff" font-size="12">⚖️</text>
 

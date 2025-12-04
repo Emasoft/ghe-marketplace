@@ -259,33 +259,19 @@ For any feature/epic, only ONE thread can be open at a time:
 
 ## Element Classification System
 
-Every conversation exchange posted to GitHub Issues is classified with semantic badges that enable targeted memory recall:
+Every conversation exchange posted to GitHub Issues is classified with semantic badges that enable targeted memory recall.
 
-```
-+-------------------+     +-------------------+     +-------------------+
-|    KNOWLEDGE      |     |      ACTION       |     |    JUDGEMENT      |
-|      (blue)       |     |      (green)      |     |     (orange)      |
-+-------------------+     +-------------------+     +-------------------+
-|                   |     |                   |     |                   |
-|   "The Talk"      |     |  "The Reality"    |     |  "The Verdict"    |
-|                   |     |                   |     |                   |
-| - Requirements    |     | CODE:             |     | - Bug reports     |
-| - Specs           |     |  - Functions      |     | - Reviews         |
-| - Design docs     |     |  - Classes        |     | - Test results    |
-| - Architecture    |     |  - Scripts        |     | - Feedback        |
-| - Algorithms      |     |  - Configs        |     | - Critiques       |
-| - Explanations    |     |                   |     | - Issues found    |
-| - Protocols       |     | ASSETS:           |     | - Concerns        |
-| - Theory          |     |  - Images/Sprites |     |                   |
-|                   |     |  - Icons/Graphics |     |                   |
-| (Plans & Ideas)   |     |  - Audio/Sound FX |     | (Evaluation)      |
-|                   |     |  - Video/Animation|     |                   |
-|                   |     |  - 3D Models      |     |                   |
-|                   |     |  - Stylesheets    |     |                   |
-|                   |     |                   |     |                   |
-|                   |     | (Tangible Change) |     |                   |
-+-------------------+     +-------------------+     +-------------------+
-```
+### The Element Triangle
+
+<p align="center">
+  <img src="assets/element-triangle.svg" alt="The Element Triangle" width="400"/>
+</p>
+
+Each element stored in a GitHub Issue comment is tagged with one or more classification badges:
+
+<p align="center">
+  <img src="assets/element-classification.svg" alt="Element Classification System" width="900"/>
+</p>
 
 ### Semantic Badges
 
@@ -414,8 +400,9 @@ ghe/
 │   ├── pr-checker.md                    # Cerberus
 │   └── reporter.md                      # Hermes
 ├── assets/
-│   ├── avatars/              # Robot avatar PNGs (13 agents)
-│   └── element-triangle.svg  # Workflow diagram
+│   ├── avatars/                  # Robot avatar PNGs (13 agents)
+│   ├── element-triangle.svg      # Element concept diagram
+│   └── element-classification.svg # 3-column classification table
 ├── scripts/
 │   ├── auto-transcribe.sh    # Issue auto-transcription with element classification
 │   ├── recall-elements.sh    # Element-based memory recall CLI
