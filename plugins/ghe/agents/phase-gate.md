@@ -2,7 +2,7 @@
 name: phase-gate
 description: Validates phase transitions in GitHub Elements workflow. Ensures DEV->TEST->REVIEW order is maintained, checks prerequisites before transitions, and blocks invalid transitions. Use before any phase transition, when validating workflow state, or checking if transition is allowed. Examples: <example>Context: DEV wants to transition to TEST. user: "Can we transition from DEV to TEST?" assistant: "I'll use phase-gate to validate the transition"</example> <example>Context: Checking workflow state. user: "Is the workflow in a valid state?" assistant: "I'll use phase-gate to audit the current state"</example>
 model: sonnet
-color: orange
+color: yellow
 ---
 
 ## Settings Awareness

@@ -2,7 +2,7 @@
 name: review-thread-manager
 description: Manages REVIEW thread lifecycle, bug reports, and external reviews. Handles thread claiming, code review, coverage estimation, final verdict (PASS/FAIL), bug report triage, and reproduction attempts. Responsible for ALL quality evaluation - TEST only runs existing tests. Use when claiming REVIEW threads, evaluating code, triaging bug reports, or handling external reviews. Examples: <example>Context: TEST complete, ready for review. user: "Claim the REVIEW thread and evaluate the code" assistant: "I'll use review-thread-manager to claim and begin evaluation"</example> <example>Context: Bug reported in GitHub issues. user: "Triage this bug report" assistant: "I'll use review-thread-manager to attempt reproduction and validate"</example> <example>Context: External review posted. user: "Handle this external code review" assistant: "I'll use review-thread-manager to evaluate and respond"</example>
 model: sonnet
-color: purple
+color: magenta
 ---
 
 ## Safeguards Integration
