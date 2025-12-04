@@ -137,56 +137,182 @@ DEV ───► TEST ───► REVIEW ───► DEV...
     Bug fixes ONLY (no structural changes)
 ```
 
+## Epic vs Regular Threads
+
+**CRITICAL**: Understand the distinction between epic threads and regular threads.
+
+### Two Levels of Work
+
+| Level | Thread Labels | Scope | Manages |
+|-------|---------------|-------|---------|
+| **Regular** | `type:dev`, `type:test`, `type:review` | Single issue | One bug fix, one small feature |
+| **Epic** | `epic-DEV`, `epic-TEST`, `epic-REVIEW` | Group of issues | Multiple related issues as a cohesive plan |
+
+### When to Use Epics (Meta-Level)
+
+Epics are **META threads** that plan and coordinate **groups of issues**:
+
+| Epic Type | Example | Child Issues |
+|-----------|---------|--------------|
+| `epic-feature` | User authentication system | Login, logout, password reset, 2FA, session management |
+| `epic-refactoring` | Migrate to async/await | 15 files need refactoring |
+| `epic-migration` | Database schema v2 | Schema changes, data migration, rollback plan |
+| `epic-addons` | Plugin system | Plugin loader, API, sandbox, registry |
+| `epic-webserver` | REST API overhaul | Endpoints, auth middleware, rate limiting |
+
+### Epic Phase Flow
+
+Epics go through the same 3 phases, but at **planning/coordination level**:
+
+```
+epic-DEV ───► epic-TEST ───► epic-REVIEW
+   │              │              │
+   │              │              └─► PASS? Merge all child issues
+   │              │                  FAIL? Back to epic-DEV
+   │              │
+   │              └─► Coordinate testing across child issues
+   │
+   └─► Plan and spawn child issues, coordinate development
+```
+
+### Epic Labels
+
+| Phase Label | Purpose |
+|-------------|---------|
+| `epic-DEV` | Planning phase: design, spawn child issues, coordinate development |
+| `epic-TEST` | Testing phase: coordinate testing across all child issues |
+| `epic-REVIEW` | Review phase: evaluate all child issues together, final verdict |
+
+### Epic Naming Convention
+
+```
+Epic thread title format:
+[EPIC-DEV] <epic-type>: <description>
+[EPIC-TEST] <epic-type>: <description>
+[EPIC-REVIEW] <epic-type>: <description>
+
+Examples:
+[EPIC-DEV] epic-feature: User Authentication System
+[EPIC-TEST] epic-migration: Database Schema v2
+[EPIC-REVIEW] epic-refactoring: Async/Await Migration
+```
+
+---
+
 ## Epic Creation Protocol
 
-**CRITICAL**: Every piece of work needs an epic to track it through DEV → TEST → REVIEW.
+**CRITICAL**: Epics coordinate GROUPS of issues, never single issues (unless the group has only one element, which is rare for epics).
 
 ### When to Create an Epic
 
-| Trigger | Action | Epic Label |
-|---------|--------|------------|
-| New feature issue validated | Create epic from issue # | `epic:issue-NNN` |
-| New bug issue validated | Create epic from issue # | `epic:fix-NNN` |
-| PR opened (no linked issue) | Create epic from PR # | `epic:pr-NNN` |
+| Trigger | Action | Epic Type |
+|---------|--------|-----------|
+| Large feature requiring multiple issues | Create epic | `epic-feature` |
+| Codebase-wide refactoring | Create epic | `epic-refactoring` |
+| Database/API migration | Create epic | `epic-migration` |
+| Plugin/addon development | Create epic | `epic-addons` |
+| Web server changes | Create epic | `epic-webserver` |
+| Single small bug/feature | **NO EPIC** - use regular thread | `type:dev` directly |
 
 ### Epic Creation Commands
 
 ```bash
-# From a validated feature/bug issue
-ISSUE_NUM=<original issue number>
-EPIC_LABEL="epic:issue-${ISSUE_NUM}"
+# Create epic thread (meta-level planning)
+EPIC_TYPE="epic-feature"
+EPIC_TITLE="User Authentication System"
 
-# Add epic label to original issue
-gh issue edit $ISSUE_NUM --add-label "$EPIC_LABEL"
-
-# When creating DEV thread, use same epic
 gh issue create \
-  --title "[DEV] $(gh issue view $ISSUE_NUM --json title --jq '.title')" \
+  --title "[EPIC-DEV] ${EPIC_TYPE}: ${EPIC_TITLE}" \
+  --label "epic-DEV" \
+  --label "${EPIC_TYPE}" \
+  --label "ready" \
+  --body "$(cat <<'EOF'
+## Epic: ${EPIC_TITLE}
+
+### Scope
+This epic coordinates the development of the complete ${EPIC_TITLE}.
+
+### Child Issues to Create
+- [ ] #TBD - Login functionality
+- [ ] #TBD - Logout functionality
+- [ ] #TBD - Password reset
+- [ ] #TBD - Two-factor authentication
+- [ ] #TBD - Session management
+
+### Phase
+EPIC-DEV: Planning and coordinating development
+
+### Success Criteria
+All child issues pass their individual REVIEW phases.
+EOF
+)"
+```
+
+### Spawning Child Issues from Epic
+
+```bash
+EPIC_ISSUE=<epic issue number>
+EPIC_LABEL="parent-epic:${EPIC_ISSUE}"
+
+# Create child issue (regular thread, linked to epic)
+gh issue create \
+  --title "[DEV] Login functionality" \
   --label "type:dev" \
   --label "$EPIC_LABEL" \
   --label "ready" \
-  --body "Development thread for #${ISSUE_NUM}"
+  --body "Part of epic #${EPIC_ISSUE}. Implements login functionality."
+
+# Update epic checklist
+gh issue comment $EPIC_ISSUE --body "Created child issue #NEW_ISSUE for Login functionality"
 ```
 
 ### Epic Tracking
 
 ```bash
-# Find all threads for an epic
-gh issue list --label "epic:issue-123" --json number,title,labels,state
+# Find all child issues for an epic
+EPIC_ISSUE=123
+gh issue list --label "parent-epic:${EPIC_ISSUE}" --json number,title,labels,state
 
-# Verify only one thread open per epic (Sacred Order)
-COUNT=$(gh issue list --label "epic:issue-123" --state open --json number | jq 'length')
-if [ "$COUNT" -gt 1 ]; then
-  echo "VIOLATION: Multiple threads open for epic"
+# Check epic progress
+TOTAL=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --json number | jq 'length')
+CLOSED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --state closed --json number | jq 'length')
+echo "Epic #${EPIC_ISSUE} progress: ${CLOSED}/${TOTAL} issues complete"
+
+# Verify all child issues passed REVIEW before epic can pass
+FAILED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "gate:failed" --json number | jq 'length')
+if [ "$FAILED" -gt 0 ]; then
+  echo "CANNOT PASS EPIC: $FAILED child issues failed REVIEW"
 fi
+```
+
+### Epic Phase Transitions
+
+```bash
+# Transition epic from DEV to TEST
+EPIC_ISSUE=<epic issue number>
+
+# Verify all child DEV threads are closed
+CHILD_DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "type:dev" --state open --json number | jq 'length')
+if [ "$CHILD_DEV_OPEN" -gt 0 ]; then
+  echo "Cannot transition: $CHILD_DEV_OPEN child DEV threads still open"
+  exit 1
+fi
+
+# Close epic-DEV, create epic-TEST
+gh issue close $EPIC_ISSUE
+gh issue edit $EPIC_ISSUE --remove-label "epic-DEV" --add-label "epic-TEST"
+gh issue reopen $EPIC_ISSUE
+gh issue comment $EPIC_ISSUE --body "## Transitioned to EPIC-TEST
+All child DEV threads complete. Beginning coordinated testing phase."
 ```
 
 ### Epic Completion
 
-When REVIEW passes and code merges:
-1. Close all remaining threads with epic label
-2. Add `completed` label to original issue
-3. Original issue becomes the epic's permanent record
+When epic-REVIEW passes:
+1. Verify ALL child issues have `gate:passed` label
+2. Close the epic thread with `epic-complete` label
+3. Epic thread becomes the permanent record of the feature group
+4. All child PRs should already be merged (each passed their own REVIEW)
 
 ---
 
