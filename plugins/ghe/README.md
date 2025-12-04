@@ -1,6 +1,10 @@
 # GitHub Elements Plugin (GHE)
 
-**Version: 0.2.1** | [Releases](https://github.com/Emasoft/ghe-marketplace/releases) | [Issues](https://github.com/Emasoft/ghe-marketplace/issues)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.2.1)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![GitHub Issues](https://img.shields.io/github/issues/Emasoft/ghe-marketplace)](https://github.com/Emasoft/ghe-marketplace/issues)
+[![GitHub Stars](https://img.shields.io/github/stars/Emasoft/ghe-marketplace)](https://github.com/Emasoft/ghe-marketplace/stargazers)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
 
 A Claude Code plugin for using GitHub Issues as persistent memory with orchestrated DEV/TEST/REVIEW workflow management.
 

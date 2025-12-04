@@ -95,10 +95,13 @@ update_plugin_json() {
 update_readme() {
     local new_version="$1"
 
-    # Update the version badge at the top of README
-    sed -i '' "s/\*\*Version: [0-9]*\.[0-9]*\.[0-9]*\*\*/**Version: $new_version**/" "$README"
+    # Update shields.io version badge
+    sed -i '' "s/version-[0-9]*\.[0-9]*\.[0-9]*-blue/version-$new_version-blue/" "$README"
 
-    success "Updated README.md version badge"
+    # Update release tag link
+    sed -i '' "s/releases\/tag\/v[0-9]*\.[0-9]*\.[0-9]*/releases\/tag\/v$new_version/" "$README"
+
+    success "Updated README.md version badges"
 }
 
 # Create git commit
