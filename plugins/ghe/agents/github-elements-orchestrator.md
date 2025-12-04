@@ -175,30 +175,181 @@ Epics are **META threads** that plan and coordinate **groups of issues**:
 | `epic-addons` | Plugin system | Plugin loader, API, sandbox, registry |
 | `epic-webserver` | REST API overhaul | Endpoints, auth middleware, rate limiting |
 
-### Epic Phase Flow
+### Epic Phase Flow (META-LEVEL)
 
-Epics go through the same 3 phases, but at **planning/coordination level**:
+Epic phases are **fundamentally different** from regular thread phases. They are META-level operations:
 
 ```
-epic-DEV ───► epic-TEST ───► epic-REVIEW
-   │              │              │
-   │              │              └─► PASS? → epic-complete
-   │              │                  FAIL? → back to epic-DEV
-   │              │
-   │              └─► Define test strategies for all waves
-   │
-   └─► Plan waves, spawn child issues, coordinate development
+epic-DEV ───────────► epic-TEST ────────────► epic-REVIEW ───► epic-complete
+     │                     │                        │
+     │                     │                        │
+     ▼                     ▼                        ▼
+ Athena creates        BETA RELEASE              RC RELEASE
+ waves + requirements  Public testing            External reviews
+     │                     │                        │
+     │                     │                        │
+     ▼                     ▼                        ▼
+ All waves complete    All beta bugs fixed      User approves
+ (normal flow)         (normal bug flow)        (external verdicts)
 
-ALL PHASES MANAGED BY ATHENA (never by Hephaestus/Artemis/Hera)
+ONLY ONE EPIC CAN BE IN epic-TEST OR epic-REVIEW AT A TIME!
 ```
 
-### Epic Labels
+### Epic Labels - META Meanings
 
-| Phase Label | Purpose | Managed By |
-|-------------|---------|------------|
-| `epic-DEV` | Planning phase: design, spawn waves, define requirements | **Athena** |
-| `epic-TEST` | Test planning: define test coverage, coordinate test waves | **Athena** |
-| `epic-REVIEW` | Review planning: set quality bar, acceptance criteria | **Athena** |
+| Phase Label | What It Means | What Happens |
+|-------------|---------------|--------------|
+| `epic-DEV` | Planning: create waves, write requirements | Athena creates issues, waves execute via normal flow |
+| `epic-TEST` | **BETA RELEASE**: Public testing phase | Beta version released, users test, bugs routed to epic |
+| `epic-REVIEW` | **RC RELEASE**: External review phase | Release Candidate released, external reviews collected |
+
+---
+
+### epic-DEV: Wave Planning (Normal Flow)
+
+When an epic is in `epic-DEV`:
+1. Athena writes requirements for each wave
+2. Athena starts waves (creates issues with `type:dev`)
+3. Issues go through normal DEV → TEST → REVIEW flow
+4. Themis notifies Athena when each wave completes
+5. When ALL waves are complete, Athena requests transition to `epic-TEST`
+
+---
+
+### epic-TEST: Beta Release (META Testing)
+
+**CRITICAL**: `epic-TEST` does NOT mean Athena is testing. It means the epic feature is ready for PUBLIC BETA TESTING.
+
+#### What Happens When epic-TEST is Applied
+
+```
+1. Orchestrator informs user: "Epic feature ready for beta testing"
+     │
+     ▼
+2. BETA RELEASE created on GitHub (from beta branch)
+     │
+     ▼
+3. Users download and test the beta
+     │
+     ▼
+4. Bug reports from users are posted to GitHub Issues
+     │
+     ▼
+5. Hermes routes bug reports to the epic thread
+   (tagged with parent-epic:NNN for traceability)
+     │
+     ▼
+6. Bugs are triaged and fixed via NORMAL bug flow
+   (code is from beta branch of this epic)
+     │
+     ▼
+7. User decides to close beta testing
+     │
+     ▼
+8. Themis posts to epic thread: "Beta phase complete, all bugs fixed"
+     │
+     ▼
+9. Athena requests Themis to promote to epic-REVIEW
+```
+
+#### Beta Testing Rules
+
+| Rule | Description |
+|------|-------------|
+| **One at a time** | Only ONE epic can be in `epic-TEST` at any time |
+| **Bug routing** | Hermes routes all beta bug reports to the epic thread |
+| **Normal flow** | Bugs are fixed via normal DEV → TEST → REVIEW cycle |
+| **Beta branch** | All bug fixes are on the beta branch for this epic |
+| **User control** | User decides when to close beta testing |
+
+#### Hermes: Bug Report Router
+
+**Hermes** (the messenger) routes bug reports from beta testers to the correct epic thread:
+
+```bash
+# When a new bug report is filed during beta testing:
+ACTIVE_BETA_EPIC=$(gh issue list --label "epic-TEST" --state open --json number --jq '.[0].number')
+
+if [ -n "$ACTIVE_BETA_EPIC" ]; then
+  # Route to the active beta epic
+  gh issue edit $BUG_ISSUE --add-label "parent-epic:${ACTIVE_BETA_EPIC}"
+  gh issue edit $BUG_ISSUE --add-label "beta-bug"
+
+  # Post notification to epic thread
+  HEADER=$(avatar_header "Hermes")
+  gh issue comment $ACTIVE_BETA_EPIC --body "${HEADER}
+## Beta Bug Report Received
+
+A new bug report has been filed during beta testing.
+
+### Bug Issue
+#${BUG_ISSUE}
+
+### Status
+Routing to normal bug triage flow (DEV → TEST → REVIEW)."
+fi
+```
+
+---
+
+### epic-REVIEW: Release Candidate (META Review)
+
+**CRITICAL**: `epic-REVIEW` does NOT mean Athena is reviewing. It means the epic feature is ready for EXTERNAL REVIEW as a Release Candidate.
+
+#### What Happens When epic-REVIEW is Applied
+
+```
+1. Orchestrator informs user: "Epic feature ready for RC release"
+     │
+     ▼
+2. RELEASE CANDIDATE (RC) created on GitHub (from review branch)
+     │
+     ▼
+3. User asks external reviewers to test and evaluate
+     │
+     ▼
+4. External reviews posted to GitHub Issues
+   (tagged with: external-epic-REVIEW)
+     │
+     ▼
+5. Athena collects external feedback (does NOT respond to issues)
+     │
+     ▼
+6. User reviews external feedback and makes decision
+     │
+     ▼
+7. User approves → Themis promotes to epic-complete + merge to main
+   User rejects → Themis demotes to epic-DEV with feedback
+```
+
+#### RC Review Rules
+
+| Rule | Description |
+|------|-------------|
+| **One at a time** | Only ONE epic can be in `epic-REVIEW` at any time |
+| **External label** | External reviews tagged `external-epic-REVIEW` |
+| **User decision** | User (not Athena) decides PASS/FAIL |
+| **Review branch** | RC is built from review branch |
+| **No mixing** | External reviews distinct from normal review phases |
+
+#### External Review Label
+
+```bash
+# External reviewers' issues are marked distinctly
+gh issue edit $EXTERNAL_REVIEW_ISSUE --add-label "external-epic-REVIEW"
+gh issue edit $EXTERNAL_REVIEW_ISSUE --add-label "parent-epic:${EPIC_ISSUE}"
+```
+
+---
+
+### Epic Phase Summary
+
+| Phase | Athena's Role | Release Type | Who Acts |
+|-------|---------------|--------------|----------|
+| `epic-DEV` | **ACTIVE**: Creates requirements, starts waves | None | Normal agents for issues |
+| `epic-TEST` | **PASSIVE**: Waits for beta bugs to be fixed | BETA | Users test, Hermes routes bugs |
+| `epic-REVIEW` | **PASSIVE**: Collects external feedback | RC | External reviewers, User decides |
+| `epic-complete` | Done | PRODUCTION | Merge to main |
 
 ### Epic Naming Convention
 
