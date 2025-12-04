@@ -1921,6 +1921,159 @@ Note: No priority labels. No time-based labels. Order is determined by wave memb
 
 ---
 
+## Safeguards System
+
+GHE includes a comprehensive safeguards system to prevent errors and enable recovery.
+
+### Loading Safeguards
+
+```bash
+# Source at the beginning of any operation
+source plugins/ghe/scripts/safeguards.sh
+```
+
+### Available Functions
+
+| Function | Purpose | When to Use |
+|----------|---------|-------------|
+| `pre_flight_check <issue>` | All safety checks | Before starting any work |
+| `verify_worktree_health <path>` | Check worktree validity | Before worktree operations |
+| `safe_worktree_cleanup <path> [force]` | Safe removal | When cleaning up worktrees |
+| `acquire_merge_lock_safe <issue>` | Get lock with TTL | Before merge attempts |
+| `release_merge_lock_safe <issue>` | Release lock | After merge (always!) |
+| `wait_for_merge_lock <issue> [timeout]` | Wait for lock | When lock is held by others |
+| `heartbeat_merge_lock <issue>` | Keep lock alive | During long operations |
+| `atomic_commit_push <branch> <msg> <files>` | Safe commit+push | For critical commits |
+| `reconcile_ghe_state` | Fix state desync | On startup, after errors |
+| `validate_with_retry <script> <file>` | Validation with retries | For flaky validations |
+| `recover_from_merge_crash <issue>` | Crash recovery | After interruptions |
+
+### Configuration (Environment Variables)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOCK_TTL` | 900 | Lock timeout in seconds (15 min) |
+| `MAX_RETRIES` | 3 | Retry attempts for validation |
+| `RETRY_DELAY` | 2 | Seconds between retries |
+| `GHE_WORKTREES_DIR` | ../ghe-worktrees | Worktrees directory |
+
+### Pre-Flight Check Output
+
+```
+Running pre-flight checks for issue #123
+==================================================
+[1/6] Issue #123 status: OPEN
+[2/6] Worktree exists: YES
+[3/6] Worktree health: HEALTHY
+[4/6] Branch check: issue-123
+[5/6] Merge lock: FREE
+[6/6] GitHub auth: OK
+==================================================
+All pre-flight checks passed
+```
+
+---
+
+## Recovery Procedures
+
+### Recovery: Crashed Merge Operation
+
+If a merge was interrupted (agent crashed, network failure, etc.):
+
+```bash
+source plugins/ghe/scripts/safeguards.sh
+
+# Automatic recovery
+recover_from_merge_crash "$ISSUE_NUM"
+
+# This will:
+# 1. Release any held merge locks
+# 2. Abort any in-progress rebase or merge
+# 3. Reconcile ghe.local.md state
+```
+
+### Recovery: Orphaned Worktree
+
+If a worktree exists but its issue is closed:
+
+```bash
+source plugins/ghe/scripts/safeguards.sh
+
+# Check and cleanup all orphaned worktrees
+reconcile_ghe_state
+
+# Or cleanup specific worktree
+safe_worktree_cleanup "../ghe-worktrees/issue-123" true
+```
+
+### Recovery: Stale Merge Lock
+
+If a merge lock is held longer than TTL (15 min):
+
+```bash
+# The safeguards system automatically detects and releases stale locks
+# Just attempt to acquire the lock normally:
+acquire_merge_lock_safe "$ISSUE_NUM"
+# If old lock is stale, it will be released automatically
+```
+
+### Recovery: Corrupted Worktree
+
+If worktree is in an invalid state (detached HEAD, missing .git, etc.):
+
+```bash
+source plugins/ghe/scripts/safeguards.sh
+
+# Check health
+if ! verify_worktree_health "../ghe-worktrees/issue-123"; then
+    echo "Worktree corrupted - recreating..."
+
+    # Force remove corrupted worktree
+    safe_worktree_cleanup "../ghe-worktrees/issue-123" true
+
+    # Recreate from main
+    git worktree add ../ghe-worktrees/issue-123 -b issue-123 main
+fi
+```
+
+### Recovery: State Desync
+
+If ghe.local.md references closed issues or wrong phase:
+
+```bash
+source plugins/ghe/scripts/safeguards.sh
+
+# Automatic reconciliation
+reconcile_ghe_state ".claude/ghe.local.md"
+```
+
+### Recovery Decision Matrix
+
+| Symptom | Recovery Function |
+|---------|-------------------|
+| Worktree operations fail | `verify_worktree_health` → `safe_worktree_cleanup` |
+| Merge lock stuck | `acquire_merge_lock_safe` (auto-releases stale) |
+| ghe.local.md wrong issue | `reconcile_ghe_state` |
+| Rebase left incomplete | `recover_from_merge_crash` |
+| Push failed mid-operation | `atomic_commit_push` (rollback) |
+| Validation flaky | `validate_with_retry` |
+
+### Startup Reconciliation
+
+Run on every startup/session to ensure clean state:
+
+```bash
+source plugins/ghe/scripts/safeguards.sh
+
+# Full state reconciliation
+reconcile_ghe_state
+
+# Prune any stale git worktrees
+git worktree prune
+```
+
+---
+
 ## Anti-Patterns
 
 | Anti-Pattern | Problem | Correct Approach |
