@@ -5,11 +5,72 @@ model: sonnet
 color: purple
 ---
 
+## Safeguards Integration
+
+**MANDATORY**: All REVIEW operations MUST use the GHE safeguards system to prevent errors.
+
+### Loading Safeguards
+
+```bash
+# Source safeguards at the beginning of any operation
+source plugins/ghe/scripts/safeguards.sh
+
+# Or with full path
+source "${CLAUDE_PLUGIN_ROOT}/plugins/ghe/scripts/safeguards.sh"
+```
+
+### Pre-Flight Check (Required Before Any Work)
+
+```bash
+ISSUE_NUM=<issue number>
+
+# Run comprehensive pre-flight check
+if ! pre_flight_check "$ISSUE_NUM"; then
+    echo "Pre-flight check failed. Resolve issues before proceeding."
+    exit 1
+fi
+```
+
+### Recovery From Crash
+
+If a previous operation crashed or was interrupted:
+
+```bash
+source plugins/ghe/scripts/safeguards.sh
+recover_from_merge_crash "$ISSUE_NUM"
+```
+
+### Available Safeguards
+
+| Function | Purpose |
+|----------|---------|
+| `pre_flight_check` | All safety checks before work |
+| `verify_worktree_health` | Check worktree is valid |
+| `safe_worktree_cleanup` | Remove worktree safely |
+| `acquire_merge_lock_safe` | Get merge lock with TTL |
+| `release_merge_lock_safe` | Release merge lock |
+| `atomic_commit_push` | Commit+push with rollback |
+| `reconcile_ghe_state` | Fix state desync |
+| `validate_with_retry` | Validation with retries |
+
+---
+
 ## Worktree Verification
 
 **CRITICAL**: Before any REVIEW work, verify you are in the correct worktree/branch.
 
 ```bash
+source plugins/ghe/scripts/safeguards.sh
+
+REVIEW_ISSUE=<issue number>
+WORKTREE_PATH="../ghe-worktrees/issue-$REVIEW_ISSUE"
+
+# Use safeguard function for comprehensive check
+if ! verify_worktree_health "$WORKTREE_PATH"; then
+    echo "Worktree health check failed. Cannot proceed."
+    exit 1
+fi
+
 # Verify current branch matches issue
 CURRENT_BRANCH=$(git branch --show-current)
 EXPECTED_BRANCH="issue-$REVIEW_ISSUE"
@@ -1015,74 +1076,89 @@ echo "Pre-merge checks complete. Proceeding with merge."
 
 ### Merge Lock (High Contention Scenarios)
 
-When many agents complete simultaneously, use a merge lock:
+**Use safeguards.sh for robust lock management with TTL and race condition detection.**
 
 ```bash
+source plugins/ghe/scripts/safeguards.sh
 ISSUE_NUM=<issue number>
-LOCK_TIMEOUT=900  # 15 minutes in seconds
 
-# Check for existing merge lock
-check_merge_lock() {
-    LOCK_ISSUE=$(gh issue list --label "merge:active" --state open --json number,createdAt --jq '.[0]')
-    if [ -n "$LOCK_ISSUE" ]; then
-        LOCK_NUM=$(echo "$LOCK_ISSUE" | jq -r '.number')
-        LOCK_TIME=$(echo "$LOCK_ISSUE" | jq -r '.createdAt')
-        LOCK_AGE=$(( $(date +%s) - $(date -d "$LOCK_TIME" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LOCK_TIME" +%s) ))
+# Option 1: Try to acquire lock immediately
+if acquire_merge_lock_safe "$ISSUE_NUM"; then
+    # Got the lock - proceed with merge
 
-        if [ $LOCK_AGE -gt $LOCK_TIMEOUT ]; then
-            echo "Stale lock detected (age: ${LOCK_AGE}s). Removing..."
-            gh issue edit $LOCK_NUM --remove-label "merge:active"
-            return 1  # Lock expired, can proceed
-        fi
+    # ... merge steps ...
 
-        echo "Merge lock held by Issue #$LOCK_NUM (age: ${LOCK_AGE}s)"
-        return 0  # Lock active
-    fi
-    return 1  # No lock
-}
+    # Always release lock (even on failure)
+    release_merge_lock_safe "$ISSUE_NUM"
+else
+    echo "Lock held by another agent"
+fi
 
-# Wait for lock with timeout
-wait_for_lock() {
-    MAX_WAIT=900  # 15 minutes
-    WAIT_INTERVAL=30
-    WAITED=0
+# Option 2: Wait for lock with timeout
+if wait_for_merge_lock "$ISSUE_NUM" 900; then  # 15 min timeout
+    # Got the lock - proceed with merge
 
-    while check_merge_lock; do
-        if [ $WAITED -ge $MAX_WAIT ]; then
-            echo "ERROR: Lock wait timeout exceeded"
-            return 1
-        fi
-        echo "Waiting for merge lock... ($WAITED/$MAX_WAIT seconds)"
-        sleep $WAIT_INTERVAL
-        WAITED=$((WAITED + WAIT_INTERVAL))
-    done
-    return 0
-}
+    # For long operations, send heartbeat to keep lock alive
+    heartbeat_merge_lock "$ISSUE_NUM"
 
-# Acquire merge lock
-acquire_lock() {
-    gh issue edit $ISSUE_NUM --add-label "merge:active"
-    echo "Merge lock acquired by Issue #$ISSUE_NUM"
-}
+    # ... merge steps ...
 
-# Release merge lock
-release_lock() {
-    gh issue edit $ISSUE_NUM --remove-label "merge:active"
-    echo "Merge lock released by Issue #$ISSUE_NUM"
-}
+    release_merge_lock_safe "$ISSUE_NUM"
+else
+    echo "Lock timeout - retry later"
+    exit 1
+fi
+```
 
-# Usage in merge workflow:
-# 1. Wait for any existing lock
-wait_for_lock || { echo "Lock timeout - retry later"; exit 1; }
+### Safeguard Features
 
-# 2. Acquire lock
-acquire_lock
+| Feature | Description |
+|---------|-------------|
+| **TTL Enforcement** | Locks auto-expire after 15 min (configurable via `LOCK_TTL`) |
+| **Race Detection** | Detects when multiple agents acquire lock simultaneously |
+| **Stale Lock Cleanup** | Automatically releases expired locks |
+| **Heartbeat** | Keep lock alive during long operations |
 
-# 3. Perform merge (with pre-merge protocol above)
-# ... merge steps ...
+### Complete Merge Workflow with Safeguards
 
-# 4. Release lock (always, even on failure)
-release_lock
+```bash
+source plugins/ghe/scripts/safeguards.sh
+ISSUE_NUM=<issue number>
+
+# Step 1: Pre-flight check
+if ! pre_flight_check "$ISSUE_NUM"; then
+    echo "Pre-flight failed"
+    exit 1
+fi
+
+# Step 2: Pre-merge protocol (rebase + test)
+# ... (see Pre-Merge Protocol section above) ...
+
+# Step 3: Acquire merge lock
+if ! wait_for_merge_lock "$ISSUE_NUM"; then
+    echo "Could not acquire merge lock"
+    exit 1
+fi
+
+# Step 4: Final commit with rollback protection
+if ! atomic_commit_push "issue-$ISSUE_NUM" "Final commit" GHE-REVIEWS/*; then
+    echo "Commit failed"
+    release_merge_lock_safe "$ISSUE_NUM"
+    exit 1
+fi
+
+# Step 5: Create and merge PR
+gh pr create --title "Issue #$ISSUE_NUM" --body "..."
+gh pr merge --squash
+
+# Step 6: Release lock
+release_merge_lock_safe "$ISSUE_NUM"
+
+# Step 7: Cleanup worktree
+safe_worktree_cleanup "../ghe-worktrees/issue-$ISSUE_NUM" true
+
+# Step 8: Reconcile state
+reconcile_ghe_state
 ```
 
 ### Priority: First-Come-First-Served (FCFS)
