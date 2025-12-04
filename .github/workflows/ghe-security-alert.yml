@@ -1,16 +1,33 @@
 # GHE Automation: Event F - Security Alert → URGENT DEV Issue
 # Creates urgent issue for Hephaestus when security vulnerabilities detected.
 # SECURITY: Only system-generated inputs used (alert numbers, not user content).
+# NOTE: Security events require GitHub Advanced Security or specific repo settings.
+#       This workflow only triggers when those features are enabled.
 
 name: "GHE: Security Alert"
 
 on:
+  # Dependabot alerts (requires Dependabot to be enabled)
   dependabot_alert:
     types: [created]
+  # Code scanning alerts (requires GitHub Code Scanning or third-party scanner)
   code_scanning_alert:
     types: [created, reopened]
+  # Secret scanning alerts (requires GitHub Secret Scanning)
   secret_scanning_alert:
     types: [created]
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      alert_type:
+        description: 'Type of security alert to simulate'
+        required: true
+        default: 'dependabot'
+        type: choice
+        options:
+          - dependabot
+          - code_scanning
+          - secret_scanning
 
 concurrency:
   group: ghe-security-${{ github.event_name }}-${{ github.run_id }}
