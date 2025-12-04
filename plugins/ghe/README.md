@@ -1,4 +1,6 @@
-# GitHub Elements Plugin
+# GitHub Elements Plugin (GHE)
+
+**Version: 0.2.1** | [Releases](https://github.com/Emasoft/ghe-marketplace/releases) | [Issues](https://github.com/Emasoft/ghe-marketplace/issues)
 
 A Claude Code plugin for using GitHub Issues as persistent memory with orchestrated DEV/TEST/REVIEW workflow management.
 
@@ -7,24 +9,29 @@ A Claude Code plugin for using GitHub Issues as persistent memory with orchestra
 GitHub Elements provides a complete system for:
 - **Persistent Memory**: GitHub Issues survive context exhaustion
 - **Workflow Orchestration**: Automated DEV -> TEST -> REVIEW lifecycle
-- **Agent Coordination**: Specialized agents for each workflow phase
+- **Agent Coordination**: Specialized agents for each workflow phase (with unique robot avatars)
 - **Memory Integration**: Syncs with SERENA memory bank
+- **24/7 Automation**: Argos Panoptes monitors your repo via GitHub Actions
 
 ## Installation
 
-### From Dev Marketplace
+### Via Claude Code CLI (Recommended)
 
 ```bash
-# Add to your project's .claude/settings.json
-{
-  "plugins": [
-    {
-      "name": "github-elements",
-      "marketplace": "skill-factory-dev",
-      "path": "github-elements-plugin"
-    }
-  ]
-}
+claude plugin add Emasoft/ghe-marketplace
+```
+
+### Manual Installation
+
+1. Download the latest release zip from [Releases](https://github.com/Emasoft/ghe-marketplace/releases)
+2. Extract to `~/.claude/plugins/ghe/`
+3. Restart Claude Code
+
+### From Source
+
+```bash
+git clone https://github.com/Emasoft/ghe-marketplace.git
+cp -r ghe-marketplace/plugins/ghe ~/.claude/plugins/
 ```
 
 ## Features
@@ -51,18 +58,24 @@ GitHub Elements provides a complete system for:
 
 > **"Enforce no Time, Only Order"**
 
-| Agent | Model | Purpose |
-|-------|-------|---------|
-| `github-elements-orchestrator` | opus | Central coordinator |
-| `dev-thread-manager` | opus | DEV thread lifecycle |
-| `test-thread-manager` | sonnet | TEST thread lifecycle |
-| `review-thread-manager` | sonnet | REVIEW thread lifecycle |
-| `phase-gate` | sonnet | Transition validation |
-| `memory-sync` | haiku | SERENA memory sync |
-| `enforcement` | haiku | Violation detection |
-| `ci-issue-opener` | haiku | CI failure issues |
-| `pr-checker` | haiku | PR requirements |
-| `reporter` | haiku | Status reports |
+Each agent has a unique **Greek god/mythology robot avatar** that appears in GitHub issue comments for visual identity.
+
+| Agent | Persona | Model | Purpose |
+|-------|---------|-------|---------|
+| `github-elements-orchestrator` | **Athena** | opus | Central coordinator (wisdom) |
+| `dev-thread-manager` | **Hephaestus** | opus | DEV thread lifecycle (forge/build) |
+| `test-thread-manager` | **Artemis** | sonnet | TEST thread lifecycle (hunt bugs) |
+| `review-thread-manager` | **Hera** | sonnet | REVIEW thread lifecycle (quality) |
+| `phase-gate` | **Themis** | sonnet | Transition validation (justice) |
+| `memory-sync` | **Mnemosyne** | haiku | SERENA memory sync (memory) |
+| `enforcement` | **Ares** | haiku | Violation detection (enforcement) |
+| `ci-issue-opener` | **Chronos** | haiku | CI failure issues (time) |
+| `pr-checker` | **Cerberus** | haiku | PR requirements (guardian) |
+| `reporter` | **Hermes** | haiku | Status reports (messenger) |
+
+**Avatar System:**
+- **Agent avatars**: Bundled locally in `assets/avatars/` (13 robot PNGs)
+- **User avatars**: Fetched dynamically from GitHub API at runtime
 
 ---
 
@@ -303,34 +316,46 @@ Claude: [Spawns orchestrator which:
 ## Plugin Structure
 
 ```
-github-elements-plugin/
+ghe/
 ├── .claude-plugin/
-│   ├── plugin.json           # Plugin manifest
-│   └── marketplace.json      # Dev marketplace config
+│   └── plugin.json           # Plugin manifest
 ├── skills/
 │   ├── github-elements-tracking/
 │   │   ├── SKILL.md          # Main skill
-│   │   └── references/       # Playbooks (P1-P9)
+│   │   └── references/       # Playbooks (P1-P10)
 │   ├── ghe-status/           # Status operation skill
 │   ├── ghe-claim/            # Claim operation skill
 │   ├── ghe-checkpoint/       # Checkpoint operation skill
 │   ├── ghe-transition/       # Transition operation skill
 │   └── ghe-report/           # Report operation skill
 ├── agents/
-│   ├── github-elements-orchestrator.md
-│   ├── dev-thread-manager.md
-│   ├── test-thread-manager.md
-│   ├── review-thread-manager.md
-│   ├── phase-gate.md
-│   ├── memory-sync.md
-│   ├── enforcement.md
-│   ├── ci-issue-opener.md
-│   ├── pr-checker.md
-│   └── reporter.md
+│   ├── github-elements-orchestrator.md  # Athena
+│   ├── dev-thread-manager.md            # Hephaestus
+│   ├── test-thread-manager.md           # Artemis
+│   ├── review-thread-manager.md         # Hera
+│   ├── phase-gate.md                    # Themis
+│   ├── memory-sync.md                   # Mnemosyne
+│   ├── enforcement.md                   # Ares
+│   ├── ci-issue-opener.md               # Chronos
+│   ├── pr-checker.md                    # Cerberus
+│   └── reporter.md                      # Hermes
+├── assets/
+│   ├── avatars/              # Robot avatar PNGs (13 agents)
+│   └── element-triangle.svg  # Workflow diagram
+├── scripts/
+│   ├── auto-transcribe.sh    # Issue auto-transcription
+│   ├── post-with-avatar.sh   # Avatar comment helper
+│   ├── parse-settings.sh     # Settings parser
+│   ├── safeguards.sh         # Safety checks
+│   └── check-issue-set.sh    # Issue validation
 ├── hooks/
-│   └── hooks.json
+│   └── hooks.json            # Hook definitions
+├── commands/
+│   └── setup.md              # /ghe:setup command
 ├── examples/
-│   └── github-actions/       # 24/7 automation workflows
+│   └── github-actions/       # Argos Panoptes workflows
+├── docs/                     # Additional documentation
+├── LICENSE                   # MIT License
 └── README.md
 ```
 
@@ -409,8 +434,12 @@ After editing `.claude/github-elements.local.md`, restart Claude Code for change
 
 ## License
 
-Apache 2.0
+MIT License - See [LICENSE](LICENSE) for details.
 
 ## Author
 
-Emasoft
+[Emasoft](https://github.com/Emasoft)
+
+## Contributing
+
+Issues and pull requests welcome at [ghe-marketplace](https://github.com/Emasoft/ghe-marketplace).
