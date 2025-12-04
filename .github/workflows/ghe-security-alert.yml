@@ -7,16 +7,7 @@
 name: "GHE: Security Alert"
 
 on:
-  # Dependabot alerts (requires Dependabot to be enabled)
-  dependabot_alert:
-    types: [created]
-  # Code scanning alerts (requires GitHub Code Scanning or third-party scanner)
-  code_scanning_alert:
-    types: [created, reopened]
-  # Secret scanning alerts (requires GitHub Secret Scanning)
-  secret_scanning_alert:
-    types: [created]
-  # Manual trigger for testing
+  # Manual trigger for testing and primary use
   workflow_dispatch:
     inputs:
       alert_type:
