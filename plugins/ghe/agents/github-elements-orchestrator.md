@@ -262,6 +262,79 @@ When an epic is in `epic-DEV`:
 | **Beta branch** | All bug fixes are on the beta branch for this epic |
 | **User control** | User decides when to close beta testing |
 
+#### epic-TEST Demotion Protocol (Rare)
+
+In rare cases, critical issues during beta testing may require demoting the entire epic back to `epic-DEV`:
+
+**When to Demote epic-TEST → epic-DEV**:
+- Fundamental architectural flaw discovered
+- Security vulnerability requiring redesign
+- Core requirements changed mid-beta
+- Beta testing reveals missing essential functionality
+
+**Demotion Process**:
+
+```bash
+EPIC_ISSUE=<epic issue number>
+
+# Source avatar helper
+source plugins/ghe/scripts/post-with-avatar.sh
+
+# Step 1: Request demotion (Athena to Themis)
+HEADER=$(avatar_header "Athena")
+gh issue comment $EPIC_ISSUE --body "${HEADER}
+## Requesting Epic Demotion: epic-TEST → epic-DEV
+
+### Critical Issues Found
+[Describe the fundamental issues discovered during beta testing]
+
+### Why Demotion is Necessary
+- [ ] Cannot be fixed with normal bug fix cycle
+- [ ] Requires structural changes to the epic design
+- [ ] User has approved demotion
+
+### Affected Areas
+- [List components/features that need rework]
+
+### Proposed New Wave
+Will create a new wave to address these issues after demotion."
+
+# Step 2: Themis validates and executes (if approved by user)
+gh issue edit $EPIC_ISSUE \
+  --remove-label "epic-TEST" \
+  --add-label "epic-DEV"
+
+# Step 3: Update epic title
+TITLE=$(gh issue view $EPIC_ISSUE --json title --jq '.title' | sed 's/\[EPIC-TEST\]/[EPIC-DEV]/')
+gh issue edit $EPIC_ISSUE --title "$TITLE"
+
+# Step 4: Post demotion notification
+HEADER=$(avatar_header "Themis")
+gh issue comment $EPIC_ISSUE --body "${HEADER}
+## Epic Demoted: epic-TEST → epic-DEV
+
+Beta testing has revealed issues requiring rework.
+
+### Status
+- Phase: epic-DEV
+- Beta release: SUSPENDED
+- New wave: PENDING
+
+### Next Steps
+1. Athena will create new wave with requirements for the rework
+2. Normal DEV → TEST → REVIEW cycle for new issues
+3. When all new wave issues complete, Athena may request epic-TEST again"
+```
+
+**What Happens After Demotion**:
+1. Beta release is suspended (users notified)
+2. Beta branch is preserved (not deleted)
+3. Athena creates new wave to address issues
+4. Existing unfixed beta bugs remain tracked
+5. When new wave completes, epic can re-enter epic-TEST
+
+---
+
 #### Hermes: Bug Report Router
 
 **Hermes** (the messenger) routes bug reports from beta testers to the correct epic thread:
@@ -367,6 +440,120 @@ Examples:
 
 ---
 
+## Branch Management Strategy
+
+### Branch Types
+
+| Branch Type | Pattern | Purpose | Lifespan |
+|-------------|---------|---------|----------|
+| **Main** | `main` | Production-ready code | Permanent |
+| **Issue branches** | `issue-<N>` | Individual issue work | Until merged |
+| **Epic beta** | `epic-<N>-beta` | Beta release during epic-TEST | Until RC |
+| **Epic RC** | `epic-<N>-rc` | Release Candidate during epic-REVIEW | Until main merge |
+
+### Branch Flow During Epic Lifecycle
+
+```
+main ◄─────────────────────────────────────────────────┐
+  │                                                    │
+  ├── issue-101 (wave 1 issue) ──► merged to epic-N-beta
+  │                                    │
+  ├── issue-102 (wave 1 issue) ──► merged to epic-N-beta
+  │                                    │
+  ├── issue-103 (wave 2 issue) ──► merged to epic-N-beta
+  │                                    │
+  │                               epic-N-beta (epic-TEST)
+  │                                    │
+  │                               Beta bugs fixed on issue branches
+  │                               then merged to epic-N-beta
+  │                                    │
+  │                               epic-N-rc (epic-REVIEW)
+  │                                    │
+  │                               RC issues fixed on issue branches
+  │                               then merged to epic-N-rc
+  │                                    │
+  └───────────────────────────────────┘ (epic-complete → merge to main)
+```
+
+### Phase-Specific Branch Rules
+
+#### epic-DEV Phase
+
+```bash
+# Each issue gets its own worktree and branch
+git worktree add ../ghe-worktrees/issue-${ISSUE_NUM} -b issue-${ISSUE_NUM} main
+
+# Work happens in issue branch
+# When DEV → TEST → REVIEW passes, issue merges to beta branch
+git checkout epic-${EPIC_NUM}-beta
+git merge issue-${ISSUE_NUM}
+```
+
+#### epic-TEST Phase (Beta)
+
+```bash
+EPIC_NUM=<epic issue number>
+
+# Create beta branch from main (once, when entering epic-TEST)
+git checkout main
+git checkout -b epic-${EPIC_NUM}-beta
+
+# Beta bugs get NEW issue branches
+git worktree add ../ghe-worktrees/issue-${BUG_ISSUE} -b issue-${BUG_ISSUE} epic-${EPIC_NUM}-beta
+
+# After bug DEV → TEST → REVIEW passes, merge to beta branch
+git checkout epic-${EPIC_NUM}-beta
+git merge issue-${BUG_ISSUE}
+```
+
+#### epic-REVIEW Phase (RC)
+
+```bash
+EPIC_NUM=<epic issue number>
+
+# Create RC branch from beta (once, when entering epic-REVIEW)
+git checkout epic-${EPIC_NUM}-beta
+git checkout -b epic-${EPIC_NUM}-rc
+
+# Critical fixes get NEW issue branches (should be rare)
+git worktree add ../ghe-worktrees/issue-${FIX_ISSUE} -b issue-${FIX_ISSUE} epic-${EPIC_NUM}-rc
+
+# After fix DEV → TEST → REVIEW passes, merge to rc branch
+git checkout epic-${EPIC_NUM}-rc
+git merge issue-${FIX_ISSUE}
+```
+
+#### epic-complete Phase (Merge to Main)
+
+```bash
+EPIC_NUM=<epic issue number>
+
+# User has approved the RC
+# Merge rc branch to main
+git checkout main
+git merge epic-${EPIC_NUM}-rc
+
+# Tag the release
+git tag -a "v1.0.0-epic-${EPIC_NUM}" -m "Epic ${EPIC_NUM} release"
+
+# Clean up epic branches
+git branch -d epic-${EPIC_NUM}-beta
+git branch -d epic-${EPIC_NUM}-rc
+```
+
+### Key Rules
+
+| Rule | Description |
+|------|-------------|
+| **Never work on main** | All work happens on issue branches |
+| **One issue = One branch** | Even beta bugs get their own branches |
+| **Merge target varies** | Issue branches merge to beta/rc during epic, to main otherwise |
+| **Beta is cumulative** | Beta branch accumulates all wave merges + bug fixes |
+| **RC is frozen** | Only critical fixes should touch RC branch |
+| **Clean up after epic** | Delete beta and rc branches after merge to main |
+
+---
+
 ## Athena's Output: Requirements Design Files
 
 **CRITICAL**: Athena produces **REQUIREMENTS DESIGN FILES**, not code.
@@ -453,19 +640,109 @@ project-root/
 └── ...
 ```
 
-### File Naming Convention
+### File Naming Convention - Two-Phase Approach
+
+**Problem**: Issue numbers aren't known until GitHub creates the issue.
+
+**Solution**: Two-phase naming with DRAFT → FINAL rename.
+
+#### Phase 1: DRAFT (During Planning)
+
+During planning, use DRAFT naming WITHOUT issue number:
 
 ```
-Standalone features (user request → single DEV issue):
-REQ-<issue-number>-<short-name>.md
-
-Epic child issues (epic breakdown → wave issues):
-REQ-<issue-number>-<short-name>_EPIC<epic-issue-number>.md
+DRAFT-<short-name>_EPIC<epic-number>.md    (for epic children)
+DRAFT-<short-name>.md                       (for standalone)
 
 Examples:
-- REQ-201-dark-mode.md                    (standalone)
-- REQ-101-user-schema_EPIC00123.md        (epic #123, wave 1)
-- REQ-104-login-endpoint_EPIC00123.md     (epic #123, wave 2)
+- DRAFT-user-schema_EPIC00123.md
+- DRAFT-dark-mode.md
+```
+
+#### Phase 2: FINAL (When Wave Starts / Issue Created)
+
+When creating the issue:
+1. Create issue with `draft` label (not claimable yet)
+2. Get issue number from GitHub
+3. Rename file to include issue number
+4. Update issue body with requirements link
+5. Remove `draft` label, add `ready` label
+
+```
+REQ-<issue-number>-<short-name>_EPIC<epic-number>.md    (epic children)
+REQ-<issue-number>-<short-name>.md                      (standalone)
+
+Examples:
+- REQ-101-user-schema_EPIC00123.md
+- REQ-201-dark-mode.md
+```
+
+#### Rename Protocol
+
+```bash
+EPIC_ISSUE=123
+WAVE_NUM=1
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+REQUIREMENTS_DIR="${PROJECT_ROOT}/REQUIREMENTS/epic-${EPIC_ISSUE}/wave-${WAVE_NUM}"
+
+# For each DRAFT file:
+for DRAFT_FILE in "$REQUIREMENTS_DIR"/DRAFT-*.md; do
+  # Extract short name
+  SHORT_NAME=$(basename "$DRAFT_FILE" .md | sed "s/DRAFT-//" | sed "s/_EPIC[0-9]*//")
+
+  # Create issue with draft label (not claimable)
+  ISSUE_NUM=$(gh issue create \
+    --title "[DEV] $(echo $SHORT_NAME | tr '-' ' ')" \
+    --label "type:dev" \
+    --label "draft" \
+    --label "parent-epic:${EPIC_ISSUE}" \
+    --label "wave:${WAVE_NUM}" \
+    --body "## Requirements pending..." \
+    --json number --jq '.number')
+
+  # Rename file with issue number
+  EPIC_PADDED=$(printf "%05d" $EPIC_ISSUE)
+  FINAL_NAME="REQ-${ISSUE_NUM}-${SHORT_NAME}_EPIC${EPIC_PADDED}.md"
+  mv "$DRAFT_FILE" "${REQUIREMENTS_DIR}/${FINAL_NAME}"
+
+  # Read requirements content
+  REQ_CONTENT=$(cat "${REQUIREMENTS_DIR}/${FINAL_NAME}")
+
+  # Update issue body with full requirements
+  gh issue edit $ISSUE_NUM --body "## Requirements
+
+**File**: [${FINAL_NAME}](REQUIREMENTS/epic-${EPIC_ISSUE}/wave-${WAVE_NUM}/${FINAL_NAME})
+
+---
+
+${REQ_CONTENT}"
+
+  # Make claimable: remove draft, add ready
+  gh issue edit $ISSUE_NUM --remove-label "draft" --add-label "ready"
+done
+```
+
+#### File Lifecycle
+
+```
+PLANNING:
+  DRAFT-user-schema_EPIC00123.md  (not linked to any issue)
+       │
+       ▼
+WAVE START:
+  Issue #101 created with "draft" label
+       │
+       ▼
+RENAME:
+  REQ-101-user-schema_EPIC00123.md
+       │
+       ▼
+LINK:
+  Issue #101 body updated with requirements link
+       │
+       ▼
+READY:
+  "draft" removed, "ready" added → Hephaestus can claim
 ```
 
 **The `_EPIC` suffix** links the requirements file to its parent epic GitHub issue number (zero-padded to 5 digits).

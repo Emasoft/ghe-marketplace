@@ -116,7 +116,20 @@ if [ -n "$IS_BUG" ]; then
   echo "Bug report detected - requirements file not required"
   # Proceed with claiming
 else
-  # Step 2: Get issue body and check for requirements link
+  # Step 2: Check for draft label (not claimable yet)
+  IS_DRAFT=$(gh issue view $DEV_ISSUE --json labels --jq '.labels[] | select(.name == "draft") | .name')
+
+  if [ -n "$IS_DRAFT" ]; then
+    echo "ERROR: Issue is in DRAFT state - requirements not finalized!"
+    echo ""
+    echo "This issue was created but its requirements file hasn't been renamed yet."
+    echo "Wait for Athena to finalize the requirements (rename DRAFT → REQ-NNN)."
+    echo ""
+    echo "Once finalized, the 'draft' label will be removed and 'ready' will be added."
+    exit 1
+  fi
+
+  # Step 3: Get issue body and check for requirements link
   ISSUE_BODY=$(gh issue view $DEV_ISSUE --json body --jq '.body')
 
   # Check for requirements file link in body
@@ -132,7 +145,7 @@ else
     exit 1
   fi
 
-  # Step 3: Extract requirements file path and verify it exists
+  # Step 4: Extract requirements file path and verify it exists
   REQ_PATH=$(echo "$ISSUE_BODY" | grep -oE "REQUIREMENTS/[^)\"']+" | head -1)
 
   if [ ! -f "${PROJECT_ROOT}/${REQ_PATH}" ]; then
@@ -146,13 +159,20 @@ else
 fi
 ```
 
-### Bug Reports Are Exempt
+### Issue Claimability Rules
 
-| Issue Type | Requirements File | Reason |
-|------------|------------------|--------|
-| Feature (`type:dev`) | **REQUIRED** | Must define what to build |
-| Epic child (`parent-epic:N`) | **REQUIRED** | Part of planned wave |
-| Bug fix (`bug`, `type:bug`) | **NOT REQUIRED** | Bug describes the problem |
+| Issue Type | Requirements File | Claimable? | Reason |
+|------------|------------------|------------|--------|
+| Feature (`type:dev`) | **REQUIRED** | When `ready` | Must define what to build |
+| Epic child (`parent-epic:N`) | **REQUIRED** | When `ready` | Part of planned wave |
+| Bug fix (`bug`, `type:bug`) | **NOT REQUIRED** | When `ready` | Bug describes the problem |
+| Draft issue (`draft` label) | In progress | **NO** | Requirements not finalized |
+
+**Draft Label Flow**:
+1. Athena creates issue with `draft` label
+2. Athena renames DRAFT file to REQ-NNN format
+3. Athena removes `draft`, adds `ready`
+4. Only THEN can Hephaestus claim the issue
 
 ---
 
