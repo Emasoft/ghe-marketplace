@@ -257,6 +257,76 @@ For any feature/epic, only ONE thread can be open at a time:
 - **TEST -> DEV**: When structural changes needed
 - **REVIEW -> TEST**: NEVER (must go to DEV)
 
+## Element Classification System
+
+Every conversation exchange posted to GitHub Issues is classified with semantic badges that enable targeted memory recall:
+
+```
++-------------------+     +-------------------+     +-------------------+
+|    KNOWLEDGE      |     |      ACTION       |     |    JUDGEMENT      |
+|      (blue)       |     |      (green)      |     |     (orange)      |
++-------------------+     +-------------------+     +-------------------+
+|                   |     |                   |     |                   |
+|   "The Talk"      |     |  "The Reality"    |     |  "The Verdict"    |
+|                   |     |                   |     |                   |
+| - Requirements    |     | CODE:             |     | - Bug reports     |
+| - Specs           |     |  - Functions      |     | - Reviews         |
+| - Design docs     |     |  - Classes        |     | - Test results    |
+| - Architecture    |     |  - Scripts        |     | - Feedback        |
+| - Algorithms      |     |  - Configs        |     | - Critiques       |
+| - Explanations    |     |                   |     | - Issues found    |
+| - Protocols       |     | ASSETS:           |     | - Concerns        |
+| - Theory          |     |  - Images/Sprites |     |                   |
+|                   |     |  - Icons/Graphics |     |                   |
+| (Plans & Ideas)   |     |  - Audio/Sound FX |     | (Evaluation)      |
+|                   |     |  - Video/Animation|     |                   |
+|                   |     |  - 3D Models      |     |                   |
+|                   |     |  - Stylesheets    |     |                   |
+|                   |     |                   |     |                   |
+|                   |     | (Tangible Change) |     |                   |
++-------------------+     +-------------------+     +-------------------+
+```
+
+### Semantic Badges
+
+| Badge | Type | Purpose |
+|-------|------|---------|
+| ![knowledge](https://img.shields.io/badge/element-knowledge-blue) | KNOWLEDGE | Plans, requirements, design, theory |
+| ![action](https://img.shields.io/badge/element-action-green) | ACTION | Code, assets, configs - actual changes |
+| ![judgement](https://img.shields.io/badge/element-judgement-orange) | JUDGEMENT | Reviews, bugs, feedback, test results |
+
+### Key Insight
+
+> **Only ACTION elements change the project.** KNOWLEDGE and JUDGEMENT are discussion - they inform decisions but don't modify artifacts. In a video game project, 90% of ACTION elements might be asset uploads (sprites, 3D models, sounds) rather than code.
+
+### Element-Based Memory Recall
+
+When you need to recover specific information, query by element type:
+
+```bash
+# Find CODE/ASSETS (what we built)
+recall-elements.sh --issue 201 --type action
+
+# Find REQUIREMENTS/SPECS (what we planned)
+recall-elements.sh --issue 201 --type knowledge
+
+# Find BUGS/ISSUES (what went wrong)
+recall-elements.sh --issue 201 --type judgement
+
+# Smart session recovery (all context)
+recall-elements.sh --issue 201 --recover
+```
+
+| What You Want to Recall | Element Type |
+|------------------------|--------------|
+| "What code did we write?" | ACTION |
+| "What assets were created?" | ACTION |
+| "What were the requirements?" | KNOWLEDGE |
+| "What bugs did we find?" | JUDGEMENT |
+| "What feedback was given?" | JUDGEMENT |
+
+---
+
 ## Memory Integration
 
 ### Three-Tier Storage
