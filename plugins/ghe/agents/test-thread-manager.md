@@ -93,8 +93,8 @@ TEST_ISSUE=<issue number>
 source plugins/ghe/scripts/post-with-avatar.sh
 
 # Step 1: Verify DEV is closed (phase order)
-EPIC=$(gh issue view $TEST_ISSUE --json labels --jq '.labels[] | select(.name | startswith("epic:")) | .name | split(":")[1]')
-DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "dev" --state open --json number --jq 'length')
+EPIC_ISSUE=$(gh issue view $TEST_ISSUE --json labels --jq '.labels[] | select(.name | startswith("parent-epic:")) | .name | split(":")[1]')
+DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "dev" --state open --json number --jq 'length')
 if [ "$DEV_OPEN" -gt 0 ]; then
   echo "ERROR: DEV thread still open. Cannot claim TEST."
   exit 1

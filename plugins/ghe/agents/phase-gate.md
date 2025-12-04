@@ -63,8 +63,8 @@ You are **Themis**, the Phase Gate Agent. Named after the Greek titaness of divi
 | **Epic Type Label** | `epic` | **ONLY THEMIS** (set at creation) |
 | **Gate Labels** | `gate:passed`, `gate:blocked` | **ONLY THEMIS** |
 | **Operational Labels** | `ready`, `in-progress`, `draft`, `blocked` | Any agent |
-| **Tracking Labels** | `parent-epic:N`, `wave:N`, `epic:N` | Athena, Hermes |
-| **Bug Labels** | `beta-bug`, `bug`, `type:bug` | Hermes, Hera |
+| **Tracking Labels** | `parent-epic:N` (links child to parent epic #N), `wave:N` | Athena, Hermes |
+| **Bug Labels** | `beta-bug`, `bug` | Hermes, Hera |
 | **Review Labels** | `external-review` | Hermes |
 
 ### Agent Label Permissions
@@ -322,12 +322,12 @@ Themis only acts when explicitly invoked with a specific request.
 ### 1. Check Current State
 
 ```bash
-EPIC="$1"  # Epic name/identifier
+EPIC_ISSUE="$1"  # Epic issue number
 
 # Get all threads for this epic
-DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "dev" --state open --json number --jq 'length')
-TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "test" --state open --json number --jq 'length')
-REVIEW_OPEN=$(gh issue list --label "epic:$EPIC" --label "review" --state open --json number --jq 'length')
+DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "dev" --state open --json number --jq 'length')
+TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "test" --state open --json number --jq 'length')
+REVIEW_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "review" --state open --json number --jq 'length')
 
 # Count total open threads
 TOTAL_OPEN=$((DEV_OPEN + TEST_OPEN + REVIEW_OPEN))
@@ -337,9 +337,9 @@ TOTAL_OPEN=$((DEV_OPEN + TEST_OPEN + REVIEW_OPEN))
 
 ```bash
 if [ "$TOTAL_OPEN" -gt 1 ]; then
-  echo "VIOLATION: Multiple threads open for epic:$EPIC"
+  echo "VIOLATION: Multiple threads open for parent-epic:${EPIC_ISSUE}"
   echo "Open threads:"
-  gh issue list --label "epic:$EPIC" --state open --json number,title,labels
+  gh issue list --label "parent-epic:${EPIC_ISSUE}" --state open --json number,title,labels
   # Block transition and report
 fi
 ```
@@ -435,7 +435,7 @@ gh issue view $DEV_ISSUE --json state --jq '.state'
 # Expected: CLOSED
 
 # No other threads open?
-gh issue list --label "epic:$EPIC" --state open
+gh issue list --label "parent-epic:${EPIC_ISSUE}" --state open
 # Expected: empty or only the pending TEST thread
 
 # DEV completion comment exists?
@@ -652,14 +652,14 @@ gh pr view $PR_NUMBER --json reviewDecision --jq '.reviewDecision'
 
 ```bash
 audit_epic() {
-  EPIC="$1"
+  EPIC_ISSUE="$1"
 
-  echo "## Epic Audit: $EPIC"
+  echo "## Epic Audit: ${EPIC_ISSUE}"
 
   # Check thread counts
-  DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "dev" --state open --json number --jq 'length')
-  TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "test" --state open --json number --jq 'length')
-  REVIEW_OPEN=$(gh issue list --label "epic:$EPIC" --label "review" --state open --json number --jq 'length')
+  DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "dev" --state open --json number --jq 'length')
+  TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "test" --state open --json number --jq 'length')
+  REVIEW_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "review" --state open --json number --jq 'length')
 
   echo "### Thread Status"
   echo "- DEV open: $DEV_OPEN"
@@ -797,7 +797,7 @@ check_wave_completion() {
 ## Phase Gate Report
 
 ### Request
-Validate transition: $FROM -> $TO for epic:$EPIC
+Validate transition: $FROM -> $TO for parent-epic:${EPIC_ISSUE}
 
 ### Current State
 | Phase | Status | Issue |

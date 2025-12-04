@@ -10,9 +10,9 @@ color: yellow
 Check `.claude/ghe.local.md` before creating issues:
 - `enabled`: If false, skip issue creation
 - `notification_level`: Controls issue verbosity (verbose=full logs, normal=summary, quiet=minimal)
-- `epic_label_prefix`: Use this prefix for epic labels (default: "epic:")
+- `epic_label_prefix`: Use this prefix for epic tracking labels (default: "parent-epic:")
 
-**Defaults if no settings file**: enabled=true, notification=normal, epic_label_prefix="epic:"
+**Defaults if no settings file**: enabled=true, notification=normal, epic_label_prefix="parent-epic:"
 
 ---
 
@@ -132,9 +132,9 @@ EPIC=$(echo "$BRANCH" | grep -oP '(?<=feature/)\d+|(?<=epic/)\w+')
 ```bash
 gh issue create \
   --title "CI Failure: $JOB_NAME - $ERROR_SUMMARY" \
-  --label "type:bug" \
+  --label "bug" \
   --label "source:ci" \
-  --label "epic:$EPIC" \
+  --label "parent-epic:${EPIC}" \
   --body "$(cat <<'EOF'
 ## CI Failure Report
 
@@ -181,12 +181,12 @@ EOF
 
 | Failure Type | Labels | Suggested Action |
 |--------------|--------|------------------|
-| Test failure | type:bug, area:test | Investigate test, may need DEV |
-| Build failure | type:bug, area:build | Fix build configuration |
-| Lint failure | type:bug, area:quality | Fix code style issues |
-| Type check failure | type:bug, area:types | Fix type errors |
-| Security scan failure | type:security, priority:high | Address security issue |
-| Dependency failure | type:bug, area:deps | Update dependencies |
+| Test failure | bug, area:test | Investigate test, may need DEV |
+| Build failure | bug, area:build | Fix build configuration |
+| Lint failure | bug, area:quality | Fix code style issues |
+| Type check failure | bug, area:types | Fix type errors |
+| Security scan failure | security, priority:high | Address security issue |
+| Dependency failure | bug, area:deps | Update dependencies |
 
 ## Issue Templates
 
@@ -302,9 +302,9 @@ This should be addressed before merge.
 ## Quick Reference
 
 ### Labels to Apply
-- `type:bug` - Always for CI failures
+- `bug` - Always for CI failures
 - `source:ci` - Mark as CI-generated
-- `epic:NAME` - Link to epic
+- `parent-epic:N` - Link to epic (use epic issue number)
 - `priority:high` - For blocking failures
 - `area:test|build|security` - Categorize failure
 

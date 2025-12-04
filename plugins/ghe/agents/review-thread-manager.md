@@ -319,17 +319,17 @@ When you see an Argos comment, the work has been triaged. Proceed with your REVI
 
 ```bash
 REVIEW_ISSUE=<number>
-EPIC=$(gh issue view $REVIEW_ISSUE --json labels --jq '.labels[] | select(.name | startswith("epic:")) | .name | split(":")[1]')
+EPIC_ISSUE=$(gh issue view $REVIEW_ISSUE --json labels --jq '.labels[] | select(.name | startswith("parent-epic:")) | .name | split(":")[1]')
 
 # DEV must be CLOSED
-DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "dev" --state open --json number --jq 'length')
+DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "dev" --state open --json number --jq 'length')
 if [ "$DEV_OPEN" -gt 0 ]; then
   echo "ERROR: DEV thread still open. Cannot start REVIEW."
   exit 1
 fi
 
 # TEST must be CLOSED
-TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "test" --state open --json number --jq 'length')
+TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "test" --state open --json number --jq 'length')
 if [ "$TEST_OPEN" -gt 0 ]; then
   echo "ERROR: TEST thread still open. Cannot start REVIEW."
   exit 1

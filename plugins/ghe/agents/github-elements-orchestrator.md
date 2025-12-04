@@ -417,14 +417,14 @@ gh issue edit $EXTERNAL_REVIEW_ISSUE --add-label "parent-epic:${EPIC_ISSUE}"
 
 ```
 Epic thread title format:
-[EPIC-DEV] <epic-type>: <description>
-[EPIC-TEST] <epic-type>: <description>
-[EPIC-REVIEW] <epic-type>: <description>
+[EPIC] [DEV] <epic-type>: <description>
+[EPIC] [TEST] <epic-type>: <description>
+[EPIC] [REVIEW] <epic-type>: <description>
 
 Examples:
-[EPIC-DEV] epic-feature: User Authentication System
-[EPIC-TEST] epic-migration: Database Schema v2
-[EPIC-REVIEW] epic-refactoring: Async/Await Migration
+[EPIC] [DEV] epic-feature: User Authentication System
+[EPIC] [TEST] epic-migration: Database Schema v2
+[EPIC] [REVIEW] epic-refactoring: Async/Await Migration
 ```
 
 ---
@@ -1100,7 +1100,7 @@ source plugins/ghe/scripts/post-with-avatar.sh
 HEADER=$(avatar_header "Athena")
 
 gh issue create \
-  --title "[EPIC-DEV] ${EPIC_TYPE}: ${EPIC_TITLE}" \
+  --title "[EPIC] [DEV] ${EPIC_TYPE}: ${EPIC_TITLE}" \
   --label "epic" \
   --label "dev" \
   --label "${EPIC_TYPE}" \
@@ -1109,7 +1109,7 @@ gh issue create \
 ## Epic: ${EPIC_TITLE}
 
 ### Phase
-**EPIC-DEV**: Planning what to develop
+**DEV**: Planning what to develop (epic thread)
 
 ### Scope
 This epic coordinates the complete ${EPIC_TITLE} feature.
@@ -1373,7 +1373,7 @@ gh issue list --state open --json number,title,labels,updatedAt | \
   jq -r '.[] | select(.labels[].name | test("^(dev|test|review)$"))'
 
 # Check for violations (multiple threads open per epic)
-gh issue list --label "epic:$EPIC" --state open --json number | jq 'length'
+gh issue list --label "parent-epic:$EPIC" --state open --json number | jq 'length'
 # Must be ≤ 1
 
 # Post orchestrator checkpoint

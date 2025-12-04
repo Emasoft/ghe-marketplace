@@ -133,7 +133,7 @@ Loops trigger approval prompts. Process issues one at a time.
 ```
 1. Get all epics with open threads:
    gh issue list --state open --json labels | \
-     jq -r '.[].labels[] | select(.name | startswith("epic:")) | .name' | sort -u
+     jq -r '.[].labels[] | select(.name | startswith("parent-epic:")) | .name' | sort -u
 
 2. Create TodoWrite list with all epic names
 
@@ -149,10 +149,10 @@ Loops trigger approval prompts. Process issues one at a time.
 
 ```bash
 # Step 1: Count open threads for specific epic (NOT a function)
-gh issue list --label "epic:jwt-auth" --state open --json number | jq 'length'
+gh issue list --label "parent-epic:123" --state open --json number | jq 'length'
 
 # Step 2: If count > 1, get details (individual command)
-gh issue list --label "epic:jwt-auth" --state open --json number,title,labels | \
+gh issue list --label "parent-epic:123" --state open --json number,title,labels | \
   jq -r '.[] | "#\(.number): \(.title)"'
 
 # Step 3: Report violation with issue numbers
@@ -165,7 +165,7 @@ gh issue list --label "epic:jwt-auth" --state open --json number,title,labels | 
 gh issue view 203 --json labels --jq '.labels[].name'
 
 # Step 2: If review, extract epic and check for TEST
-gh issue list --label "epic:jwt-auth" --label "test" --json number | jq 'length'
+gh issue list --label "parent-epic:123" --label "test" --json number | jq 'length'
 
 # Step 3: If count = 0, violation detected
 ```
@@ -175,7 +175,7 @@ gh issue list --label "epic:jwt-auth" --label "test" --json number | jq 'length'
 ```bash
 # Get epics with multiple open threads using jq
 gh issue list --state open --json number,labels | jq -r '
-  [.[] | {number, epic: (.labels[] | select(.name | startswith("epic:")) | .name)}] |
+  [.[] | {number, epic: (.labels[] | select(.name | startswith("parent-epic:")) | .name)}] |
   group_by(.epic) |
   .[] |
   select(length > 1) |
@@ -233,7 +233,7 @@ gh issue comment 203 --body "## Workflow Warning
 **Type**: Multiple threads open
 
 ### Details
-Epic jwt-auth has 2 threads open: #203 (TEST), #205 (DEV)
+Epic #123 has 2 threads open: #203 (TEST), #205 (DEV)
 
 ### Impact
 This is a first warning. Repeat violations will be blocked.
@@ -258,7 +258,7 @@ gh issue comment 205 --body "## Action Blocked
 Warning posted on #203 at 2024-01-15 10:00 UTC
 
 ### Details
-Epic jwt-auth still has multiple threads open after warning.
+Epic #123 still has multiple threads open after warning.
 
 ### Action Required
 This action has been blocked due to repeat violation.
@@ -281,7 +281,7 @@ Track violations per epic to enable progressive enforcement.
 
 ```bash
 # Step 1: Get all issues in epic (individual command)
-gh issue list --label "epic:jwt-auth" --json number --jq '.[].number'
+gh issue list --label "parent-epic:123" --json number --jq '.[].number'
 # Returns: 201, 202, 203, 205
 
 # Step 2: Create TodoWrite list with all issue numbers
