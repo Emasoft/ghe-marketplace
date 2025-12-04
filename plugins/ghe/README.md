@@ -137,13 +137,13 @@ When you're offline, Argos automatically processes these events and queues work 
 
 | Event | Trigger | What Argos Does | Queued For |
 |-------|---------|-----------------|------------|
-| **A: PR Opened** | Someone opens a pull request | Creates a REVIEW issue linking to the PR, adds `phase:review` and `source:pr` labels, comments on the PR with the queue issue link | Hera |
-| **B: Bug Report** | Someone opens an issue with `bug` label | Validates the bug report template (description, steps to reproduce, expected vs actual behavior, environment). If complete: adds `phase:review` and `ready` labels. If incomplete: adds `needs-info` label and politely asks for missing details | Hera |
-| **C: Feature Request** | Someone opens an issue with `enhancement` or `feature` label | Validates the feature request (description, use case). If complete: adds `phase:dev` and `ready` labels. If incomplete: adds `needs-info` label and asks for clarification | Hephaestus |
+| **A: PR Opened** | Someone opens a pull request | Creates a REVIEW issue linking to the PR, adds `review` and `source:pr` labels, comments on the PR with the queue issue link | Hera |
+| **B: Bug Report** | Someone opens an issue with `bug` label | Validates the bug report template (description, steps to reproduce, expected vs actual behavior, environment). If complete: adds `review` and `ready` labels. If incomplete: adds `needs-info` label and politely asks for missing details | Hera |
+| **C: Feature Request** | Someone opens an issue with `enhancement` or `feature` label | Validates the feature request (description, use case). If complete: adds `dev` and `ready` labels. If incomplete: adds `needs-info` label and asks for clarification | Hephaestus |
 | **D: Policy Violation** | Someone posts a comment with harassment, threats, spam, or discrimination | Issues a warning (maximum 3 warnings per user). After 3 warnings: adds `needs-moderation` label for human review. Very conservative - when uncertain, does nothing | Ares |
 | **E: SPAM Detected** | Someone posts obvious spam (requires 3+ indicators) | Closes the issue with `spam` label. Extremely conservative - only acts on obvious spam (new account + no activity + promotional links + crypto/gambling content). False positives are unacceptable | - |
-| **F: Security Alert** | GitHub detects a Dependabot alert, code scanning alert, or secret scanning alert | Creates an URGENT issue with `phase:dev`, `urgent`, and `security` labels. If critical severity: also adds `blocked` label. Never dismisses alerts | Hephaestus |
-| **G: CI/CD Failure** | A workflow fails (excluding GHE workflows to prevent loops) | Creates or updates a CI failure issue with `phase:review`, `ci-failure`, and `source:ci` labels. Tracks consecutive failures and adds `urgent` label after 3+ failures | Chronos |
+| **F: Security Alert** | GitHub detects a Dependabot alert, code scanning alert, or secret scanning alert | Creates an URGENT issue with `dev`, `urgent`, and `security` labels. If critical severity: also adds `blocked` label. Never dismisses alerts | Hephaestus |
+| **G: CI/CD Failure** | A workflow fails (excluding GHE workflows to prevent loops) | Creates or updates a CI failure issue with `review`, `ci-failure`, and `source:ci` labels. Tracks consecutive failures and adds `urgent` label after 3+ failures | Chronos |
 
 ### Argos Design Principles
 

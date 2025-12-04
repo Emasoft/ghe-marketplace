@@ -206,9 +206,9 @@ Create labels in the selected repository:
 cd <repo-path>
 
 # Phase labels
-gh label create "phase:dev" --color "0E8A16" --description "DEV phase - development work" --force
-gh label create "phase:test" --color "FBCA04" --description "TEST phase - testing and bug fixes" --force
-gh label create "phase:review" --color "1D76DB" --description "REVIEW phase - quality evaluation" --force
+gh label create "dev" --color "0E8A16" --description "Development work" --force
+gh label create "test" --color "FBCA04" --description "Testing and bug fixes" --force
+gh label create "review" --color "1D76DB" --description "Quality evaluation" --force
 
 # Status labels
 gh label create "ready" --color "C2E0C6" --description "Available for claiming" --force
@@ -265,7 +265,7 @@ Configuration:
 - Auto worktree: Always on
 - Review agent: Hera (ghe:review-thread-manager)
 
-Labels created: phase:dev, phase:test, phase:review, ready, in-progress,
+Labels created: dev, test, review, ready, in-progress,
                blocked, needs-input, gate:passed, gate:failed,
                violation:phase, violation:scope, ci-failure, epic
 

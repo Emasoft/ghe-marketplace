@@ -91,9 +91,9 @@ Collect:
 ### Step 3: Post checkpoint
 
 Spawn appropriate thread manager based on thread type:
-- `type:dev` → **dev-thread-manager**
-- `type:test` → **test-thread-manager**
-- `type:review` → **review-thread-manager**
+- `dev` → **dev-thread-manager**
+- `test` → **test-thread-manager**
+- `review` → **review-thread-manager**
 
 The thread manager will post formatted checkpoint to issue.
 

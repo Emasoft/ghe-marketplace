@@ -1938,9 +1938,9 @@ gh issue list --state open --label "ready" --json number,title,labels | \
 # 1. URGENT + security → Hephaestus (DEV) immediately
 # 2. ci-failure → Chronos
 # 3. needs-moderation → Ares (enforcement)
-# 4. source:pr + phase:review → Hera (REVIEW)
-# 5. bug + phase:review → Hera (REVIEW)
-# 6. feature + phase:dev → Hephaestus (DEV)
+# 4. source:pr + review → Hera (REVIEW)
+# 5. bug + review → Hera (REVIEW)
+# 6. feature + dev → Hephaestus (DEV)
 ```
 
 ### Argos Label Reference
@@ -1948,8 +1948,8 @@ gh issue list --state open --label "ready" --json number,title,labels | \
 | Label | Set By | Meaning | Route To |
 |-------|--------|---------|----------|
 | `ready` | Argos | Validated, ready for work | Check phase label for specialist |
-| `phase:dev` | Argos | Needs development work | Hephaestus (dev-thread-manager) |
-| `phase:review` | Argos | Needs review/triage | Hera (review-thread-manager) |
+| `dev` | Argos | Needs development work | Hephaestus (dev-thread-manager) |
+| `review` | Argos | Needs review/triage | Hera (review-thread-manager) |
 | `source:pr` | Argos | Originated from a PR | Hera (review-thread-manager) |
 | `source:ci` | Argos | Originated from CI failure | Chronos (ci-issue-opener) |
 | `needs-info` | Argos | Awaiting user response | Wait for response |

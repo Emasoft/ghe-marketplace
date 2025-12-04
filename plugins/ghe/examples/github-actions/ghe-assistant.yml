@@ -46,12 +46,11 @@ jobs:
               - TEST: Testing and validation
               - REVIEW: Code review before merge
 
-              Each phase has its own issue thread (type:dev, type:test, type:review).
+              Each phase has its own issue thread (dev, test, review).
               Threads track work via checkpoint comments posted by developers.
 
               GHE LABELS:
-              - type:dev / type:test / type:review - Thread type
-              - phase:dev / phase:test / phase:review - Current phase
+              - dev / test / review - Thread type and phase
               - ready - Available to claim
               - in-progress - Being worked on
               - blocked - Has a blocker

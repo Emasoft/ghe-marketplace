@@ -79,7 +79,7 @@ Each workflow has configurable parameters in the `env` section:
 env:
   STALE_HOURS: 24        # Hours before thread is considered stale
   EPIC_LABEL: "epic:"    # Prefix for epic labels
-  PHASE_LABELS: "phase:dev,phase:test,phase:review"
+  PHASE_LABELS: "dev,test,review"
 ```
 
 ## Workflow Details
@@ -112,14 +112,14 @@ Post warning on stale threads.
 - Posts corrective comment if invalid combination detected
 
 **Valid combinations**:
-- `type:dev` + `phase:dev` + `in-progress`
-- `type:test` + `phase:test` + `ready`
+- `dev` + `dev` + `in-progress`
+- `test` + `test` + `ready`
 - etc.
 
 **Invalid combinations** (will warn):
-- `phase:dev` + `phase:test` (multiple phases)
+- `dev` + `test` (multiple phases)
 - `in-progress` without assignee
-- `type:review` without linked PR
+- `review` without linked PR
 
 ### 3. PR Thread Checker (`ghe-pr-checker.yml`)
 

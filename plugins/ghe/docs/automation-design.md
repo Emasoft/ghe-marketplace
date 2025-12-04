@@ -18,13 +18,13 @@ The system handles 7 event types, routing them to the appropriate GHE agents for
 
 | Event | Trigger | Tag(s) | Agent | Priority |
 |-------|---------|--------|-------|----------|
-| A: PR Opened | `pull_request: opened` | `phase:review` | Hera | Normal |
-| B: Bug Report | `issues: opened` + bug template | `phase:review` | Hera | Normal |
-| C: Feature Request | `issues: opened` + feature template | `phase:dev` | Hephaestus | Normal |
+| A: PR Opened | `pull_request: opened` | `review` | Hera | Normal |
+| B: Bug Report | `issues: opened` + bug template | `review` | Hera | Normal |
+| C: Feature Request | `issues: opened` + feature template | `dev` | Hephaestus | Normal |
 | D: Policy Violation | `issue_comment: created` | `needs-moderation` | Ares | Normal |
-| E: SPAM Detected | `issues/comments` | (close/delete) | (auto) | Low |
-| F: Security Alert | `dependabot/code_scanning` | `phase:dev`, `urgent` | Hephaestus | URGENT |
-| G: CI/CD Failure | `workflow_run: completed` (failure) | `phase:review`, `ci-failure` | Chronos | High |
+| E: SPAM Detected | `issues/comments` | `possible-spam` | Argos | Low |
+| F: Security Alert | `dependabot/code_scanning` | `dev`, `urgent`, `security` | Hephaestus | URGENT |
+| G: CI/CD Failure | `workflow_run: completed` (failure) | `review`, `ci-failure` | Chronos | High |
 
 ## Critical Edge Cases
 
@@ -94,7 +94,7 @@ concurrency:
 2. If exists, skip
 3. Create issue with:
    - Title: `[REVIEW] PR #X: <PR title>`
-   - Label: `phase:review`, `source:pr`
+   - Label: `review`, `source:pr`
    - Body: Link to PR, summary of changes, file list
 4. Comment on PR linking to review issue
 
@@ -125,9 +125,9 @@ Required fields:
 2. If incomplete:
    - Comment explaining what's missing
    - Add `needs-info` label
-   - Do NOT add `phase:review` yet
+   - Do NOT add `review` yet
 3. If complete:
-   - Add `phase:review` label
+   - Add `review` label
    - Add `ready` label
    - Comment confirming issue is queued for Hera
 
@@ -155,9 +155,9 @@ Required fields:
 2. If incomplete:
    - Comment explaining what's missing
    - Add `needs-info` label
-   - Do NOT add `phase:dev` yet
+   - Do NOT add `dev` yet
 3. If complete:
-   - Add `phase:dev` label
+   - Add `dev` label
    - Add `ready` label
    - Comment confirming issue is queued for Hephaestus
 
@@ -259,7 +259,7 @@ Required fields:
 3. If new:
    - Create issue with:
      - Title: `[SECURITY] <alert title>`
-     - Labels: `phase:dev`, `urgent`, `security`
+     - Labels: `dev`, `urgent`, `security`
      - Body: Full alert details, severity, remediation steps
 4. If CRITICAL severity:
    - Also add `blocked` label (nothing else should proceed)
@@ -287,7 +287,7 @@ Required fields:
 4. If new failure:
    - Create issue with:
      - Title: `[CI] <workflow name> failed`
-     - Labels: `phase:review`, `ci-failure`, `source:ci`
+     - Labels: `review`, `ci-failure`, `source:ci`
      - Body: Workflow link, error summary, affected files
 5. If same workflow fails 3+ times:
    - Add `urgent` label
@@ -314,17 +314,27 @@ These labels must exist in the repository (created by /ghe:setup):
 
 | Label | Color | Description |
 |-------|-------|-------------|
-| `phase:dev` | #0E8A16 | DEV phase |
-| `phase:review` | #1D76DB | REVIEW phase |
+| `dev` | #0E8A16 | DEV phase |
+| `test` | #FBCA04 | TEST phase |
+| `review` | #1D76DB | REVIEW phase |
+| `complete` | #6E5494 | COMPLETE phase |
+| `epic` | #5319E7 | Epic thread type |
+| `ready` | #0E8A16 | Ready for work |
+| `in-progress` | #1D76DB | Work in progress |
+| `blocked` | #B60205 | Work blocked |
 | `urgent` | #B60205 | Needs immediate attention |
+| `security` | #B60205 | Security issue |
 | `needs-info` | #D4C5F9 | Waiting for more information |
 | `needs-moderation` | #D93F0B | Needs human moderation review |
+| `possible-spam` | #FBCA04 | Potential spam, needs review |
+| `owner-review` | #D93F0B | Awaiting owner decision |
+| `awaiting-response` | #D4C5F9 | Waiting for user response |
 | `ci-failure` | #D93F0B | CI/CD failure |
-| `security` | #B60205 | Security issue |
 | `source:pr` | #C5DEF5 | Auto-created from PR |
 | `source:ci` | #C5DEF5 | Auto-created from CI |
-| `possible-spam` | #FBCA04 | Potential spam, needs review |
 | `bot-pr` | #BFD4F2 | PR from bot (Dependabot, etc.) |
+| `parent-epic:N` | #C5DEF5 | Links child to parent epic #N |
+| `wave:N` | #BFD4F2 | Wave number for epic children |
 
 ## Permissions Matrix
 

@@ -74,9 +74,9 @@ Spawn **phase-gate** agent to check:
 ### Step 2: Execute claim
 
 Spawn appropriate thread manager based on issue labels:
-- `type:dev` label → **dev-thread-manager**
-- `type:test` label → **test-thread-manager**
-- `type:review` label → **review-thread-manager**
+- `dev` label → **dev-thread-manager**
+- `test` label → **test-thread-manager**
+- `review` label → **review-thread-manager**
 
 The thread manager will:
 1. Assign issue to @me (atomic claim)

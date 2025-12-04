@@ -17,9 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     # Only run for issues that might be GHE threads (have any ghe-related label)
     if: |
-      contains(github.event.issue.labels.*.name, 'type:dev') ||
-      contains(github.event.issue.labels.*.name, 'type:test') ||
-      contains(github.event.issue.labels.*.name, 'type:review')
+      contains(github.event.issue.labels.*.name, 'dev') ||
+      contains(github.event.issue.labels.*.name, 'test') ||
+      contains(github.event.issue.labels.*.name, 'review')
 
     steps:
       - name: Validate GHE labels
@@ -43,10 +43,10 @@ jobs:
 
             GHE LABEL RULES:
 
-            1. TYPE LABELS (thread type - exactly one required):
-               - type:dev = Development thread
-               - type:test = Testing thread
-               - type:review = Code review thread
+            1. PHASE LABELS (current phase - exactly one required):
+               - dev = Development thread
+               - test = Testing thread
+               - review = Code review thread
 
             2. STATUS LABELS (current status - at most one):
                - ready = Available to claim (no assignee allowed)
@@ -58,14 +58,14 @@ jobs:
                - epic:NNN = Linked to epic issue #NNN (use issue number, not name)
 
             VALID COMBINATIONS:
-            - Exactly one type: label
+            - Exactly one phase label (dev, test, or review)
             - At most one status label
             - At most one epic: label
             - in-progress requires an assignee
             - ready requires NO assignee
 
             INVALID COMBINATIONS (must warn):
-            - Multiple type: labels on same issue
+            - Multiple phase labels on same issue
             - in-progress without an assignee
             - ready WITH an assignee
             - Both ready and in-progress on same issue

@@ -56,7 +56,7 @@ jobs:
 
             3. LINKED ISSUE VALIDATION:
                If issue is linked, verify it has GHE labels:
-               - Should have type:dev, type:test, or type:review
+               - Should have dev, test, or review
                - Should have a phase label
                - Should be in-progress or have been claimed
 
