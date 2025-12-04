@@ -176,6 +176,7 @@ validate_transition() {
 ### Prerequisites
 - [ ] DEV thread is CLOSED
 - [ ] No other threads open for this epic
+- [ ] **Requirements file exists** (unless bug fix)
 - [ ] All code committed
 - [ ] Tests written (unit at minimum)
 - [ ] Local tests pass
@@ -184,6 +185,29 @@ validate_transition() {
 
 ### Verification Commands
 ```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+
+# Check if this is a bug fix (exempt from requirements)
+IS_BUG=$(gh issue view $DEV_ISSUE --json labels --jq '.labels[] | select(.name == "bug" or .name == "type:bug") | .name')
+
+if [ -z "$IS_BUG" ]; then
+  # Not a bug - requirements file REQUIRED
+  ISSUE_BODY=$(gh issue view $DEV_ISSUE --json body --jq '.body')
+  REQ_PATH=$(echo "$ISSUE_BODY" | grep -oE "REQUIREMENTS/[^)\"']+" | head -1)
+
+  if [ -z "$REQ_PATH" ]; then
+    echo "BLOCKED: No requirements file linked in issue"
+    exit 1
+  fi
+
+  if [ ! -f "${PROJECT_ROOT}/${REQ_PATH}" ]; then
+    echo "BLOCKED: Requirements file not found: ${REQ_PATH}"
+    exit 1
+  fi
+
+  echo "Requirements file verified: ${REQ_PATH}"
+fi
+
 # DEV thread closed?
 gh issue view $DEV_ISSUE --json state --jq '.state'
 # Expected: CLOSED
@@ -202,6 +226,20 @@ gh pr list --head $BRANCH --json number --jq '.[0].number' | xargs -I {} gh pr c
 # Or if no PR yet:
 gh run list --branch $BRANCH --limit 1 --json conclusion --jq '.[0].conclusion'
 # Expected: "success"
+```
+
+### If Requirements File Missing
+```markdown
+## BLOCKED: Requirements File Missing
+
+The transition from DEV to TEST is blocked because no requirements file exists.
+
+### Required Action
+1. Contact Athena to create requirements file in REQUIREMENTS/ folder
+2. Link the requirements file in the DEV issue body
+3. Re-run transition check after requirements are added
+
+**Exception**: Bug fix issues do not require requirements files.
 ```
 
 ### If CI is Failing

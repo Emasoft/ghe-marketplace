@@ -99,6 +99,63 @@ When DEV is complete:
 
 ---
 
+## MANDATORY: Requirements File Validation
+
+**CRITICAL**: Before claiming ANY DEV thread, verify a requirements file exists (except bug reports).
+
+### Requirements Check Protocol
+
+```bash
+DEV_ISSUE=<issue number>
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+
+# Step 1: Check if this is a bug report (exempt from requirements)
+IS_BUG=$(gh issue view $DEV_ISSUE --json labels --jq '.labels[] | select(.name == "bug" or .name == "type:bug") | .name')
+
+if [ -n "$IS_BUG" ]; then
+  echo "Bug report detected - requirements file not required"
+  # Proceed with claiming
+else
+  # Step 2: Get issue body and check for requirements link
+  ISSUE_BODY=$(gh issue view $DEV_ISSUE --json body --jq '.body')
+
+  # Check for requirements file link in body
+  if ! echo "$ISSUE_BODY" | grep -q "REQUIREMENTS/"; then
+    echo "ERROR: No requirements file linked in issue body!"
+    echo "Cannot claim DEV thread without requirements."
+    echo ""
+    echo "This issue needs a requirements file in the REQUIREMENTS/ folder."
+    echo "Format: REQUIREMENTS/epic-N/wave-N/REQ-XXX-name.md"
+    echo "Or: REQUIREMENTS/standalone/REQ-XXX-name.md"
+    echo ""
+    echo "Contact Athena to create requirements before claiming."
+    exit 1
+  fi
+
+  # Step 3: Extract requirements file path and verify it exists
+  REQ_PATH=$(echo "$ISSUE_BODY" | grep -oE "REQUIREMENTS/[^)\"']+" | head -1)
+
+  if [ ! -f "${PROJECT_ROOT}/${REQ_PATH}" ]; then
+    echo "ERROR: Requirements file not found: ${REQ_PATH}"
+    echo "The issue links to a requirements file that doesn't exist."
+    echo "Contact Athena to fix this before claiming."
+    exit 1
+  fi
+
+  echo "Requirements file verified: ${REQ_PATH}"
+fi
+```
+
+### Bug Reports Are Exempt
+
+| Issue Type | Requirements File | Reason |
+|------------|------------------|--------|
+| Feature (`type:dev`) | **REQUIRED** | Must define what to build |
+| Epic child (`parent-epic:N`) | **REQUIRED** | Part of planned wave |
+| Bug fix (`bug`, `type:bug`) | **NOT REQUIRED** | Bug describes the problem |
+
+---
+
 ## Thread Claiming Protocol (Claim Locking)
 
 **CRITICAL**: Always verify no other agent has claimed the thread before claiming.
@@ -108,6 +165,9 @@ DEV_ISSUE=<issue number>
 
 # Source avatar helper
 source plugins/ghe/scripts/post-with-avatar.sh
+
+# Step 0: VERIFY REQUIREMENTS FILE FIRST (see above)
+# (Run Requirements Check Protocol before proceeding)
 
 # Step 1: Verify not already claimed (MANDATORY)
 CURRENT=$(gh issue view $DEV_ISSUE --json assignees --jq '.assignees | length')

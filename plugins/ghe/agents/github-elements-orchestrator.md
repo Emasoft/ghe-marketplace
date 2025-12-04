@@ -220,6 +220,67 @@ Examples:
 
 **CRITICAL**: Athena produces **REQUIREMENTS DESIGN FILES**, not code.
 
+### REQUIREMENTS Folder Structure
+
+All requirements files MUST be saved to the `REQUIREMENTS/` folder in the repository root:
+
+```
+project-root/
+├── REQUIREMENTS/
+│   ├── epic-123/                    # Epic-specific folder
+│   │   ├── wave-1/
+│   │   │   ├── REQ-101-user-schema.md
+│   │   │   ├── REQ-102-user-model.md
+│   │   │   └── REQ-103-password-hash.md
+│   │   ├── wave-2/
+│   │   │   ├── REQ-104-login-endpoint.md
+│   │   │   └── REQ-105-logout-endpoint.md
+│   │   └── epic-overview.md         # Epic summary
+│   ├── standalone/                  # Non-epic features
+│   │   ├── REQ-201-dark-mode.md
+│   │   └── REQ-202-export-csv.md
+│   └── README.md                    # Index of all requirements
+└── ...
+```
+
+### File Naming Convention
+
+```
+REQ-<issue-number>-<short-name>.md
+
+Examples:
+- REQ-101-user-schema.md
+- REQ-102-user-model.md
+- REQ-201-dark-mode.md
+```
+
+### CRITICAL: Requirements File is MANDATORY
+
+| Thread Type | Requirements File | Why |
+|-------------|------------------|-----|
+| Epic child issue (`parent-epic:N`) | **REQUIRED** | Must have complete requirements before wave starts |
+| Standalone feature (`type:dev`) | **REQUIRED** | Must define what to build before building |
+| Bug report (`type:bug`) | **NOT REQUIRED** | Bug reports describe the problem, not the solution |
+
+**NO DEV THREAD CAN BE CREATED WITHOUT A REQUIREMENTS FILE** (except bug reports).
+
+### Requirements in Issue Body
+
+When creating a DEV issue, the requirements file MUST be:
+
+1. **LINKED** - Always link to the file in REQUIREMENTS/ folder
+2. **EMBEDDED** - If the file is **less than 10 pages** (~4000 chars), include the full content directly
+
+```markdown
+## Requirements
+
+**File**: [REQ-101-user-schema.md](../REQUIREMENTS/epic-123/wave-1/REQ-101-user-schema.md)
+
+---
+
+[Full requirements content embedded here if < 10 pages]
+```
+
 ### What Athena Does
 
 | Athena DOES | Athena DOES NOT |
@@ -382,26 +443,75 @@ Athena receives notification → Returns to PHASE 1 for next wave
 
 ### Starting a Wave
 
-**PREREQUISITE**: ALL requirements design files must be complete.
+**PREREQUISITE**: ALL requirements design files must be complete AND saved to REQUIREMENTS folder.
 
 ```bash
 EPIC_ISSUE=123
 WAVE_NUM=1
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
 
 # Source avatar helper
 source plugins/ghe/scripts/post-with-avatar.sh
 
-# For EACH requirement file in this wave:
-REQUIREMENT_CONTENT="[The complete requirements design file content]"
-FEATURE_NAME="Database schema for users"
+# Step 1: Verify requirements folder exists
+REQUIREMENTS_DIR="${PROJECT_ROOT}/REQUIREMENTS/epic-${EPIC_ISSUE}/wave-${WAVE_NUM}"
+if [ ! -d "$REQUIREMENTS_DIR" ]; then
+  echo "ERROR: Requirements folder does not exist: $REQUIREMENTS_DIR"
+  echo "Cannot start wave without requirements files!"
+  exit 1
+fi
 
-gh issue create \
-  --title "[DEV] ${FEATURE_NAME}" \
-  --label "type:dev" \
-  --label "parent-epic:${EPIC_ISSUE}" \
-  --label "wave:${WAVE_NUM}" \
-  --label "ready" \
-  --body "${REQUIREMENT_CONTENT}"
+# Step 2: Count requirements files
+REQ_COUNT=$(ls -1 "$REQUIREMENTS_DIR"/REQ-*.md 2>/dev/null | wc -l)
+if [ "$REQ_COUNT" -eq 0 ]; then
+  echo "ERROR: No requirements files found in $REQUIREMENTS_DIR"
+  exit 1
+fi
+
+echo "Found $REQ_COUNT requirements files. Starting wave..."
+
+# Step 3: For EACH requirements file, create an issue
+for REQ_FILE in "$REQUIREMENTS_DIR"/REQ-*.md; do
+  # Extract feature name from filename (REQ-NNN-feature-name.md -> feature-name)
+  FEATURE_NAME=$(basename "$REQ_FILE" .md | sed 's/REQ-[0-9]*-//' | tr '-' ' ')
+
+  # Read requirements content
+  REQ_CONTENT=$(cat "$REQ_FILE")
+  REQ_SIZE=${#REQ_CONTENT}
+
+  # Build issue body with link
+  REQ_RELATIVE_PATH="REQUIREMENTS/epic-${EPIC_ISSUE}/wave-${WAVE_NUM}/$(basename $REQ_FILE)"
+
+  if [ "$REQ_SIZE" -lt 4000 ]; then
+    # Less than ~10 pages: embed full content
+    ISSUE_BODY="## Requirements
+
+**File**: [$(basename $REQ_FILE)](${REQ_RELATIVE_PATH})
+
+---
+
+${REQ_CONTENT}"
+  else
+    # Large file: link only
+    ISSUE_BODY="## Requirements
+
+**File**: [$(basename $REQ_FILE)](${REQ_RELATIVE_PATH})
+
+> Requirements file is large (${REQ_SIZE} chars). See linked file for full content.
+
+### Summary
+$(head -50 "$REQ_FILE" | tail -40)"
+  fi
+
+  # Create the issue
+  gh issue create \
+    --title "[DEV] ${FEATURE_NAME}" \
+    --label "type:dev" \
+    --label "parent-epic:${EPIC_ISSUE}" \
+    --label "wave:${WAVE_NUM}" \
+    --label "ready" \
+    --body "$ISSUE_BODY"
+done
 
 # After creating ALL issues, post to epic
 HEADER=$(avatar_header "Athena")
