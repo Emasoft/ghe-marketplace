@@ -375,6 +375,119 @@ audit_epic() {
 }
 ```
 
+## Wave Completion Notification
+
+**CRITICAL**: When Themis promotes the LAST issue of a wave to release status, it MUST notify the parent epic.
+
+### Detecting Wave Completion
+
+```bash
+ISSUE_NUM=<issue being promoted to release>
+
+# Get parent epic and wave info
+PARENT_EPIC=$(gh issue view $ISSUE_NUM --json labels --jq '.labels[] | select(.name | startswith("parent-epic:")) | .name | split(":")[1]')
+WAVE=$(gh issue view $ISSUE_NUM --json labels --jq '.labels[] | select(.name | startswith("wave:")) | .name | split(":")[1]')
+
+if [ -n "$PARENT_EPIC" ] && [ -n "$WAVE" ]; then
+  # Check if this completes the wave
+  TOTAL_IN_WAVE=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --json number | jq 'length')
+  RELEASED_IN_WAVE=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --label "gate:passed" --json number | jq 'length')
+
+  # Account for the current issue being promoted (not yet labeled gate:passed)
+  RELEASED_IN_WAVE=$((RELEASED_IN_WAVE + 1))
+
+  if [ "$RELEASED_IN_WAVE" -eq "$TOTAL_IN_WAVE" ]; then
+    # This issue completes the wave - MUST notify epic
+    notify_wave_complete "$PARENT_EPIC" "$WAVE"
+  fi
+fi
+```
+
+### Wave Completion Notification Format
+
+```bash
+notify_wave_complete() {
+  EPIC_ISSUE=$1
+  WAVE_NUM=$2
+
+  # Source avatar helper
+  source plugins/ghe/scripts/post-with-avatar.sh
+  HEADER=$(avatar_header "Themis")
+
+  # Get all released issues in this wave
+  RELEASED_ISSUES=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --json number,title,closedAt --jq '.[] | "| #\(.number) | \(.title) | \(.closedAt) |"')
+
+  gh issue comment $EPIC_ISSUE --body "${HEADER}
+## WAVE COMPLETION NOTIFICATION
+
+### Wave
+Wave ${WAVE_NUM} of Epic #${EPIC_ISSUE}
+
+### Status
+**ALL ISSUES COMPLETE** - Wave ${WAVE_NUM} has reached release status.
+
+### Issues Released
+| Issue | Title | Released At |
+|-------|-------|-------------|
+${RELEASED_ISSUES}
+
+### Next Action
+**Athena**: This wave is complete. You may now:
+1. Create the next wave of issues, OR
+2. If all waves are complete, transition epic to epic-complete
+
+### Wave Completion Verified By
+Themis (phase-gate) - $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+```
+
+### Integration with Phase Transitions
+
+When promoting an issue to release (REVIEW PASS → merge):
+
+```bash
+promote_to_release() {
+  ISSUE_NUM=$1
+
+  # Standard promotion steps
+  gh issue edit $ISSUE_NUM --add-label "gate:passed"
+  gh issue close $ISSUE_NUM
+
+  # Check for wave completion
+  check_wave_completion $ISSUE_NUM
+}
+
+check_wave_completion() {
+  ISSUE_NUM=$1
+
+  PARENT_EPIC=$(gh issue view $ISSUE_NUM --json labels --jq '.labels[] | select(.name | startswith("parent-epic:")) | .name | split(":")[1]')
+  WAVE=$(gh issue view $ISSUE_NUM --json labels --jq '.labels[] | select(.name | startswith("wave:")) | .name | split(":")[1]')
+
+  # Skip if not part of an epic/wave
+  if [ -z "$PARENT_EPIC" ] || [ -z "$WAVE" ]; then
+    return 0
+  fi
+
+  # Check wave completion
+  TOTAL=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --json number | jq 'length')
+  RELEASED=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --label "gate:passed" --json number | jq 'length')
+
+  if [ "$RELEASED" -eq "$TOTAL" ]; then
+    notify_wave_complete "$PARENT_EPIC" "$WAVE"
+  fi
+}
+```
+
+### Scope Reminder
+
+| Themis Handles | Themis Does NOT Handle |
+|----------------|------------------------|
+| ALL phase transitions for regular threads | Epic phase transitions (Athena only) |
+| Wave completion notifications to epics | Wave planning or creation |
+| Validating sacred order | Actual development/testing/review work |
+
+---
+
 ## Report Format to Orchestrator
 
 ```markdown

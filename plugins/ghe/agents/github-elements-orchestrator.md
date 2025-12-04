@@ -143,10 +143,25 @@ DEV ───► TEST ───► REVIEW ───► DEV...
 
 ### Two Levels of Work
 
-| Level | Thread Labels | Scope | Manages |
-|-------|---------------|-------|---------|
-| **Regular** | `type:dev`, `type:test`, `type:review` | Single issue | One bug fix, one small feature |
-| **Epic** | `epic-DEV`, `epic-TEST`, `epic-REVIEW` | Group of issues | Multiple related issues as a cohesive plan |
+| Level | Thread Labels | Scope | Managed By |
+|-------|---------------|-------|------------|
+| **Regular** | `type:dev`, `type:test`, `type:review` | Single issue | Hephaestus, Artemis, Hera |
+| **Epic** | `epic-DEV`, `epic-TEST`, `epic-REVIEW` | Group of issues | **ATHENA ONLY** |
+
+### CRITICAL: Athena Owns ALL Epic Phases
+
+**Epic threads are ONLY managed by Athena**, regardless of phase:
+
+| Phase | Regular Thread | Epic Thread |
+|-------|---------------|-------------|
+| DEV | Hephaestus (actual coding) | **Athena** (planning what to code) |
+| TEST | Artemis (actual testing) | **Athena** (planning what to test) |
+| REVIEW | Hera (actual reviewing) | **Athena** (setting review standards) |
+
+**WHY?** Epic threads are about **PLANNING**, not **EXECUTION**:
+- `epic-DEV`: Planning WHAT features to develop, breaking into issues, organizing into WAVES
+- `epic-TEST`: Planning WHAT tests to create/execute, test coverage strategy
+- `epic-REVIEW`: Setting review expectations, quality standards, acceptance criteria
 
 ### When to Use Epics (Meta-Level)
 
@@ -167,21 +182,23 @@ Epics go through the same 3 phases, but at **planning/coordination level**:
 ```
 epic-DEV ───► epic-TEST ───► epic-REVIEW
    │              │              │
-   │              │              └─► PASS? Merge all child issues
-   │              │                  FAIL? Back to epic-DEV
+   │              │              └─► PASS? → epic-complete
+   │              │                  FAIL? → back to epic-DEV
    │              │
-   │              └─► Coordinate testing across child issues
+   │              └─► Define test strategies for all waves
    │
-   └─► Plan and spawn child issues, coordinate development
+   └─► Plan waves, spawn child issues, coordinate development
+
+ALL PHASES MANAGED BY ATHENA (never by Hephaestus/Artemis/Hera)
 ```
 
 ### Epic Labels
 
-| Phase Label | Purpose |
-|-------------|---------|
-| `epic-DEV` | Planning phase: design, spawn child issues, coordinate development |
-| `epic-TEST` | Testing phase: coordinate testing across all child issues |
-| `epic-REVIEW` | Review phase: evaluate all child issues together, final verdict |
+| Phase Label | Purpose | Managed By |
+|-------------|---------|------------|
+| `epic-DEV` | Planning phase: design, spawn waves, define requirements | **Athena** |
+| `epic-TEST` | Test planning: define test coverage, coordinate test waves | **Athena** |
+| `epic-REVIEW` | Review planning: set quality bar, acceptance criteria | **Athena** |
 
 ### Epic Naming Convention
 
@@ -199,9 +216,129 @@ Examples:
 
 ---
 
+## WAVE-Based Development
+
+**CRITICAL**: Epics organize work into WAVES - groups of related issues that progress together.
+
+### What is a WAVE?
+
+A WAVE is a batch of child issues that:
+1. Can be developed in parallel
+2. Have no blocking dependencies on each other
+3. Must ALL complete before the next wave starts
+
+```
+EPIC: User Authentication System
+│
+├── WAVE 1 (Foundation)
+│   ├── Issue #101: Database schema for users
+│   ├── Issue #102: User model and validation
+│   └── Issue #103: Password hashing utilities
+│
+├── WAVE 2 (Core Auth) - depends on WAVE 1
+│   ├── Issue #104: Login endpoint
+│   ├── Issue #105: Logout endpoint
+│   └── Issue #106: Session management
+│
+└── WAVE 3 (Advanced) - depends on WAVE 2
+    ├── Issue #107: Password reset flow
+    ├── Issue #108: Two-factor authentication
+    └── Issue #109: OAuth integration
+```
+
+### WAVE Labels
+
+| Label | Purpose |
+|-------|---------|
+| `wave:1` | First wave of issues |
+| `wave:2` | Second wave (depends on wave 1 completion) |
+| `wave:N` | Nth wave |
+| `parent-epic:123` | Links child issue to parent epic |
+
+### WAVE Lifecycle
+
+```
+Athena creates WAVE 1 issues
+         │
+         ▼
+Child issues go through normal DEV → TEST → REVIEW
+(managed by Hephaestus, Artemis, Hera respectively)
+         │
+         ▼
+Themis promotes each issue through phases
+         │
+         ▼
+When LAST issue of WAVE 1 reaches RELEASE status
+         │
+         ▼
+Themis posts WAVE COMPLETION notification to epic thread
+         │
+         ▼
+Athena receives notification, starts planning WAVE 2
+         │
+         ▼
+Repeat until all waves complete
+         │
+         ▼
+Epic transitions to epic-complete
+```
+
+### WAVE Completion Notification (from Themis)
+
+When Themis promotes the LAST issue of a wave to release, it MUST post to the epic:
+
+```markdown
+## WAVE COMPLETION NOTIFICATION
+
+### Wave
+Wave 1 of Epic #123
+
+### Status
+ALL ISSUES COMPLETE
+
+### Issues Released
+| Issue | Title | Released At |
+|-------|-------|-------------|
+| #101 | Database schema | 2025-01-15 |
+| #102 | User model | 2025-01-16 |
+| #103 | Password hashing | 2025-01-16 |
+
+### Next Action
+Athena: Begin planning WAVE 2
+```
+
+### Athena's Response to WAVE Completion
+
+When Athena receives a wave completion notification:
+
+```bash
+EPIC_ISSUE=123
+COMPLETED_WAVE=1
+NEXT_WAVE=2
+
+# Post wave completion acknowledgment
+HEADER=$(avatar_header "Athena")
+gh issue comment $EPIC_ISSUE --body "${HEADER}
+## Wave ${COMPLETED_WAVE} Complete
+
+All issues in Wave ${COMPLETED_WAVE} have reached release status.
+
+### Planning Wave ${NEXT_WAVE}
+Now analyzing dependencies and planning the next batch of issues...
+
+### Wave ${NEXT_WAVE} Issues (Draft)
+- [ ] #TBD - [Feature 1]
+- [ ] #TBD - [Feature 2]
+- [ ] #TBD - [Feature 3]
+
+Will create these issues and update this checklist."
+```
+
+---
+
 ## Epic Creation Protocol
 
-**CRITICAL**: Epics coordinate GROUPS of issues, never single issues (unless the group has only one element, which is rare for epics).
+**CRITICAL**: Epics coordinate GROUPS of issues via WAVES. Athena owns ALL epic phases.
 
 ### When to Create an Epic
 
@@ -214,105 +351,200 @@ Examples:
 | Web server changes | Create epic | `epic-webserver` |
 | Single small bug/feature | **NO EPIC** - use regular thread | `type:dev` directly |
 
-### Epic Creation Commands
+### Epic Creation Commands (Athena Only)
 
 ```bash
 # Create epic thread (meta-level planning)
 EPIC_TYPE="epic-feature"
 EPIC_TITLE="User Authentication System"
 
+# Source avatar helper
+source plugins/ghe/scripts/post-with-avatar.sh
+HEADER=$(avatar_header "Athena")
+
 gh issue create \
   --title "[EPIC-DEV] ${EPIC_TYPE}: ${EPIC_TITLE}" \
   --label "epic-DEV" \
   --label "${EPIC_TYPE}" \
   --label "ready" \
-  --body "$(cat <<'EOF'
+  --body "${HEADER}
 ## Epic: ${EPIC_TITLE}
 
-### Scope
-This epic coordinates the development of the complete ${EPIC_TITLE}.
+### Phase
+**EPIC-DEV**: Planning what to develop
 
-### Child Issues to Create
-- [ ] #TBD - Login functionality
-- [ ] #TBD - Logout functionality
-- [ ] #TBD - Password reset
-- [ ] #TBD - Two-factor authentication
+### Scope
+This epic coordinates the complete ${EPIC_TITLE} feature.
+
+### WAVE 1 (Foundation) - To Be Created
+- [ ] #TBD - Database schema for users
+- [ ] #TBD - User model and validation
+- [ ] #TBD - Password hashing utilities
+
+### WAVE 2 (Core Auth) - After Wave 1 Complete
+- [ ] #TBD - Login endpoint
+- [ ] #TBD - Logout endpoint
 - [ ] #TBD - Session management
 
-### Phase
-EPIC-DEV: Planning and coordinating development
+### WAVE 3 (Advanced) - After Wave 2 Complete
+- [ ] #TBD - Password reset flow
+- [ ] #TBD - Two-factor authentication
 
-### Success Criteria
-All child issues pass their individual REVIEW phases.
-EOF
-)"
+### Managed By
+**Athena** (all epic phases)
+
+### Child Issues Managed By
+- DEV phase: Hephaestus
+- TEST phase: Artemis
+- REVIEW phase: Hera
+- Phase transitions: Themis"
 ```
 
-### Spawning Child Issues from Epic
+### Creating a WAVE (Athena Only)
 
 ```bash
 EPIC_ISSUE=<epic issue number>
-EPIC_LABEL="parent-epic:${EPIC_ISSUE}"
+WAVE_NUM=1
 
-# Create child issue (regular thread, linked to epic)
-gh issue create \
-  --title "[DEV] Login functionality" \
-  --label "type:dev" \
-  --label "$EPIC_LABEL" \
-  --label "ready" \
-  --body "Part of epic #${EPIC_ISSUE}. Implements login functionality."
+# Create all issues for WAVE 1
+for FEATURE in "Database schema" "User model" "Password hashing"; do
+  gh issue create \
+    --title "[DEV] ${FEATURE}" \
+    --label "type:dev" \
+    --label "parent-epic:${EPIC_ISSUE}" \
+    --label "wave:${WAVE_NUM}" \
+    --label "ready" \
+    --body "Part of Epic #${EPIC_ISSUE}, Wave ${WAVE_NUM}.
 
-# Update epic checklist
-gh issue comment $EPIC_ISSUE --body "Created child issue #NEW_ISSUE for Login functionality"
+## Feature
+${FEATURE}
+
+## Parent Epic
+#${EPIC_ISSUE}
+
+## Wave
+Wave ${WAVE_NUM} - Foundation
+
+## Managed By
+- DEV: Hephaestus
+- TEST: Artemis
+- REVIEW: Hera
+- Phase transitions: Themis"
+done
+
+# Update epic with created issues
+HEADER=$(avatar_header "Athena")
+gh issue comment $EPIC_ISSUE --body "${HEADER}
+## Wave ${WAVE_NUM} Created
+
+### Issues
+- #NEW1 - Database schema
+- #NEW2 - User model
+- #NEW3 - Password hashing
+
+### Next Steps
+These issues will now go through normal DEV → TEST → REVIEW cycles.
+Themis will notify this epic when all Wave ${WAVE_NUM} issues reach release."
 ```
 
-### Epic Tracking
+### Wave Tracking (Athena Only)
 
 ```bash
-# Find all child issues for an epic
 EPIC_ISSUE=123
-gh issue list --label "parent-epic:${EPIC_ISSUE}" --json number,title,labels,state
+WAVE_NUM=1
 
-# Check epic progress
-TOTAL=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --json number | jq 'length')
-CLOSED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --state closed --json number | jq 'length')
-echo "Epic #${EPIC_ISSUE} progress: ${CLOSED}/${TOTAL} issues complete"
+# Find all issues in a specific wave
+gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --json number,title,state,labels
 
-# Verify all child issues passed REVIEW before epic can pass
-FAILED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "gate:failed" --json number | jq 'length')
-if [ "$FAILED" -gt 0 ]; then
-  echo "CANNOT PASS EPIC: $FAILED child issues failed REVIEW"
+# Check wave progress
+TOTAL=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --json number | jq 'length')
+RELEASED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --label "gate:passed" --json number | jq 'length')
+echo "Wave ${WAVE_NUM} progress: ${RELEASED}/${TOTAL} issues released"
+
+# Check if wave is complete (all issues have gate:passed)
+if [ "$RELEASED" -eq "$TOTAL" ]; then
+  echo "WAVE ${WAVE_NUM} COMPLETE - ready for next wave"
 fi
 ```
 
-### Epic Phase Transitions
+### Epic Phase Transitions (Athena Only)
+
+Epic phases transition based on PLANNING completion, not development completion:
 
 ```bash
-# Transition epic from DEV to TEST
 EPIC_ISSUE=<epic issue number>
 
-# Verify all child DEV threads are closed
-CHILD_DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "type:dev" --state open --json number | jq 'length')
-if [ "$CHILD_DEV_OPEN" -gt 0 ]; then
-  echo "Cannot transition: $CHILD_DEV_OPEN child DEV threads still open"
-  exit 1
-fi
+# Transition epic-DEV to epic-TEST
+# Condition: All waves are PLANNED (not necessarily developed)
+# Athena has defined WHAT to develop in each wave
 
-# Close epic-DEV, create epic-TEST
-gh issue close $EPIC_ISSUE
+# Source avatar helper
+source plugins/ghe/scripts/post-with-avatar.sh
+HEADER=$(avatar_header "Athena")
+
 gh issue edit $EPIC_ISSUE --remove-label "epic-DEV" --add-label "epic-TEST"
-gh issue reopen $EPIC_ISSUE
-gh issue comment $EPIC_ISSUE --body "## Transitioned to EPIC-TEST
-All child DEV threads complete. Beginning coordinated testing phase."
+gh issue comment $EPIC_ISSUE --body "${HEADER}
+## Transitioned to EPIC-TEST
+
+### What This Means
+Development planning is complete. Now planning TEST strategy.
+
+### epic-TEST Planning
+- Define test coverage requirements for each wave
+- Specify acceptance criteria
+- Coordinate test execution across waves
+
+### Note
+Child issues continue their normal cycles. This transition is about Athena's planning focus, not development status."
 ```
 
-### Epic Completion
+### Epic Completion (Athena Only)
 
-When epic-REVIEW passes:
-1. Verify ALL child issues have `gate:passed` label
-2. Close the epic thread with `epic-complete` label
-3. Epic thread becomes the permanent record of the feature group
-4. All child PRs should already be merged (each passed their own REVIEW)
+When ALL waves are complete (all child issues have `gate:passed`):
+
+```bash
+EPIC_ISSUE=123
+
+# Verify ALL child issues have passed
+TOTAL=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --json number | jq 'length')
+PASSED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "gate:passed" --json number | jq 'length')
+
+if [ "$PASSED" -eq "$TOTAL" ]; then
+  # Mark epic complete
+  gh issue edit $EPIC_ISSUE \
+    --remove-label "epic-DEV" \
+    --remove-label "epic-TEST" \
+    --remove-label "epic-REVIEW" \
+    --add-label "epic-complete"
+
+  gh issue close $EPIC_ISSUE
+
+  HEADER=$(avatar_header "Athena")
+  gh issue comment $EPIC_ISSUE --body "${HEADER}
+## EPIC COMPLETE
+
+### Summary
+All ${TOTAL} child issues have passed REVIEW and been released.
+
+### Waves Completed
+- Wave 1: [X issues]
+- Wave 2: [Y issues]
+- Wave 3: [Z issues]
+
+### Final Status
+This epic is now complete. The epic thread serves as the permanent record."
+fi
+```
+
+### Agent Responsibilities Summary
+
+| Agent | Handles | Never Handles |
+|-------|---------|---------------|
+| **Athena** | ALL epic phases (epic-DEV, epic-TEST, epic-REVIEW), wave planning | Single issue execution |
+| **Hephaestus** | Regular `type:dev` threads | Epic threads |
+| **Artemis** | Regular `type:test` threads | Epic threads |
+| **Hera** | Regular `type:review` threads | Epic threads |
+| **Themis** | ALL phase transitions, wave completion notifications | Execution work |
 
 ---
 
