@@ -6,6 +6,7 @@ name: "GHE: CI Failure"
 
 on:
   workflow_run:
+    workflows: ["Claude Code", "Claude Code Review"]
     types: [completed]
 
 concurrency:
