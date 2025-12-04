@@ -307,7 +307,33 @@ if [ "$TEST_OPEN" -gt 0 ]; then
 fi
 ```
 
-## Thread Claiming Protocol
+## Automatic Memory-Sync Triggers
+
+**MANDATORY**: Spawn `memory-sync` agent automatically after:
+
+| Action | Trigger |
+|--------|---------|
+| Thread claim | After successful claim |
+| Checkpoint post | After posting any checkpoint |
+| Verdict rendered | After PASS or FAIL |
+| Bug triage complete | After validating/rejecting bug report |
+| PR merged | After successful merge to main |
+| Thread close | After closing REVIEW thread |
+
+```bash
+# After any major action, spawn memory-sync
+# Example: After verdict
+echo "SPAWN memory-sync: REVIEW verdict rendered - [PASS/FAIL]"
+
+# Example: After merge
+echo "SPAWN memory-sync: PR merged to main"
+```
+
+---
+
+## Thread Claiming Protocol (Claim Locking)
+
+**CRITICAL**: Always verify no other agent has claimed the thread before claiming.
 
 ```bash
 REVIEW_ISSUE=<issue number>

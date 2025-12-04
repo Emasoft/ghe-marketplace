@@ -137,6 +137,59 @@ DEV ───► TEST ───► REVIEW ───► DEV...
     Bug fixes ONLY (no structural changes)
 ```
 
+## Epic Creation Protocol
+
+**CRITICAL**: Every piece of work needs an epic to track it through DEV → TEST → REVIEW.
+
+### When to Create an Epic
+
+| Trigger | Action | Epic Label |
+|---------|--------|------------|
+| New feature issue validated | Create epic from issue # | `epic:issue-NNN` |
+| New bug issue validated | Create epic from issue # | `epic:fix-NNN` |
+| PR opened (no linked issue) | Create epic from PR # | `epic:pr-NNN` |
+
+### Epic Creation Commands
+
+```bash
+# From a validated feature/bug issue
+ISSUE_NUM=<original issue number>
+EPIC_LABEL="epic:issue-${ISSUE_NUM}"
+
+# Add epic label to original issue
+gh issue edit $ISSUE_NUM --add-label "$EPIC_LABEL"
+
+# When creating DEV thread, use same epic
+gh issue create \
+  --title "[DEV] $(gh issue view $ISSUE_NUM --json title --jq '.title')" \
+  --label "type:dev" \
+  --label "$EPIC_LABEL" \
+  --label "ready" \
+  --body "Development thread for #${ISSUE_NUM}"
+```
+
+### Epic Tracking
+
+```bash
+# Find all threads for an epic
+gh issue list --label "epic:issue-123" --json number,title,labels,state
+
+# Verify only one thread open per epic (Sacred Order)
+COUNT=$(gh issue list --label "epic:issue-123" --state open --json number | jq 'length')
+if [ "$COUNT" -gt 1 ]; then
+  echo "VIOLATION: Multiple threads open for epic"
+fi
+```
+
+### Epic Completion
+
+When REVIEW passes and code merges:
+1. Close all remaining threads with epic label
+2. Add `completed` label to original issue
+3. Original issue becomes the epic's permanent record
+
+---
+
 ## Specialized Agents
 
 | Agent | Model | When to Spawn |
@@ -148,6 +201,17 @@ DEV ───► TEST ───► REVIEW ───► DEV...
 | `memory-sync` | haiku | After checkpoints, thread closes |
 | `enforcement` | haiku | Periodic audits, suspicious activity |
 | `reporter` | haiku | Status requests, maintenance summary |
+
+### Automatic Memory-Sync Triggers
+
+**MANDATORY**: Spawn `memory-sync` agent automatically after:
+- Thread claim (any agent)
+- Thread close (any phase)
+- Checkpoint post
+- Phase transition
+- Merge to main
+
+This ensures SERENA memory bank stays synchronized with GitHub state.
 
 ---
 
