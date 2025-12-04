@@ -6,7 +6,7 @@
 
 **Persistent Memory for Claude Code**
 
-[![Version](https://img.shields.io/badge/version-0.1.12--alpha-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.1.12-alpha)
+[![Version](https://img.shields.io/badge/version-0.2.1--alpha-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.2.1-alpha)
 [![Release](https://img.shields.io/github/v/release/Emasoft/ghe-marketplace?include_prereleases&label=release)](https://github.com/Emasoft/ghe-marketplace/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
@@ -288,11 +288,11 @@ gh auth login
 
 ## Plugin Contents
 
-### GHE v0.1.12-alpha
+### GHE v0.2.1-alpha
 
 | Component | Count | Description |
 |-----------|-------|-------------|
-| Agents | 10 | DEV/TEST/REVIEW managers, orchestrator, enforcement |
+| Agents | 12 | DEV/TEST/REVIEW managers, orchestrator, moderation, routing |
 | Skills | 6 | ghe-status, ghe-claim, ghe-checkpoint, ghe-transition, ghe-report |
 | Commands | 1 | `/ghe:setup` |
 | Hooks | 1 | SessionStart for context recovery |
@@ -308,9 +308,11 @@ gh auth login
 | <img src="https://robohash.org/themis.png?size=77x77&set=set3" width="77"/> | **Themis** | `ghe:phase-gate` | Upholds rules and judges phase transitions |
 | <img src="https://robohash.org/mnemosyne.png?size=77x77&set=set3" width="77"/> | **Mnemosyne** | `ghe:memory-sync` | Records and preserves knowledge |
 | <img src="https://robohash.org/ares.png?size=77x77&set=set3" width="77"/> | **Ares** | `ghe:enforcement` | Maintains order and enforces boundaries |
-| <img src="https://robohash.org/cerberus.png?size=77x77&set=set3" width="77"/> | **Hermes** | `ghe:reporter` | Messenger delivering status reports |
+| <img src="https://robohash.org/hermes.png?size=77x77&set=set3" width="77"/> | **Hermes** | `ghe:reporter` | Messenger delivering status reports |
 | <img src="https://robohash.org/chronos.png?size=77x77&set=set3" width="77"/> | **Chronos** | `ghe:ci-issue-opener` | Sounds the alarm when CI fails |
-| <img src="https://robohash.org/hermes.png?size=77x77&set=set3" width="77"/> | **Cerberus** | `ghe:pr-checker` | Guards the threshold, validates PRs |
+| <img src="https://robohash.org/cerberus.png?size=77x77&set=set3" width="77"/> | **Cerberus** | `ghe:pr-checker` | Guards the threshold, validates PRs |
+| <img src="https://robohash.org/argos.png?size=77x77&set=set3" width="77"/> | **Argos** | `ghe:ares` | Watchman for moderation and flagged content |
+| <img src="https://robohash.org/iris.png?size=77x77&set=set3" width="77"/> | **Iris** | `ghe:hermes` | Routes messages and bugs between agents |
 
 ### Skills
 

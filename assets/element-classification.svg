@@ -68,7 +68,7 @@
   <text x="620" y="198" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Code Reviews</text>
   <text x="620" y="221" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Test Results</text>
   <text x="620" y="244" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Feedback</text>
-  <text x="620" y="267" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Verdicts</text>
+  <text x="620" y="267" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Benchmarks</text>
   <text x="620" y="290" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Critiques</text>
   <text x="620" y="313" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Issues Found</text>
   <text x="620" y="336" fill="#c9d1d9" font-family="system-ui, -apple-system, sans-serif" font-size="13">- Concerns</text>
