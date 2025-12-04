@@ -160,17 +160,32 @@ Phase transition rules and one-thread-at-a-time enforcement remain active.
 
 ## Setup Requirements
 
-### 1. Repository Secret
+### Recommended: Use `/install-github-app` Command
 
-Add to **Settings → Secrets and variables → Actions**:
+The easiest and most reliable way to set up Claude GitHub Action:
 
-| Secret | Description |
-|--------|-------------|
-| `ANTHROPIC_API_KEY` | Your API key (sk-ant-...) |
+```
+/install-github-app https://github.com/<owner>/<repo>
+```
 
-### 2. Workflow File
+This command (run by the user in Claude Code chat):
+1. Guides through GitHub App authentication
+2. Creates optimized workflow files automatically
+3. Configures secrets based on your Claude subscription
+4. Creates a PR for you to review and merge
 
-Create `.github/workflows/claude.yml`:
+**Benefits over manual setup:**
+
+| Feature | Manual | `/install-github-app` |
+|---------|--------|----------------------|
+| Secret handling | Manual `ANTHROPIC_API_KEY` | Auto `CLAUDE_CODE_OAUTH_TOKEN` |
+| Permissions | Broad write access | Minimal read-only (more secure) |
+| PR reviews | Not included | Auto review workflow included |
+| Subscription | Manual configuration | Auto-detected from your plan |
+
+### What the Command Creates
+
+**1. `.github/workflows/claude.yml`** - Interactive mode (responds to @claude)
 
 ```yaml
 name: Claude Code
@@ -178,14 +193,12 @@ name: Claude Code
 on:
   issue_comment:
     types: [created]
-  issues:
-    types: [opened, edited]
   pull_request_review_comment:
     types: [created]
+  issues:
+    types: [opened, assigned]
   pull_request_review:
     types: [submitted]
-  pull_request:
-    types: [opened, synchronize]
 
 jobs:
   claude:
@@ -193,30 +206,69 @@ jobs:
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && github.event.action == 'opened') ||
-      (github.event_name == 'pull_request' && github.event.action == 'opened')
-
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
       actions: read
-
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          plugins: ./plugins/ghe
-          timeout_minutes: 30
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: |
+            actions: read
 ```
 
-### 3. Plugin Location
+**2. `.github/workflows/claude-code-review.yml`** - Auto PR reviews
+
+```yaml
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Please review this pull request and provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
+```
+
+### Alternative: Manual Setup
+
+If you prefer manual configuration, add to **Settings → Secrets → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `ANTHROPIC_API_KEY` | Your API key (sk-ant-...) |
+
+Then create workflow files manually (see above examples, but use `anthropic_api_key` instead of `claude_code_oauth_token`).
+
+### Plugin Location
 
 The GHE plugin must be at `./plugins/ghe` relative to repository root.
 
@@ -249,9 +301,17 @@ The GHE plugin must be at `./plugins/ghe` relative to repository root.
 ### Claude Not Responding
 
 1. Check workflow is triggered (Actions tab)
-2. Verify `ANTHROPIC_API_KEY` secret is set
+2. Verify secret is set:
+   - `CLAUDE_CODE_OAUTH_TOKEN` (if used `/install-github-app`)
+   - `ANTHROPIC_API_KEY` (if manual setup)
 3. Confirm @claude mention is in the comment
 4. Check for workflow errors in run logs
+
+### OIDC Token Error
+
+If you see "Could not fetch an OIDC token" error:
+- Ensure `id-token: write` permission is in workflow
+- Verify the PR from `/install-github-app` was merged
 
 ### Plugin Not Loading
 
@@ -264,6 +324,16 @@ The GHE plugin must be at `./plugins/ghe` relative to repository root.
 1. Confirm agents are in `plugins/ghe/agents/`
 2. Check agent frontmatter is valid YAML
 3. Verify plugin.json includes agents directory
+
+### Re-running Setup
+
+If you need to reconfigure Claude GitHub Action:
+
+```
+/install-github-app https://github.com/<owner>/<repo>
+```
+
+This creates a new PR that updates existing workflow files.
 
 ## References
 

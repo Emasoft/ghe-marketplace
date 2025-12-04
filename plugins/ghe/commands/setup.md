@@ -276,6 +276,59 @@ Next steps:
 2. Or "lets work on this new issue" to create and track a new one
 ```
 
+## Step 10: Claude GitHub Action Setup
+
+Ask user if they want to enable Claude GitHub Action for @claude mentions:
+
+```json
+{
+  "questions": [
+    {
+      "question": "Enable Claude GitHub Action for @claude mentions in issues/PRs?",
+      "header": "Claude Action",
+      "multiSelect": false,
+      "options": [
+        {"label": "Yes", "description": "Recommended - enables @claude in issues and auto PR reviews"},
+        {"label": "Skip", "description": "Can be set up later with /install-github-app"}
+      ]
+    }
+  ]
+}
+```
+
+If user selects "Yes", display:
+
+```
+Claude GitHub Action Setup
+==========================
+
+To enable @claude mentions in issues and PRs, you need to run
+a special command that only YOU (the repo owner) can execute:
+
+  /install-github-app https://github.com/<owner>/<repo>
+
+This command will:
+1. Guide you through GitHub App authentication
+2. Create workflow files (.github/workflows/claude.yml)
+3. Automatically configure secrets based on your subscription
+4. Create a PR for you to review and merge
+
+IMPORTANT: The assistant cannot run this command for you.
+You must type it yourself in the chat.
+
+After running the command:
+1. Review the PR it creates
+2. Merge the PR
+3. @claude mentions will be active!
+```
+
+If user selects "Skip", display:
+
+```
+Skipping Claude GitHub Action setup.
+You can enable it later by typing: /install-github-app <your-repo-url>
+```
+
 ## Error Handling
 
 - If no git repos found: Tell user to initialize a repo first
