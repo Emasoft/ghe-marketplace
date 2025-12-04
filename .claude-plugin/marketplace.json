@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "GHE (GitHub-Elements) - Automated project management for Claude Code using GitHub Issues as persistent memory",
-    "version": "0.2.1-alpha"
+    "version": "0.2.2-alpha"
   },
   "plugins": [
     {
       "name": "ghe",
       "source": "./plugins/ghe",
-      "version": "0.2.1-alpha",
+      "version": "0.2.2-alpha",
       "description": "GHE (GitHub-Elements) - Automated project management for Claude Code. Uses GitHub Issues as persistent memory for multi-session work tracking, context survival, and team collaboration.",
       "author": {
         "name": "Emasoft",
