@@ -1921,6 +1921,70 @@ Note: No priority labels. No time-based labels. Order is determined by wave memb
 
 ---
 
+## Argos Panoptes Labels
+
+**Argos Panoptes** is the 24/7 GitHub Actions automation that triages incoming work while agents are offline. Argos uses specific labels to queue work for the appropriate specialist agents.
+
+### Session Startup: Check Argos-Queued Work FIRST
+
+When starting any session, check for Argos-queued work before handling existing in-progress threads:
+
+```bash
+# Find all Argos-queued work (ready for processing)
+gh issue list --state open --label "ready" --json number,title,labels | \
+  jq -r '.[] | "\(.number): \(.title) [\(.labels | map(.name) | join(", "))]"'
+
+# Priority order:
+# 1. URGENT + security → Hephaestus (DEV) immediately
+# 2. ci-failure → Chronos
+# 3. needs-moderation → Ares (enforcement)
+# 4. source:pr + phase:review → Hera (REVIEW)
+# 5. bug + phase:review → Hera (REVIEW)
+# 6. feature + phase:dev → Hephaestus (DEV)
+```
+
+### Argos Label Reference
+
+| Label | Set By | Meaning | Route To |
+|-------|--------|---------|----------|
+| `ready` | Argos | Validated, ready for work | Check phase label for specialist |
+| `phase:dev` | Argos | Needs development work | Hephaestus (dev-thread-manager) |
+| `phase:review` | Argos | Needs review/triage | Hera (review-thread-manager) |
+| `source:pr` | Argos | Originated from a PR | Hera (review-thread-manager) |
+| `source:ci` | Argos | Originated from CI failure | Chronos (ci-issue-opener) |
+| `needs-info` | Argos | Awaiting user response | Wait for response |
+| `needs-moderation` | Argos | Policy violation flagged | Ares (enforcement) |
+| `urgent` | Argos | High priority work | Handle immediately |
+| `security` | Argos | Security vulnerability | Hephaestus + urgent |
+| `ci-failure` | Argos | CI/CD workflow failed | Chronos |
+| `bot-pr` | Argos | PR from Dependabot | Hera (may auto-merge) |
+| `blocked` | Argos | Critical severity | Escalate to orchestrator |
+| `feature` / `enhancement` | Argos | Feature request validated | Hephaestus |
+| `bug` | Argos | Bug report validated | Hera |
+
+### Recognizing Argos Comments
+
+Argos Panoptes signs all comments with its identity:
+
+```
+Argos Panoptes (The All-Seeing)
+Avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+```
+
+When you see an Argos comment, the issue has been triaged. Proceed with your phase-specific duties.
+
+### Argos Does NOT:
+
+- Claim issues (only queues them)
+- Post checkpoints (only triages)
+- Transition phases (only labels)
+- Write code (only validates)
+- Render verdicts (only flags)
+
+Argos queues. Specialists execute.
+
+---
+
 ## Safeguards System
 
 GHE includes a comprehensive safeguards system to prevent errors and enable recovery.

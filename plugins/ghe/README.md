@@ -49,6 +49,8 @@ GitHub Elements provides a complete system for:
 
 ### Specialized Agents
 
+> **"Enforce no Time, Only Order"**
+
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | `github-elements-orchestrator` | opus | Central coordinator |
@@ -61,6 +63,138 @@ GitHub Elements provides a complete system for:
 | `ci-issue-opener` | haiku | CI failure issues |
 | `pr-checker` | haiku | PR requirements |
 | `reporter` | haiku | Status reports |
+
+---
+
+## Argos Panoptes - The All-Seeing Guardian
+
+> *"Argos Panoptes"* (Ancient Greek: Ἄργος Πανόπτης, "All-seeing Argos") was a giant with a hundred eyes in Greek mythology. He was a faithful guardian who never slept, as some of his eyes were always awake.
+
+### What is Argos Panoptes?
+
+**Argos Panoptes is NOT a Claude Code agent.** It is powered by the **Claude GitHub App** and runs as GitHub Actions workflows that monitor your repository 24/7, even when you are offline.
+
+While the specialized agents (Hera, Hephaestus, Ares, Chronos) are local Claude Code subagents that require you to be online with an active Claude Code session, Argos Panoptes operates autonomously through GitHub's infrastructure.
+
+### What Argos Does
+
+Argos Panoptes serves as your repository's tireless sentinel:
+
+1. **Monitors Events 24/7**: Watches for PRs, issues, comments, security alerts, and CI failures
+2. **Triages Incoming Work**: Validates submissions, asks for missing information, applies labels
+3. **Queues Work for Specialists**: Prepares issues for the appropriate agent to handle when you're online
+4. **Maintains Order**: Prevents spam, flags policy violations, tracks CI health
+5. **Never Impersonates**: Always identifies itself as "Argos Panoptes (The All-Seeing)" and clearly states which specialist agent will handle the work
+
+### How Argos Differs from Local Agents
+
+| Aspect | Argos Panoptes | Local Agents (Hera, Hephaestus, etc.) |
+|--------|----------------|---------------------------------------|
+| **Powered by** | Claude GitHub App | Claude Code CLI |
+| **Runs when** | 24/7 (GitHub Actions) | Only during active sessions |
+| **Can do** | Triage, label, comment, queue | Full development, testing, review |
+| **Identity** | Own avatar and banner | Own avatars and banners |
+| **Autonomy** | High (automated) | Supervised (you're online) |
+
+### Installing Argos Panoptes
+
+Argos requires the Claude GitHub App to be installed on your repository.
+
+#### Step 1: Install the Claude GitHub App
+
+Run this command in Claude Code:
+
+```
+/install-github-app
+```
+
+This command will:
+- Guide you through GitHub OAuth authentication
+- Create a pull request to add the Claude workflow to your repository
+- Automatically configure the `CLAUDE_CODE_OAUTH_TOKEN` secret based on your subscription
+
+**Note**: Only the repository owner can run this command. The setup varies based on your Anthropic subscription (Max Pro flat-rate, usage-based credits, etc.).
+
+#### Step 2: Copy the GHE Workflow Files
+
+After the Claude GitHub App is installed, copy the Argos workflows to your repository:
+
+```bash
+# From your repository root
+mkdir -p .github/workflows
+cp path/to/ghe-plugin/examples/github-actions/ghe-*.yml .github/workflows/
+```
+
+Or manually copy each workflow file from the `examples/github-actions/` directory.
+
+#### Step 3: Verify Installation
+
+Create a test issue with the `bug` label to verify Argos responds. You should see a comment from Claude with the Argos Panoptes avatar asking for bug report details or confirming the issue is ready for review.
+
+### Events Argos Reacts To
+
+When you're offline, Argos automatically processes these events and queues work for your next session:
+
+| Event | Trigger | What Argos Does | Queued For |
+|-------|---------|-----------------|------------|
+| **A: PR Opened** | Someone opens a pull request | Creates a REVIEW issue linking to the PR, adds `phase:review` and `source:pr` labels, comments on the PR with the queue issue link | Hera |
+| **B: Bug Report** | Someone opens an issue with `bug` label | Validates the bug report template (description, steps to reproduce, expected vs actual behavior, environment). If complete: adds `phase:review` and `ready` labels. If incomplete: adds `needs-info` label and politely asks for missing details | Hera |
+| **C: Feature Request** | Someone opens an issue with `enhancement` or `feature` label | Validates the feature request (description, use case). If complete: adds `phase:dev` and `ready` labels. If incomplete: adds `needs-info` label and asks for clarification | Hephaestus |
+| **D: Policy Violation** | Someone posts a comment with harassment, threats, spam, or discrimination | Issues a warning (maximum 3 warnings per user). After 3 warnings: adds `needs-moderation` label for human review. Very conservative - when uncertain, does nothing | Ares |
+| **E: SPAM Detected** | Someone posts obvious spam (requires 3+ indicators) | Closes the issue with `spam` label. Extremely conservative - only acts on obvious spam (new account + no activity + promotional links + crypto/gambling content). False positives are unacceptable | - |
+| **F: Security Alert** | GitHub detects a Dependabot alert, code scanning alert, or secret scanning alert | Creates an URGENT issue with `phase:dev`, `urgent`, and `security` labels. If critical severity: also adds `blocked` label. Never dismisses alerts | Hephaestus |
+| **G: CI/CD Failure** | A workflow fails (excluding GHE workflows to prevent loops) | Creates or updates a CI failure issue with `phase:review`, `ci-failure`, and `source:ci` labels. Tracks consecutive failures and adds `urgent` label after 3+ failures | Chronos |
+
+### Argos Design Principles
+
+1. **Conservative by Default**: When uncertain, Argos creates an URGENT issue and waits for human decision rather than taking autonomous action
+2. **No False Positives**: Especially for SPAM and moderation - better to miss spam than block a legitimate user
+3. **Respect User Autonomy**: Only the repository owner makes final decisions. Argos never bans, deletes, or takes irreversible actions
+4. **Prevent Infinite Loops**: Argos workflows exclude bot actors and other GHE workflows to prevent cascading triggers
+5. **No Deletions**: Issues are closed and labeled, never deleted (preserves complete audit trail)
+6. **Clear Identity**: Always signs as "Argos Panoptes (The All-Seeing)" and explains which specialist will handle the work
+
+### What Argos Does NOT Flag as Violations
+
+To avoid false positives, these are explicitly NOT considered violations:
+
+- Mentioning other tools or projects positively
+- Technical disagreements (even heated ones)
+- Asking questions repeatedly
+- Non-English comments
+- Sarcasm or humor
+- Respectful criticism of the project
+
+### Argos Workflow Files
+
+| Workflow | Event | Purpose |
+|----------|-------|---------|
+| `ghe-pr-review.yml` | A | Queue PRs for review |
+| `ghe-bug-triage.yml` | B | Validate and triage bug reports |
+| `ghe-feature-triage.yml` | C | Validate and triage feature requests |
+| `ghe-moderation.yml` | D | Detect policy violations |
+| `ghe-spam-detection.yml` | E | Conservative spam detection |
+| `ghe-security-alert.yml` | F | Security vulnerability handling |
+| `ghe-ci-failure.yml` | G | CI/CD failure tracking |
+
+### Division of Labor: Argos vs Local Plugin
+
+| Capability | Argos (GitHub Actions) | Local Plugin (Claude Code) |
+|------------|------------------------|----------------------------|
+| 24/7 Monitoring | Yes | No |
+| Triage new issues/PRs | Yes | No |
+| Validate templates | Yes | No |
+| Apply labels | Yes | Yes |
+| @claude mentions (basic Q&A) | Yes | Yes (full) |
+| Claim issues | No | Yes |
+| Post checkpoints | No | Yes |
+| Transition phases | No | Yes |
+| SERENA memory sync | No | Yes |
+| Write/modify code | No | Yes |
+| Run tests | No | Yes |
+| Create PRs | No | Yes |
+
+---
 
 ### Natural Language Operations
 
@@ -200,95 +334,6 @@ github-elements-plugin/
 └── README.md
 ```
 
-## GitHub Actions Integration (24/7 Automation)
-
-In addition to the local Claude Code plugin, GHE provides GitHub Actions workflows that run 24/7 for automated event handling. These workflows triage incoming events and prepare work for the appropriate GHE agent.
-
-### Automated Event Handling
-
-When you're offline, these events are automatically processed and queued for your next session:
-
-| Event | Trigger | Action | Agent |
-|-------|---------|--------|-------|
-| **A: PR Opened** | Someone opens a pull request | Creates a REVIEW issue linking to the PR, adds `phase:review` label | Hera |
-| **B: Bug Report** | Someone opens a bug issue | Validates bug template, asks for missing info or adds `phase:review` label | Hera |
-| **C: Feature Request** | Someone opens a feature request | Validates feature template, asks for missing info or adds `phase:dev` label | Hephaestus |
-| **D: Policy Violation** | Someone posts an inappropriate comment | Issues warnings (max 3), then adds `needs-moderation` label | Ares |
-| **E: SPAM Detected** | Someone posts obvious spam | Closes issue with `spam` label (very conservative to avoid false positives) | Auto |
-| **F: Security Alert** | GitHub detects a vulnerability | Creates URGENT issue with `phase:dev` and `security` labels | Hephaestus |
-| **G: CI/CD Failure** | A workflow fails | Creates REVIEW issue with `ci-failure` label for investigation | Chronos |
-
-### Agent Responsibilities
-
-When you connect with Claude Code, the queued work is processed by specialized agents:
-
-| Agent | Identity | Handles |
-|-------|----------|---------|
-| **Hera** | Queen of the Gods | PR reviews, bug triage, quality evaluation |
-| **Hephaestus** | God of the Forge | Feature development, security fixes |
-| **Ares** | God of War | Moderation decisions (only reports to you) |
-| **Chronos** | God of Time | CI/CD failures, workflow issues |
-
-### Workflow Files
-
-| Workflow | Purpose |
-|----------|---------|
-| `ghe-pr-review.yml` | Event A - Queue PRs for review |
-| `ghe-bug-triage.yml` | Event B - Validate and triage bug reports |
-| `ghe-feature-triage.yml` | Event C - Validate and triage feature requests |
-| `ghe-moderation.yml` | Event D - Detect policy violations |
-| `ghe-spam-detection.yml` | Event E - Conservative spam detection |
-| `ghe-security-alert.yml` | Event F - Security vulnerability handling |
-| `ghe-ci-failure.yml` | Event G - CI/CD failure tracking |
-
-### Design Principles
-
-1. **Conservative by Default**: When uncertain, create an URGENT issue and wait for human decision
-2. **No False Positives**: Especially for SPAM/moderation - better to miss spam than block legitimate users
-3. **Respect User Autonomy**: Only the repo owner makes final decisions
-4. **Prevent Infinite Loops**: Bot actions never trigger other bot workflows
-5. **No Deletions**: Issues are closed/labeled, never deleted (preserves audit trail)
-
-### What is NOT a Violation
-
-To avoid false positives, these are explicitly NOT flagged:
-
-- Mentioning other tools/projects positively
-- Technical disagreements (even heated ones)
-- Asking questions repeatedly
-- Non-English comments
-- Sarcasm or humor
-- Respectful criticism of the project
-
-### Division of Labor
-
-| Capability | GitHub Actions | Local Plugin |
-|------------|----------------|--------------|
-| 24/7 Monitoring | Yes | No |
-| Stale detection | Yes | No |
-| Label validation | Yes | No |
-| @claude Q&A | Yes (basic) | Yes (full) |
-| Claim issues | No | Yes |
-| Post checkpoints | No | Yes |
-| Transition phases | No | Yes |
-| SERENA memory sync | No | Yes |
-| Complex code changes | No | Yes |
-
-### Installation
-
-```bash
-# Step 1: Install Claude GitHub App (in Claude Code)
-/install-github-app
-
-# Step 2: Copy workflows to your repository
-mkdir -p .github/workflows
-cp examples/github-actions/ghe-*.yml .github/workflows/
-```
-
-The `/install-github-app` command authenticates Claude and stores the OAuth token in your repository secrets automatically.
-
-See `examples/github-actions/README.md` for detailed configuration options.
-
 ## Configuration
 
 GitHub Elements supports per-project configuration via `.claude/github-elements.local.md`.
@@ -316,7 +361,6 @@ auto_worktree: false
 checkpoint_interval_minutes: 30
 notification_level: normal
 default_reviewer: "your-github-username"
-stale_threshold_hours: 24
 epic_label_prefix: "epic:"
 ---
 
@@ -336,7 +380,6 @@ Your custom notes and context here.
 | `checkpoint_interval_minutes` | 0/15/30/60 | 30 | Reminder interval (0=disabled) |
 | `notification_level` | verbose/normal/quiet | normal | Output verbosity |
 | `default_reviewer` | string | "" | Default GitHub reviewer username |
-| `stale_threshold_hours` | number | 24 | Hours before thread is stale |
 | `epic_label_prefix` | string | "epic:" | Prefix for epic labels |
 
 ### Enforcement Levels

@@ -1,4 +1,5 @@
 # GHE Automation: Event C - Feature Request → Validate + DEV
+# Validates feature requests and queues for Hephaestus.
 # SECURITY: All user inputs passed via environment variables (secure pattern).
 
 name: "GHE: Feature Triage"
@@ -13,42 +14,77 @@ concurrency:
 
 jobs:
   validate-feature:
+    # Only run for enhancement/feature labels, not from bots
     if: |
       (contains(github.event.issue.labels.*.name, 'enhancement') ||
        contains(github.event.issue.labels.*.name, 'feature')) &&
       !contains(github.actor, '[bot]')
 
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       issues: write
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Check status
-        id: check
+      - name: Check if already processed
+        id: check-status
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          labels=$(gh issue view "$ISSUE_NUMBER" --json labels --jq '.labels[].name')
-          echo "$labels" | grep -q "phase:dev" && echo "skip=true" >> $GITHUB_OUTPUT || echo "skip=false" >> $GITHUB_OUTPUT
+          labels=$(gh issue view "$ISSUE_NUMBER" --json labels --jq '.labels[].name' | tr '\n' ',')
+          if echo "$labels" | grep -q "phase:dev"; then
+            echo "status=processed" >> $GITHUB_OUTPUT
+          elif echo "$labels" | grep -q "needs-info"; then
+            echo "status=revalidate" >> $GITHUB_OUTPUT
+          else
+            echo "status=new" >> $GITHUB_OUTPUT
+          fi
 
       - name: Validate feature request
-        if: steps.check.outputs.skip != 'true'
+        if: steps.check-status.outputs.status != 'processed'
         uses: anthropics/claude-code-action@v1
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ github.event.issue.number }}
+          IS_REVALIDATE: ${{ steps.check-status.outputs.status == 'revalidate' }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Validate feature request issue $ISSUE_NUM for Hephaestus (DEV agent).
-            1. Read issue with gh cli
-            2. Check for description and use case
-            3. If valid: add phase:dev,ready labels, comment with Hephaestus avatar
-            4. If incomplete: add needs-info, ask politely for details
-            Use avatar: https://robohash.org/hephaestus.png?size=77x77&set=set3
+            Validate feature request #$ISSUE_NUM for Hephaestus (DEV agent).
+
+            Steps:
+            1. Read issue: gh issue view $ISSUE_NUM --json body,title
+            2. Check for required elements:
+               - Clear description of the feature
+               - Use case or problem it solves
+               - (Optional but nice) Example of expected behavior
+            3. If elements present:
+               - Add labels: phase:dev, ready
+               - Remove needs-info label if present
+               - Comment confirmation
+            4. If elements MISSING:
+               - Add label: needs-info
+               - Comment listing what's missing (be welcoming and helpful)
+
+            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
+            You are triaging this feature request for Hephaestus (the DEV agent) to handle when the maintainer is online.
+            Never close issues. Only label and comment.
+            If $IS_REVALIDATE is true, user edited after needs-info.
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --body "An error occurred during feature request validation. A maintainer will review manually."

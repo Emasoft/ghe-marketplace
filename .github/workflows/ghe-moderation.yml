@@ -1,4 +1,5 @@
 # GHE Automation: Event D - Comment Moderation
+# Monitors comments for policy violations (very conservative).
 # SECURITY: User inputs via env vars only. Conservative moderation.
 
 name: "GHE: Comment Moderation"
@@ -13,31 +14,70 @@ concurrency:
 
 jobs:
   check-comment:
+    # Skip: owners, members, collaborators, and bots
     if: |
       github.event.comment.author_association != 'OWNER' &&
       github.event.comment.author_association != 'MEMBER' &&
+      github.event.comment.author_association != 'COLLABORATOR' &&
       !contains(github.actor, '[bot]')
 
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       issues: write
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Analyze comment
+      - name: Analyze comment for policy violations
         uses: anthropics/claude-code-action@v1
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ github.event.issue.number }}
           COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Check comment $COMMENT_ID on issue $ISSUE_NUM for policy violations.
-            Violations: harassment, threats, spam links, discrimination.
-            NOT violations: mentioning other tools, disagreements, questions.
-            If clear violation: warn (max 3), then add needs-moderation label.
-            If uncertain: do NOTHING. Be very conservative.
-            Use Ares avatar: https://robohash.org/ares.png?size=77x77&set=set3
+            Check comment $COMMENT_ID on issue $ISSUE_NUM for policy violations (Ares agent).
+
+            VIOLATIONS (require action):
+            - Direct harassment or personal attacks
+            - Explicit threats of violence
+            - Spam links (gambling, crypto scams, unrelated promotions)
+            - Discrimination based on protected characteristics
+
+            NOT VIOLATIONS (do nothing):
+            - Mentioning other tools/projects positively
+            - Technical disagreements (even heated ones)
+            - Asking questions repeatedly
+            - Non-English comments
+            - Sarcasm or humor
+            - Respectful criticism of the project
+
+            Process:
+            1. Read comment: gh api /repos/{owner}/{repo}/issues/comments/$COMMENT_ID
+            2. Count previous warnings for user (search comments by Argos Panoptes avatar)
+            3. If CLEAR violation:
+               - If warnings < 3: Post warning
+               - If warnings >= 3: Add needs-moderation label
+            4. If UNCERTAIN: Do NOTHING. Better to miss a violation than false positive.
+
+            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
+            You are flagging potential violations for Ares (the moderation agent) to review when the maintainer is online.
+            Never delete comments or ban users. Only warn and label.
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          echo "Moderation check failed - manual review may be needed"
+          # Don't comment on failures to avoid spam

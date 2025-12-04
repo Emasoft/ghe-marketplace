@@ -1,5 +1,6 @@
 # GHE Automation: Event E - SPAM Detection
-# SECURITY: Env vars only. Very conservative - false positives worse than missed spam.
+# Very conservative spam detection - false positives are worse than missed spam.
+# SECURITY: Env vars only. Only closes obvious spam.
 
 name: "GHE: SPAM Detection"
 
@@ -13,25 +14,67 @@ concurrency:
 
 jobs:
   check-spam:
-    if: github.event.sender.type != 'Bot'
+    # Skip: bots, owners, members, collaborators
+    if: |
+      github.event.sender.type != 'Bot' &&
+      github.event.issue.author_association != 'OWNER' &&
+      github.event.issue.author_association != 'MEMBER' &&
+      github.event.issue.author_association != 'COLLABORATOR'
+
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       issues: write
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Check for spam
+      - name: Check for spam indicators
         uses: anthropics/claude-code-action@v1
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ github.event.issue.number }}
+          AUTHOR: ${{ github.event.issue.user.login }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Check issue $ISSUE_NUM for SPAM. Need 3+ indicators to confirm.
-            Indicators: new account, no activity, many links, crypto/gambling.
-            NOT spam: docs links, project mentions, legitimate questions.
-            HIGH confidence: close with spam label. UNCERTAIN: do nothing.
-            False positives are worse than missed spam. Be very conservative.
+            Check issue $ISSUE_NUM for SPAM. REQUIRE 3+ indicators to confirm.
+
+            SPAM INDICATORS:
+            - Account created very recently (< 1 day)
+            - Zero prior activity on GitHub
+            - Multiple unrelated promotional links
+            - Crypto/gambling/adult content promotion
+            - Nonsensical or auto-generated text
+            - Identical to known spam patterns
+
+            NOT SPAM (never flag):
+            - Links to documentation or related projects
+            - Mentions of competitor tools
+            - Legitimate questions even if poorly written
+            - Non-English issues
+            - Low-quality but genuine bug reports/features
+
+            Process:
+            1. Read issue: gh issue view $ISSUE_NUM --json body,title,author
+            2. Check author activity: gh api /users/$AUTHOR
+            3. Count spam indicators
+            4. If 3+ CLEAR indicators: Close with spam label, brief comment
+            5. If UNCERTAIN: Do NOTHING. False positives are unacceptable.
+
+            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
+            This is for OBVIOUS spam only. When in doubt, don't act.
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Spam check failed - issue remains open for manual review"
+          # Don't create issues for spam check failures

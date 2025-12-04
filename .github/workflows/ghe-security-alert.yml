@@ -12,9 +12,14 @@ on:
   secret_scanning_alert:
     types: [created]
 
+concurrency:
+  group: ghe-security-${{ github.event_name }}-${{ github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   create-security-issue:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       issues: write
@@ -22,18 +27,67 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Create security issue
+      - name: Check for existing security issue
+        id: check-existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # Search for existing security issue for this alert type
+          existing=$(gh issue list \
+            --label "security" \
+            --state open \
+            --json number,title \
+            --jq '.[0].number // empty')
+
+          if [ -n "$existing" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "issue_number=$existing" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or update security issue
         uses: anthropics/claude-code-action@v1
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
+          EXISTING_ISSUE: ${{ steps.check-existing.outputs.issue_number }}
+          HAS_EXISTING: ${{ steps.check-existing.outputs.exists }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Security alert detected (event: $EVENT_NAME).
-            1. Get alert details via gh api
-            2. Check for existing issue
-            3. Create issue: [SECURITY] title, labels phase:dev,urgent,security
-            4. If critical: add blocked label
-            Use Hephaestus avatar for the comment.
+            Security alert detected (event: $EVENT_NAME) for Hephaestus (DEV agent).
+
+            Steps:
+            1. Get alert details via gh api (depends on event type):
+               - dependabot_alert: gh api /repos/{owner}/{repo}/dependabot/alerts
+               - code_scanning_alert: gh api /repos/{owner}/{repo}/code-scanning/alerts
+               - secret_scanning_alert: gh api /repos/{owner}/{repo}/secret-scanning/alerts
+            2. If $HAS_EXISTING is true:
+               - Comment on issue #$EXISTING_ISSUE with new alert info
+            3. If $HAS_EXISTING is false:
+               - Create issue: [SECURITY] Security vulnerability detected
+               - Labels: phase:dev, urgent, security
+               - Body: Alert type, severity, affected component, remediation guidance
+            4. If severity is critical/high: Add blocked label
+
+            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
+            You are triaging this security alert for Hephaestus (the DEV agent) to fix when the maintainer is online.
+            Never dismiss alerts. Only create issues and notify.
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "[URGENT] GHE: Security alert handling failed" \
+            --label "urgent,security,ci-failure" \
+            --body "Security alert automation failed. MANUAL REVIEW REQUIRED. Check workflow run for details."

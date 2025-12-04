@@ -1,11 +1,6 @@
 # GHE Automation: Event B - Bug Report → Validate + REVIEW
-#
-# When a bug issue is opened, this workflow validates the bug report template
-# and queues it for Hera (review-thread-manager) to triage.
-#
-# SECURITY NOTE: All user-controlled inputs (issue body, title, author) are
-# passed through environment variables, never directly interpolated in run: commands.
-# The Claude action receives these via env: blocks which is the secure pattern.
+# Validates bug reports and queues for Hera.
+# SECURITY: All user inputs via environment variables.
 
 name: "GHE: Bug Triage"
 
@@ -19,6 +14,7 @@ concurrency:
 
 jobs:
   validate-bug-report:
+    # Only run for issues with 'bug' label, not from bots
     if: |
       contains(github.event.issue.labels.*.name, 'bug') &&
       !contains(github.actor, '[bot]')
@@ -37,7 +33,7 @@ jobs:
           fetch-depth: 1
 
       - name: Check if already processed
-        id: check-processed
+        id: check-status
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -52,30 +48,37 @@ jobs:
           fi
 
       - name: Validate and triage bug report
-        if: steps.check-processed.outputs.status != 'processed'
+        if: steps.check-status.outputs.status != 'processed'
         uses: anthropics/claude-code-action@v1
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ github.event.issue.number }}
-          ISSUE_USER: ${{ github.event.issue.user.login }}
-          EVENT_ACTION: ${{ github.event.action }}
-          PREV_STATUS: ${{ steps.check-processed.outputs.status }}
+          IS_REVALIDATE: ${{ steps.check-status.outputs.status == 'revalidate' }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            # Task: Validate Bug Report and Queue for Review
+            Validate bug report #$ISSUE_NUM for Hera (REVIEW agent).
 
-            You are preparing work for **Hera** (the REVIEW agent).
+            Steps:
+            1. Read issue: gh issue view $ISSUE_NUM --json body,title
+            2. Check for required fields:
+               - Description of the bug
+               - Steps to reproduce
+               - Expected vs actual behavior
+               - Environment/version info
+            3. If ALL fields present:
+               - Add labels: phase:review, ready
+               - Remove needs-info label if present
+               - Comment confirmation
+            4. If fields MISSING:
+               - Add label: needs-info
+               - Comment listing what's missing (be polite and welcoming)
 
-            ## Instructions
-
-            1. Read the issue using: gh issue view "$ISSUE_NUM" --json body,title
-            2. Validate it contains: Description, Steps to Reproduce, Expected/Actual Behavior, Environment
-            3. If valid: add labels phase:review,ready and post confirmation with Hera avatar
-            4. If invalid: add needs-info label and politely list what is missing
-            5. Always use heredocs for comment bodies to avoid injection
-
-            Environment variables contain the issue details. Use gh cli for all operations.
-            Be welcoming and helpful. Never close issues, only label and comment.
+            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
+            You are triaging this bug for Hera (the REVIEW agent) to handle when the maintainer is online.
+            Never close issues. Only label and comment.
+            If $IS_REVALIDATE is true, user edited after needs-info.
 
       - name: Handle failure
         if: failure()
@@ -83,4 +86,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "An error occurred. A maintainer will review manually."
+          gh issue comment "$ISSUE_NUMBER" \
+            --body "An error occurred during validation. A maintainer will review manually."

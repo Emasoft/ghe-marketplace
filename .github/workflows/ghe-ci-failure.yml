@@ -1,4 +1,5 @@
 # GHE Automation: Event G - CI/CD Failure → Issue for Chronos
+# Creates issue when workflows fail (except GHE workflows to prevent loops).
 # SECURITY: System-generated inputs only, passed via env vars.
 
 name: "GHE: CI Failure"
@@ -7,10 +8,19 @@ on:
   workflow_run:
     types: [completed]
 
+concurrency:
+  group: ghe-ci-failure-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
 jobs:
   handle-failure:
-    if: github.event.workflow_run.conclusion == 'failure'
+    # Only run for failures, and NOT for GHE workflows (prevent loops)
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      !startsWith(github.event.workflow_run.name, 'GHE:')
+
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       issues: write
@@ -18,17 +28,75 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Create CI failure issue
+      - name: Check for existing CI failure issue
+        id: check-existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+        run: |
+          # Search for existing open issue for this workflow
+          existing=$(gh issue list \
+            --label "ci-failure" \
+            --state open \
+            --search "$WORKFLOW_NAME" \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -n "$existing" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "issue_number=$existing" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or update CI failure issue
         uses: anthropics/claude-code-action@v1
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          EXISTING_ISSUE: ${{ steps.check-existing.outputs.issue_number }}
+          HAS_EXISTING: ${{ steps.check-existing.outputs.exists }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            CI workflow failed (run $RUN_ID).
-            1. Check for existing issue for this workflow
-            2. Create or update issue with labels phase:review,ci-failure,source:ci
-            3. If repeated failures: add urgent label
-            Use Chronos avatar: https://robohash.org/chronos.png?size=77x77&set=set3
+            CI workflow "$WORKFLOW_NAME" failed (run $RUN_ID) for Chronos (REVIEW agent).
+
+            Steps:
+            1. Get failure details: gh run view $RUN_ID --json jobs
+            2. Extract failed job names and error messages
+            3. If $HAS_EXISTING is true:
+               - Comment on issue #$EXISTING_ISSUE with:
+                 - New failure timestamp
+                 - Failed jobs
+                 - Link to workflow run: $WORKFLOW_URL
+                 - Count of consecutive failures
+               - If this is 3+ consecutive failures: Add urgent label
+            4. If $HAS_EXISTING is false:
+               - Create issue: [CI] $WORKFLOW_NAME failed on $HEAD_BRANCH
+               - Labels: phase:review, ci-failure, source:ci
+               - Body: Branch, commit SHA, failed jobs, error summary, run link
+
+            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
+            You are documenting this CI failure for Chronos (the CI/CD agent) to investigate when the maintainer is online.
+            Don't attempt to fix - just document for review.
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+        run: |
+          gh issue create \
+            --title "[URGENT] GHE: CI failure tracking failed" \
+            --label "urgent,ci-failure" \
+            --body "CI failure tracking automation failed for workflow: $WORKFLOW_NAME. Check workflow run for details."
