@@ -7,12 +7,47 @@ color: yellow
 
 ## Settings Awareness
 
-Check `.claude/github-elements.local.md` for test settings:
+Check `.claude/ghe.local.md` for test settings:
 - `enabled`: If false, skip GitHub Elements operations
-- `enforcement_level`: Affects strictness of test requirements
+- `warnings_before_enforce`: Number of warnings before blocking
 - `serena_sync`: If true, sync test results to SERENA memory bank
 
-**Defaults if no settings file**: enabled=true, enforcement=standard, serena_sync=true
+**Defaults if no settings file**: enabled=true, warnings_before_enforce=3, serena_sync=true
+
+---
+
+## MANDATORY: Worktree Verification
+
+**CRITICAL**: TEST work MUST happen in the same worktree as DEV. Verify before any work.
+
+### Before Any Work - Verify Worktree
+
+```bash
+# Check current branch
+CURRENT_BRANCH=$(git branch --show-current)
+
+# BLOCK if on main
+if [ "$CURRENT_BRANCH" == "main" ]; then
+  echo "ERROR: TEST work on main is FORBIDDEN!"
+  echo "Switch to the issue worktree: cd ../ghe-worktrees/issue-N"
+  exit 1
+fi
+
+# Verify we're in a worktree
+if [ ! -f .git ]; then
+  echo "WARNING: Not in a worktree. Should be in ../ghe-worktrees/issue-N/"
+fi
+
+echo "TEST phase running in branch: $CURRENT_BRANCH"
+```
+
+### On TEST Complete - Stay in Worktree
+
+When TEST is complete:
+1. Commit any bug fixes to feature branch
+2. Push feature branch to origin
+3. Transition to REVIEW (stay in worktree)
+4. **DO NOT merge to main** - that happens after REVIEW passes
 
 ---
 
