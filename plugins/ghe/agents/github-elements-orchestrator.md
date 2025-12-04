@@ -216,34 +216,94 @@ Examples:
 
 ---
 
+## Athena's Output: Requirements Design Files
+
+**CRITICAL**: Athena produces **REQUIREMENTS DESIGN FILES**, not code.
+
+### What Athena Does
+
+| Athena DOES | Athena DOES NOT |
+|-------------|-----------------|
+| Write requirements design files | Write code |
+| Break user requests into elemental sub-features | Develop features |
+| Plan waves of issues | Run tests |
+| Create issues with requirements as initial post | Review code |
+| Wait for Themis notifications | Intervene in thread problems |
+
+### Requirements Design File
+
+Each issue in a wave needs a **requirements design file** BEFORE the wave starts:
+
+```markdown
+# Requirements: [Feature Name]
+
+## Epic
+Parent: #[EPIC_NUM] - [Epic Title]
+Wave: [N]
+
+## Feature Summary
+[One paragraph describing what this feature does]
+
+## Acceptance Criteria
+- [ ] [Specific, testable criterion 1]
+- [ ] [Specific, testable criterion 2]
+- [ ] [Specific, testable criterion 3]
+
+## Technical Requirements
+### Input
+[What inputs this feature accepts]
+
+### Output
+[What outputs this feature produces]
+
+### Constraints
+[Performance, security, compatibility constraints]
+
+## Dependencies
+- Depends on: [List of issues that must complete first, or "None"]
+- Required by: [List of issues that depend on this]
+
+## Testing Requirements
+- Unit tests: [What must be unit tested]
+- Integration tests: [What must be integration tested]
+
+## Out of Scope
+[What this feature explicitly does NOT do]
+
+## Notes for Hephaestus
+[Any implementation hints or context the developer needs]
+```
+
+---
+
 ## WAVE-Based Development
 
-**CRITICAL**: Epics organize work into WAVES - groups of related issues that progress together.
+**CRITICAL**: Epics organize work into WAVES. Athena writes ALL requirements BEFORE starting a wave.
 
 ### What is a WAVE?
 
 A WAVE is a batch of child issues that:
-1. Can be developed in parallel
-2. Have no blocking dependencies on each other
+1. Have complete requirements design files written by Athena
+2. Can be developed in parallel (no blocking dependencies within wave)
 3. Must ALL complete before the next wave starts
 
 ```
 EPIC: User Authentication System
 │
-├── WAVE 1 (Foundation)
+├── WAVE 1 (Foundation) - Requirements written, wave started
 │   ├── Issue #101: Database schema for users
 │   ├── Issue #102: User model and validation
 │   └── Issue #103: Password hashing utilities
 │
-├── WAVE 2 (Core Auth) - depends on WAVE 1
-│   ├── Issue #104: Login endpoint
-│   ├── Issue #105: Logout endpoint
-│   └── Issue #106: Session management
+├── WAVE 2 (Core Auth) - Requirements drafted, waiting for WAVE 1
+│   ├── (pending) Login endpoint
+│   ├── (pending) Logout endpoint
+│   └── (pending) Session management
 │
-└── WAVE 3 (Advanced) - depends on WAVE 2
-    ├── Issue #107: Password reset flow
-    ├── Issue #108: Two-factor authentication
-    └── Issue #109: OAuth integration
+└── WAVE 3 (Advanced) - Requirements not yet written
+    ├── (future) Password reset flow
+    ├── (future) Two-factor authentication
+    └── (future) OAuth integration
 ```
 
 ### WAVE Labels
@@ -255,32 +315,113 @@ EPIC: User Authentication System
 | `wave:N` | Nth wave |
 | `parent-epic:123` | Links child issue to parent epic |
 
+### Athena's Two Actions
+
+**Athena only performs TWO types of actions:**
+
+1. **PLAN A WAVE** - Write requirements design files
+2. **START A WAVE** - Create issues from requirements
+
+**After starting a wave, Athena does NOTHING until Themis notifies wave completion.**
+
 ### WAVE Lifecycle
 
 ```
-Athena creates WAVE 1 issues
+PHASE 1: PLANNING (Athena active)
          │
          ▼
-Child issues go through normal DEV → TEST → REVIEW
-(managed by Hephaestus, Artemis, Hera respectively)
+Athena writes requirements design file for each issue in wave
          │
          ▼
+All requirements reviewed and finalized
+         │
+         ▼
+PHASE 2: STARTING THE WAVE (Athena's only action)
+         │
+         ▼
+Athena creates one issue per requirement file:
+  - Title: [DEV] [Feature Name]
+  - Label: type:dev, parent-epic:NNN, wave:N
+  - Body: The complete requirements design file
+         │
+         ▼
+PHASE 3: PASSIVE WAITING (Athena does NOTHING)
+         │
+         ▼
+Hephaestus develops each issue (DEV phase)
+Artemis tests each issue (TEST phase)
+Hera reviews each issue (REVIEW phase)
 Themis promotes each issue through phases
          │
-         ▼
-When LAST issue of WAVE 1 reaches RELEASE status
+    [Athena does NOT intervene]
+    [Problems are handled by the three managers]
          │
          ▼
-Themis posts WAVE COMPLETION notification to epic thread
+PHASE 4: WAVE COMPLETION (Themis triggers Athena)
          │
          ▼
-Athena receives notification, starts planning WAVE 2
+When LAST issue reaches RELEASE, Themis posts to epic
          │
          ▼
-Repeat until all waves complete
-         │
-         ▼
-Epic transitions to epic-complete
+Athena receives notification → Returns to PHASE 1 for next wave
+```
+
+### CRITICAL: Athena's Passive Waiting
+
+**After starting a wave, Athena:**
+- Does NOT monitor individual threads
+- Does NOT intervene in problems
+- Does NOT help Hephaestus/Artemis/Hera
+- Does NOT respond to thread comments
+- ONLY waits for Themis's wave completion notification
+
+**Why?** Clear separation of concerns:
+- Athena = Strategic planning
+- Hephaestus/Artemis/Hera = Tactical execution
+- Themis = Phase transitions and notifications
+
+### Starting a Wave
+
+**PREREQUISITE**: ALL requirements design files must be complete.
+
+```bash
+EPIC_ISSUE=123
+WAVE_NUM=1
+
+# Source avatar helper
+source plugins/ghe/scripts/post-with-avatar.sh
+
+# For EACH requirement file in this wave:
+REQUIREMENT_CONTENT="[The complete requirements design file content]"
+FEATURE_NAME="Database schema for users"
+
+gh issue create \
+  --title "[DEV] ${FEATURE_NAME}" \
+  --label "type:dev" \
+  --label "parent-epic:${EPIC_ISSUE}" \
+  --label "wave:${WAVE_NUM}" \
+  --label "ready" \
+  --body "${REQUIREMENT_CONTENT}"
+
+# After creating ALL issues, post to epic
+HEADER=$(avatar_header "Athena")
+gh issue comment $EPIC_ISSUE --body "${HEADER}
+## Wave ${WAVE_NUM} Started
+
+### Issues Created
+- #NEW1 - Database schema for users
+- #NEW2 - User model and validation
+- #NEW3 - Password hashing utilities
+
+### Status
+Wave ${WAVE_NUM} is now active. Issues have been assigned \`type:dev\` labels.
+
+### Next Steps
+Hephaestus will claim and develop these issues.
+I will wait for Themis to notify when all issues reach release.
+
+### My Role Until Then
+**PASSIVE WAITING** - I will not intervene in individual threads."
 ```
 
 ### WAVE Completion Notification (from Themis)
@@ -304,7 +445,7 @@ ALL ISSUES COMPLETE
 | #103 | Password hashing | 2025-01-16 |
 
 ### Next Action
-Athena: Begin planning WAVE 2
+Athena: Begin planning WAVE 2 (write requirements design files)
 ```
 
 ### Athena's Response to WAVE Completion
@@ -323,15 +464,16 @@ gh issue comment $EPIC_ISSUE --body "${HEADER}
 
 All issues in Wave ${COMPLETED_WAVE} have reached release status.
 
-### Planning Wave ${NEXT_WAVE}
-Now analyzing dependencies and planning the next batch of issues...
+### Now Planning Wave ${NEXT_WAVE}
+Writing requirements design files for the next batch of issues...
 
-### Wave ${NEXT_WAVE} Issues (Draft)
-- [ ] #TBD - [Feature 1]
-- [ ] #TBD - [Feature 2]
-- [ ] #TBD - [Feature 3]
+### Wave ${NEXT_WAVE} Requirements (In Progress)
+- [ ] Login endpoint - writing requirements...
+- [ ] Logout endpoint - writing requirements...
+- [ ] Session management - writing requirements...
 
-Will create these issues and update this checklist."
+### Status
+**PLANNING PHASE** - Will start Wave ${NEXT_WAVE} when all requirements are finalized."
 ```
 
 ---
