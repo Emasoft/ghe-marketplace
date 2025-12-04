@@ -2,3 +2,4 @@
 
 # GHE plugin settings (user-local, per-machine)
 .claude/*.local.md
+dist/
