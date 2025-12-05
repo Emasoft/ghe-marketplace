@@ -426,8 +426,8 @@ post_to_issue() {
     local message="$3"
     local is_user="${4:-false}"
 
-    # Get avatar
-    local avatar_url="${AVATARS[$speaker]:-${AVATARS[Athena]}}"
+    # Get avatar - use get_avatar_url which handles both agents and GitHub users
+    local avatar_url=$(get_avatar_url "$speaker")
 
     # Redact sensitive data
     local safe_message=$(redact_sensitive "$message")
@@ -484,11 +484,43 @@ post_user_message() {
 }
 
 #######################################
+# Get appropriate posting agent based on issue phase
+# - Epic issues: Always Athena
+# - Normal issues: Phase manager (Hephaestus/Artemis/Hera)
+#######################################
+get_posting_agent() {
+    local issue_num="$1"
+    local requested_agent="${2:-}"
+
+    # If agent explicitly requested and is a valid phase manager, use it
+    if [[ -n "$requested_agent" && "$requested_agent" != "Athena" ]]; then
+        echo "$requested_agent"
+        return
+    fi
+
+    # Check if epic issue (has epic label)
+    local labels=$(gh issue view "$issue_num" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+    if echo "$labels" | grep -qi "epic"; then
+        echo "Athena"
+        return
+    fi
+
+    # For normal issues, determine manager from phase
+    if echo "$labels" | grep -q "phase:review"; then
+        echo "Hera"
+    elif echo "$labels" | grep -q "phase:test"; then
+        echo "Artemis"
+    else
+        echo "Hephaestus"  # Default to DEV manager
+    fi
+}
+
+#######################################
 # Main: Post assistant message
 #######################################
 post_assistant_message() {
     local message="$1"
-    local agent="${2:-Athena}"
+    local requested_agent="${2:-}"
 
     if ! check_github_repo; then
         return 1
@@ -508,8 +540,10 @@ post_assistant_message() {
     local issue=$(get_config "current_issue" "")
 
     if [[ -n "$issue" && "$issue" != "null" ]]; then
+        # Get appropriate agent based on issue phase (Athena only for epics)
+        local agent=$(get_posting_agent "$issue" "$requested_agent")
         post_to_issue "$issue" "$agent" "$message" "false"
-        echo "Posted to issue #$issue"
+        echo "Posted to issue #$issue as $agent"
     fi
 }
 
