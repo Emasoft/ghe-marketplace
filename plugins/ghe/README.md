@@ -72,15 +72,13 @@ Each agent has a unique **Greek god/mythology robot avatar** that appears in Git
 | `review-thread-manager` | **Hera** | sonnet | REVIEW thread lifecycle (quality) |
 | `phase-gate` | **Themis** | sonnet | Transition validation (justice) |
 | `memory-sync` | **Mnemosyne** | haiku | SERENA memory sync (memory) |
-| `enforcement` | **Argos Panoptes** | haiku | All-seeing workflow enforcement |
-| `ares` | **Ares** | haiku | Moderation and policy violations |
-| `hermes` | **Hermes** | haiku | Routes messages between agents |
-| `reporter` | **Reporter** | haiku | Status reports and metrics |
+| `enforcement` | **Ares** | haiku | Enforces rules, can suspend/block |
+| `reporter` | **Hermes** | haiku | Messenger delivering reports |
 | `ci-issue-opener` | **Chronos** | haiku | CI failure issues (time) |
 | `pr-checker` | **Cerberus** | haiku | PR requirements (guardian) |
 
 **Avatar System:**
-- **Agent avatars**: Bundled locally in `assets/avatars/` (12 robot PNGs)
+- **Agent avatars**: Bundled locally in `assets/avatars/` (10 for agents + argos.png for GitHub Action + claude.png for assistant)
 - **User avatars**: Fetched dynamically from GitHub API at runtime
 
 ---
@@ -397,14 +395,12 @@ ghe/
 │   ├── review-thread-manager.md         # Hera
 │   ├── phase-gate.md                    # Themis
 │   ├── memory-sync.md                   # Mnemosyne
-│   ├── enforcement.md                   # Argos Panoptes
-│   ├── ares.md                          # Ares
-│   ├── hermes.md                        # Hermes
+│   ├── enforcement.md                   # Ares
+│   ├── reporter.md                      # Hermes
 │   ├── ci-issue-opener.md               # Chronos
-│   ├── pr-checker.md                    # Cerberus
-│   └── reporter.md                      # Reporter
+│   └── pr-checker.md                    # Cerberus
 ├── assets/
-│   ├── avatars/                  # Robot avatar PNGs (12 agents)
+│   ├── avatars/                  # Robot avatar PNGs (12 total)
 │   ├── element-triangle.svg      # Element concept diagram
 │   └── element-classification.svg # 3-column classification table
 ├── scripts/

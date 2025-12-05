@@ -292,7 +292,7 @@ gh auth login
 
 | Component | Count | Description |
 |-----------|-------|-------------|
-| Agents | 12 | DEV/TEST/REVIEW managers, orchestrator, moderation, routing |
+| Agents | 10 | DEV/TEST/REVIEW managers, orchestrator, enforcement, reporting |
 | Skills | 6 | ghe-status, ghe-claim, ghe-checkpoint, ghe-transition, ghe-report |
 | Commands | 1 | `/ghe:setup` |
 | Hooks | 1 | SessionStart for context recovery |
@@ -307,10 +307,8 @@ gh auth login
 | <img src="plugins/ghe/assets/avatars/athena.png" width="77"/> | **Athena** | `ghe:github-elements-orchestrator` | Strategist coordinating the workflow |
 | <img src="plugins/ghe/assets/avatars/themis.png" width="77"/> | **Themis** | `ghe:phase-gate` | Upholds rules and judges phase transitions |
 | <img src="plugins/ghe/assets/avatars/mnemosyne.png" width="77"/> | **Mnemosyne** | `ghe:memory-sync` | Records and preserves knowledge |
-| <img src="plugins/ghe/assets/avatars/argos.png" width="77"/> | **Argos Panoptes** | `ghe:enforcement` | All-seeing watchman, enforces workflow rules |
-| <img src="plugins/ghe/assets/avatars/ares.png" width="77"/> | **Ares** | `ghe:ares` | Moderates flagged content and policy violations |
-| <img src="plugins/ghe/assets/avatars/hermes.png" width="77"/> | **Hermes** | `ghe:hermes` | Routes messages and bugs between agents |
-| <img src="plugins/ghe/assets/avatars/claude.png" width="77"/> | **Reporter** | `ghe:reporter` | Generates status reports and metrics |
+| <img src="plugins/ghe/assets/avatars/ares.png" width="77"/> | **Ares** | `ghe:enforcement` | Enforces workflow rules, can suspend or block |
+| <img src="plugins/ghe/assets/avatars/hermes.png" width="77"/> | **Hermes** | `ghe:reporter` | Messenger delivering status reports and metrics |
 | <img src="plugins/ghe/assets/avatars/chronos.png" width="77"/> | **Chronos** | `ghe:ci-issue-opener` | Sounds the alarm when CI fails |
 | <img src="plugins/ghe/assets/avatars/cerberus.png" width="77"/> | **Cerberus** | `ghe:pr-checker` | Guards the gates, validates PRs |
 
