@@ -1,6 +1,6 @@
 # GitHub Elements Plugin (GHE)
 
-[![Version](https://img.shields.io/badge/version-0.5.2--alpha-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.5.2-alpha)
+[![Version](https://img.shields.io/badge/version-0.5.3-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.5.3)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GitHub Issues](https://img.shields.io/github/issues/Emasoft/ghe-marketplace)](https://github.com/Emasoft/ghe-marketplace/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/Emasoft/ghe-marketplace)](https://github.com/Emasoft/ghe-marketplace/stargazers)
@@ -525,6 +525,52 @@ Settings files are user-local and should not be committed:
 ### Changing Settings
 
 After editing `.claude/ghe.local.md`, restart Claude Code for changes to take effect. Hooks cannot be hot-swapped within a session.
+
+---
+
+## Critical Rule: One Source of Truth for Hooks
+
+**PARAMOUNT**: Hooks must exist in ONE location only.
+
+### DO
+
+| Action | Why |
+|--------|-----|
+| Keep hooks in the plugin that owns them | Single source of truth |
+| Modify hooks in their canonical location | Changes apply everywhere |
+| Update the plugin to get hook fixes | Clean upgrade path |
+
+### DON'T
+
+| Action | Why Not |
+|--------|---------|
+| Copy hooks to project `.claude/hooks/` | Creates stale duplicates |
+| Add duplicate hooks to `~/.claude/settings.json` | Overrides plugin hooks silently |
+| Keep local "working" copies | Version conflicts cause bugs that appear unfixed |
+
+### Why This Matters
+
+When duplicate hooks exist:
+1. A bug gets fixed in the plugin's hook
+2. But a stale copy in your project or global settings runs instead
+3. The bug appears unfixed despite the fix being deployed
+4. Debugging becomes a nightmare
+
+### If You Find Duplicate Hooks
+
+```bash
+# Check for duplicates
+find ~/.claude -name "hooks.json" 2>/dev/null
+find . -name "hooks.json" 2>/dev/null
+
+# Remove duplicates - keep ONLY the plugin's version
+rm -rf .claude/hooks/  # Remove project-level duplicates
+# Edit ~/.claude/settings.json to remove global hooks
+```
+
+The canonical location for GHE hooks is: `plugins/ghe/hooks/hooks.json`
+
+---
 
 ## Prerequisites
 
