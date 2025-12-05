@@ -1,6 +1,6 @@
-# Auto-Approval Security Model
+# auto_approve.sh Security Model
 
-This document describes the complete security model used by the PreToolUse auto-approval hook (`auto_approve.sh`).
+This document describes the complete security model used by the `auto_approve.sh` PreToolUse hook script.
 
 ## Permission Decisions
 

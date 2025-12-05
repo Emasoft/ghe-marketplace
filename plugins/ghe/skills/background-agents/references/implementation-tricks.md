@@ -1,6 +1,8 @@
 # Implementation Tricks for Background Agents
 
-This document captures the technical discoveries made while implementing background agent spawning on macOS.
+This document captures the technical discoveries made while implementing `spawn_background.sh` and `auto_approve.sh` on macOS.
+
+> **Naming convention**: Script files use underscores (`auto_approve.sh`), plugin/skill directories use hyphens (`background-agents`). Spaces are never allowed.
 
 ## Terminal Background Execution
 

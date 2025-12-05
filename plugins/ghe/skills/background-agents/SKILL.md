@@ -214,9 +214,11 @@ and save a report to agents_reports/refactor_report.md
 4. Pastes the task prompt via clipboard
 5. Returns focus to original application
 
-## The Auto-Approval Hook
+## The auto_approve.sh Hook
 
-The core of background agents is the `auto_approve.sh` PreToolUse hook. This hook intercepts every tool call and returns a permission decision.
+The core of background agents is the `auto_approve.sh` PreToolUse hook script. This hook intercepts every tool call and returns a permission decision.
+
+> **Note on naming**: The hook script uses underscores (`auto_approve.sh`) following shell scripting conventions. Plugin/skill directories use hyphens (`background-agents`). Spaces are never allowed in Claude Code plugin names, directories, or files.
 
 ### Hook Location
 
