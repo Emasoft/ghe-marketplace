@@ -151,6 +151,7 @@ ${content_after_header}"
 
 #######################################
 # Add changelog entry
+# Uses temp files and awk to avoid sed delimiter issues with URLs
 #######################################
 add_changelog_entry() {
     local issue_num="$1"
@@ -162,35 +163,48 @@ add_changelog_entry() {
 
     if [[ -n "$comment_id" ]]; then
         local repo=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
-        link_text=" → [details](https://github.com/${repo}/issues/${issue_num}#issuecomment-${comment_id})"
+        link_text=" -> [details](https://github.com/${repo}/issues/${issue_num}#issuecomment-${comment_id})"
     fi
 
     local new_entry="- [${timestamp}] ${entry}${link_text}"
 
-    # Get current body
-    local current_body=$(gh issue view "$issue_num" --json body --jq '.body')
+    # Get current body to temp file
+    local TMPFILE=$(mktemp)
+    gh issue view "$issue_num" --json body --jq '.body' > "$TMPFILE"
 
-    # Insert entry after "## Changelog (DEV)" line, before the next ---
-    # Replace "_No entries yet_" if present
-    if echo "$current_body" | grep -q "_No entries yet_"; then
-        current_body=$(echo "$current_body" | sed "s/_No entries yet_/${new_entry}/")
-    else
-        # Add after existing entries in changelog section
-        current_body=$(echo "$current_body" | sed "/^## Changelog (DEV)/,/^---/{
-            /^---/i\\
-${new_entry}
-        }")
-    fi
+    # Use awk to replace "_No entries yet_" or insert after last changelog entry
+    local OUTFILE=$(mktemp)
+    awk -v entry="$new_entry" '
+    /^_No entries yet_/ && in_changelog {
+        print entry
+        next
+    }
+    /^## Changelog \(DEV\)/ {
+        in_changelog = 1
+        print
+        next
+    }
+    /^---$/ && in_changelog {
+        print entry
+        in_changelog = 0
+    }
+    { print }
+    ' "$TMPFILE" > "$OUTFILE"
 
     # Update timestamp
-    current_body=$(echo "$current_body" | sed "s/_Last updated:.*/_Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")_/")
+    sed -i.bak 's/_Last updated:.*/_Last updated: '"$(date -u +"%Y-%m-%d %H:%M:%S UTC")"'_/' "$OUTFILE"
 
-    gh issue edit "$issue_num" --body "$current_body"
+    # Update issue
+    gh issue edit "$issue_num" --body "$(cat "$OUTFILE")"
+
+    # Cleanup
+    rm -f "$TMPFILE" "$OUTFILE" "${OUTFILE}.bak"
     echo "Added changelog entry to issue #${issue_num}"
 }
 
 #######################################
 # Add test log entry
+# Uses temp files and awk to avoid sed delimiter issues with URLs
 #######################################
 add_testlog_entry() {
     local issue_num="$1"
@@ -202,31 +216,42 @@ add_testlog_entry() {
 
     if [[ -n "$comment_id" ]]; then
         local repo=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
-        link_text=" → [details](https://github.com/${repo}/issues/${issue_num}#issuecomment-${comment_id})"
+        link_text=" -> [details](https://github.com/${repo}/issues/${issue_num}#issuecomment-${comment_id})"
     fi
 
     local new_entry="- [${timestamp}] ${entry}${link_text}"
 
-    local current_body=$(gh issue view "$issue_num" --json body --jq '.body')
+    local TMPFILE=$(mktemp)
+    gh issue view "$issue_num" --json body --jq '.body' > "$TMPFILE"
 
-    # Replace "_Phase not started_" in test section
-    if echo "$current_body" | grep -A1 "## Test Log" | grep -q "_Phase not started_"; then
-        current_body=$(echo "$current_body" | sed "/## Test Log/,/^---/{s/_Phase not started_/${new_entry}/}")
-    else
-        current_body=$(echo "$current_body" | sed "/^## Test Log (TEST)/,/^---/{
-            /^---/i\\
-${new_entry}
-        }")
-    fi
+    local OUTFILE=$(mktemp)
+    awk -v entry="$new_entry" '
+    /^_Phase not started_/ && in_testlog {
+        print entry
+        next
+    }
+    /^## Test Log \(TEST\)/ {
+        in_testlog = 1
+        print
+        next
+    }
+    /^---$/ && in_testlog {
+        print entry
+        in_testlog = 0
+    }
+    { print }
+    ' "$TMPFILE" > "$OUTFILE"
 
-    current_body=$(echo "$current_body" | sed "s/_Last updated:.*/_Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")_/")
+    sed -i.bak 's/_Last updated:.*/_Last updated: '"$(date -u +"%Y-%m-%d %H:%M:%S UTC")"'_/' "$OUTFILE"
+    gh issue edit "$issue_num" --body "$(cat "$OUTFILE")"
 
-    gh issue edit "$issue_num" --body "$current_body"
+    rm -f "$TMPFILE" "$OUTFILE" "${OUTFILE}.bak"
     echo "Added test log entry to issue #${issue_num}"
 }
 
 #######################################
 # Add review log entry
+# Uses temp files and awk to avoid sed delimiter issues with URLs
 #######################################
 add_reviewlog_entry() {
     local issue_num="$1"
@@ -238,25 +263,36 @@ add_reviewlog_entry() {
 
     if [[ -n "$comment_id" ]]; then
         local repo=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
-        link_text=" → [details](https://github.com/${repo}/issues/${issue_num}#issuecomment-${comment_id})"
+        link_text=" -> [details](https://github.com/${repo}/issues/${issue_num}#issuecomment-${comment_id})"
     fi
 
     local new_entry="- [${timestamp}] ${entry}${link_text}"
 
-    local current_body=$(gh issue view "$issue_num" --json body --jq '.body')
+    local TMPFILE=$(mktemp)
+    gh issue view "$issue_num" --json body --jq '.body' > "$TMPFILE"
 
-    if echo "$current_body" | grep -A1 "## Review Log" | grep -q "_Phase not started_"; then
-        current_body=$(echo "$current_body" | sed "/## Review Log/,/^---/{s/_Phase not started_/${new_entry}/}")
-    else
-        current_body=$(echo "$current_body" | sed "/^## Review Log (REVIEW)/,/^---/{
-            /^---/i\\
-${new_entry}
-        }")
-    fi
+    local OUTFILE=$(mktemp)
+    awk -v entry="$new_entry" '
+    /^_Phase not started_/ && in_reviewlog {
+        print entry
+        next
+    }
+    /^## Review Log \(REVIEW\)/ {
+        in_reviewlog = 1
+        print
+        next
+    }
+    /^---$/ && in_reviewlog {
+        print entry
+        in_reviewlog = 0
+    }
+    { print }
+    ' "$TMPFILE" > "$OUTFILE"
 
-    current_body=$(echo "$current_body" | sed "s/_Last updated:.*/_Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")_/")
+    sed -i.bak 's/_Last updated:.*/_Last updated: '"$(date -u +"%Y-%m-%d %H:%M:%S UTC")"'_/' "$OUTFILE"
+    gh issue edit "$issue_num" --body "$(cat "$OUTFILE")"
 
-    gh issue edit "$issue_num" --body "$current_body"
+    rm -f "$TMPFILE" "$OUTFILE" "${OUTFILE}.bak"
     echo "Added review log entry to issue #${issue_num}"
 }
 
