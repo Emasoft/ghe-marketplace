@@ -421,6 +421,277 @@ Starting evaluation now."
 fi
 ```
 
+## Requirements Adherence Verification Protocol
+
+**Hera evaluates with unwavering standards. Every requirement must be verified.**
+
+### Pre-Review Setup
+
+Before starting review, gather all verification materials:
+
+```bash
+# Get requirements file from issue
+ISSUE_BODY=$(gh issue view "$ISSUE" --json body --jq '.body')
+REQ_PATH=$(echo "$ISSUE_BODY" | grep -oP 'REQUIREMENTS/[^\s\)]+\.md' | head -1)
+
+if [ -z "$REQ_PATH" ] || [ ! -f "$REQ_PATH" ]; then
+  gh issue comment "$ISSUE" --body "## REVIEW BLOCKED
+
+### Reason: No Requirements File
+Cannot review without requirements specification.
+
+### Required Action
+- Link requirements file in issue body
+- Format: \`REQUIREMENTS/path/to/REQ-XXX.md\`"
+  exit 1
+fi
+
+# Extract acceptance criteria
+ACCEPTANCE_CRITERIA=$(sed -n '/## 3. Acceptance Criteria/,/## 4./p' "$REQ_PATH" | head -n -1)
+
+# Extract technical requirements
+TECH_REQUIREMENTS=$(sed -n '/## 4. Technical Requirements/,/## 5./p' "$REQ_PATH" | head -n -1)
+
+# Get linked DEV and TEST threads
+DEV_THREAD=$(gh issue view "$ISSUE" --json body --jq '.body' | grep -oP 'DEV thread: #\K\d+')
+TEST_THREAD=$(gh issue view "$ISSUE" --json body --jq '.body' | grep -oP 'TEST thread: #\K\d+')
+```
+
+### Acceptance Criteria Verification Matrix
+
+Create a verification matrix for each AC:
+
+```markdown
+## Acceptance Criteria Verification
+
+| ID | Criterion | Evidence | Status |
+|----|-----------|----------|--------|
+| AC-1 | [criterion text] | [link to code/test] | PASS/FAIL |
+| AC-2 | [criterion text] | [link to code/test] | PASS/FAIL |
+| AC-3 | [criterion text] | [link to code/test] | PASS/FAIL |
+
+### Verification Details
+
+#### AC-1: [Criterion Text]
+- **Implementation**: `path/to/file.py:line_number`
+- **Test Coverage**: `tests/test_file.py::test_ac1`
+- **Evidence**: [Screenshot/Log output if applicable]
+- **Verdict**: PASS | FAIL | PARTIAL
+
+[Repeat for each AC]
+```
+
+### Technical Requirements Verification
+
+```bash
+# Verify each technical requirement
+verify_technical_requirements() {
+  local REQ_FILE=$1
+
+  # Extract functional requirements
+  FR_LIST=$(grep -oP 'FR-\d+:.*' "$REQ_FILE")
+
+  # Extract non-functional requirements
+  NFR_LIST=$(grep -oP 'NFR-\d+:.*' "$REQ_FILE")
+
+  echo "## Technical Requirements Verification"
+  echo ""
+  echo "### Functional Requirements"
+  while IFS= read -r fr; do
+    FR_ID=$(echo "$fr" | grep -oP 'FR-\d+')
+    FR_DESC=$(echo "$fr" | sed 's/FR-[0-9]*: //')
+    echo "- [ ] **$FR_ID**: $FR_DESC"
+  done <<< "$FR_LIST"
+
+  echo ""
+  echo "### Non-Functional Requirements"
+  while IFS= read -r nfr; do
+    NFR_ID=$(echo "$nfr" | grep -oP 'NFR-\d+')
+    NFR_DESC=$(echo "$nfr" | sed 's/NFR-[0-9]*: //')
+    echo "- [ ] **$NFR_ID**: $NFR_DESC"
+  done <<< "$NFR_LIST"
+}
+```
+
+### Atomic Changes Completeness Check
+
+```bash
+# Verify all atomic changes were implemented
+verify_atomic_changes() {
+  local REQ_FILE=$1
+  local DEV_THREAD=$2
+
+  # Get atomic changes from requirements
+  CHANGES=$(grep -P "^\d+\.\s+\*\*CHANGE-\d+\*\*" "$REQ_FILE")
+  TOTAL_CHANGES=$(echo "$CHANGES" | wc -l)
+
+  # Check DEV thread for completion markers
+  DEV_COMMENTS=$(gh issue view "$DEV_THREAD" --comments --json comments --jq '.comments[].body')
+  COMPLETED=$(echo "$DEV_COMMENTS" | grep -c "CHANGE-[0-9]* Complete")
+
+  if [ "$COMPLETED" -lt "$TOTAL_CHANGES" ]; then
+    echo "## INCOMPLETE ATOMIC CHANGES"
+    echo ""
+    echo "Expected: $TOTAL_CHANGES changes"
+    echo "Completed: $COMPLETED changes"
+    echo ""
+    echo "### Missing Changes"
+    for i in $(seq 1 $TOTAL_CHANGES); do
+      if ! echo "$DEV_COMMENTS" | grep -q "CHANGE-$i Complete"; then
+        echo "- [ ] CHANGE-$i: NOT FOUND"
+      fi
+    done
+    return 1
+  fi
+
+  echo "All $TOTAL_CHANGES atomic changes verified."
+  return 0
+}
+```
+
+### Test Coverage Verification
+
+```bash
+# Verify tests exist for all test requirements
+verify_test_requirements() {
+  local REQ_FILE=$1
+
+  # Extract test requirements
+  TEST_REQS=$(grep -P "TEST-\d+" "$REQ_FILE")
+
+  echo "## Test Requirements Verification"
+  echo ""
+
+  while IFS= read -r test_req; do
+    TEST_ID=$(echo "$test_req" | grep -oP 'TEST-\d+')
+    TEST_DESC=$(echo "$test_req" | sed 's/.*TEST-[0-9]*.*: //')
+
+    # Search for test in codebase
+    TEST_FILE=$(grep -rl "$TEST_ID" tests/ 2>/dev/null | head -1)
+
+    if [ -n "$TEST_FILE" ]; then
+      echo "- [x] **$TEST_ID**: Found in \`$TEST_FILE\`"
+    else
+      echo "- [ ] **$TEST_ID**: NOT FOUND - $TEST_DESC"
+    fi
+  done <<< "$TEST_REQS"
+}
+```
+
+### Review Verdicts
+
+#### PASS Criteria
+All of the following must be true:
+- [ ] All acceptance criteria verified with evidence
+- [ ] All functional requirements implemented
+- [ ] All non-functional requirements met
+- [ ] All atomic changes completed
+- [ ] Test coverage >= 80%
+- [ ] No CRITICAL or MAJOR bugs outstanding
+
+#### FAIL Criteria (Demote to DEV)
+Any of the following:
+- Missing acceptance criteria implementation
+- Functional requirement not met
+- Critical security or performance issue
+- Test coverage < 60%
+- Architectural violation
+
+#### CONDITIONAL PASS
+- Minor issues that can be fixed post-merge
+- Document in review notes
+- Create follow-up issues
+
+### Parallel Review Handling
+
+```bash
+# Check current REVIEW workload
+MY_REVIEWS=$(gh issue list --assignee @me --label "phase:review" --state open --json number --jq 'length')
+
+if [ "$MY_REVIEWS" -ge 2 ]; then
+  echo "Currently reviewing $MY_REVIEWS issues"
+  echo "Complete existing reviews before claiming more"
+fi
+
+# Each review is independent
+# Use separate review documents for each
+# Track progress per-issue
+```
+
+### Review Completion Report
+
+```bash
+# Generate final review report
+generate_review_report() {
+  cat << EOF
+## REVIEW COMPLETE
+
+### Requirement: REQ-$REQ_NUM v$REQ_VERSION
+
+### Verification Summary
+
+#### Acceptance Criteria
+| Status | Count |
+|--------|-------|
+| PASS | $AC_PASS |
+| FAIL | $AC_FAIL |
+| PARTIAL | $AC_PARTIAL |
+
+#### Technical Requirements
+- Functional: $FR_PASS / $FR_TOTAL passed
+- Non-Functional: $NFR_PASS / $NFR_TOTAL passed
+
+#### Atomic Changes
+- Completed: $CHANGES_DONE / $CHANGES_TOTAL
+
+#### Test Coverage
+- Overall: ${COVERAGE}%
+- New Code: ${NEW_COVERAGE}%
+
+### Verdict: $VERDICT
+
+### Detailed Findings
+$FINDINGS
+
+### Recommendation
+$(if [ "$VERDICT" = "PASS" ]; then
+  echo "Approve for merge. Adding \`completed\` label."
+elif [ "$VERDICT" = "CONDITIONAL" ]; then
+  echo "Approve with conditions. Follow-up issues created."
+else
+  echo "Demote to DEV. Issues documented above must be resolved."
+fi)
+EOF
+}
+
+# Post report and add appropriate label
+gh issue comment "$ISSUE" --body "$(generate_review_report)"
+
+if [ "$VERDICT" = "PASS" ]; then
+  gh issue edit "$ISSUE" --add-label "pending-promotion"
+fi
+```
+
+### Saving Review Artifacts
+
+```bash
+# Save review to GHE-REVIEWS folder
+REVIEW_FILE="GHE-REVIEWS/REVIEW-${ISSUE}-$(date +%Y%m%d).md"
+mkdir -p GHE-REVIEWS
+
+cat > "$REVIEW_FILE" << EOF
+# Review: Issue #$ISSUE
+## Requirement: REQ-$REQ_NUM v$REQ_VERSION
+## Date: $(date +%Y-%m-%d)
+## Reviewer: $(gh api user --jq '.login')
+
+$FULL_REVIEW_CONTENT
+EOF
+
+git add "$REVIEW_FILE"
+git commit -m "Review complete: Issue #$ISSUE - $VERDICT"
+```
+
 ## Review Protocol
 
 **CRITICAL**: Use individual `gh` commands, NOT bash functions or loops.

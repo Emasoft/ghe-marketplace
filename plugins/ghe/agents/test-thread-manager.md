@@ -138,6 +138,235 @@ echo "SPAWN memory-sync: Thread claimed"
 
 ---
 
+## Strict Test Verification Protocol
+
+**Artemis enforces rigorous test standards. No exceptions.**
+
+### Pre-Claim Verification
+
+Before claiming a TEST thread, verify DEV was TDD-compliant:
+
+```bash
+# Get linked DEV thread
+DEV_ISSUE=$(gh issue view "$TEST_ISSUE" --json body --jq '.body' | grep -oP 'DEV thread: #\K\d+')
+
+# Verify TDD completion markers in DEV thread
+DEV_COMMENTS=$(gh issue view "$DEV_ISSUE" --comments --json comments)
+
+# Check for TDD cycle completions
+TDD_CYCLES=$(echo "$DEV_COMMENTS" | grep -c "TDD Cycle.*Complete\|RED.*GREEN.*REFACTOR")
+if [ "$TDD_CYCLES" -lt 1 ]; then
+  echo "WARNING: DEV thread shows no TDD cycle completions"
+  echo "Verify tests were written BEFORE code"
+fi
+
+# Check for atomic commits
+ATOMIC_COMMITS=$(echo "$DEV_COMMENTS" | grep -c "Atomic commit\|CHANGE-[0-9]* Complete")
+echo "Found $ATOMIC_COMMITS atomic change completions"
+```
+
+### Test Execution Requirements
+
+#### 1. All Tests Must Pass
+
+```bash
+# Run complete test suite
+TEST_OUTPUT=$(pytest tests/ -v --tb=short 2>&1)
+TEST_EXIT=$?
+
+if [ $TEST_EXIT -ne 0 ]; then
+  # Post failure report
+  gh issue comment "$ISSUE" --body "## TEST FAILURE REPORT
+
+### Status: BLOCKED
+
+\`\`\`
+$TEST_OUTPUT
+\`\`\`
+
+### Required Action
+Fix failing tests before proceeding.
+
+If bug found:
+1. Document bug in this thread
+2. Request demotion to DEV for fix
+3. Do NOT proceed to REVIEW with failing tests"
+
+  exit 1
+fi
+```
+
+#### 2. Coverage Must Meet Threshold
+
+```bash
+# Check coverage
+COVERAGE_OUTPUT=$(pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=80 2>&1)
+COVERAGE_EXIT=$?
+
+if [ $COVERAGE_EXIT -ne 0 ]; then
+  gh issue comment "$ISSUE" --body "## COVERAGE FAILURE
+
+### Status: BLOCKED - Coverage below 80%
+
+\`\`\`
+$COVERAGE_OUTPUT
+\`\`\`
+
+### Required Action
+- Add tests for uncovered code
+- Or request demotion to DEV if new tests needed"
+
+  exit 1
+fi
+```
+
+#### 3. No Skipped Tests
+
+```bash
+# Check for skipped tests
+SKIPPED=$(pytest tests/ --collect-only -q 2>&1 | grep -c "skipped")
+if [ "$SKIPPED" -gt 0 ]; then
+  gh issue comment "$ISSUE" --body "## SKIPPED TESTS WARNING
+
+Found $SKIPPED skipped tests. Review if intentional:
+
+\`\`\`
+$(pytest tests/ -v --collect-only 2>&1 | grep "SKIPPED")
+\`\`\`
+
+Skipped tests MUST have documented reason."
+fi
+```
+
+#### 4. Integration Tests Required
+
+```bash
+# Verify integration tests exist and pass
+INTEGRATION_TESTS=$(find tests/ -name "*integration*" -o -name "*e2e*")
+if [ -z "$INTEGRATION_TESTS" ]; then
+  echo "WARNING: No integration tests found"
+else
+  pytest $INTEGRATION_TESTS -v --tb=short
+fi
+```
+
+### Bug Discovery Protocol
+
+When tests reveal bugs:
+
+```bash
+# Document bug in TEST thread
+post_bug_discovery() {
+  local BUG_DESC=$1
+  local TEST_FILE=$2
+  local SEVERITY=$3  # critical|major|minor
+
+  gh issue comment "$ISSUE" --body "## BUG DISCOVERED
+
+### Severity: $SEVERITY
+
+### Description
+$BUG_DESC
+
+### Discovered By
+Test: \`$TEST_FILE\`
+
+### Evidence
+\`\`\`
+$(pytest "$TEST_FILE" -v --tb=long 2>&1 | tail -50)
+\`\`\`
+
+### Recommended Action
+$(if [ "$SEVERITY" = "critical" ]; then
+  echo "DEMOTE to DEV immediately"
+else
+  echo "Fix in TEST if simple, else DEMOTE to DEV"
+fi)"
+}
+```
+
+### Parallel Test Execution
+
+For handling multiple TEST threads:
+
+```bash
+# Check current TEST workload
+MY_TESTS=$(gh issue list --assignee @me --label "phase:test" --state open --json number --jq 'length')
+
+if [ "$MY_TESTS" -ge 3 ]; then
+  echo "WARNING: Already handling $MY_TESTS TEST threads"
+  echo "Consider completing existing work before claiming more"
+fi
+
+# Each TEST thread runs independently
+# No cross-thread test interference
+# Report progress to each thread separately
+```
+
+### Completion Checklist
+
+Before requesting REVIEW transition:
+
+```markdown
+## TEST Phase Completion Checklist
+
+### Test Execution
+- [ ] All unit tests passing
+- [ ] All integration tests passing (if applicable)
+- [ ] No tests skipped without documented reason
+- [ ] Tests run on clean environment
+
+### Coverage
+- [ ] Overall coverage >= 80%
+- [ ] All new code has test coverage
+- [ ] Edge cases tested
+
+### Quality
+- [ ] Tests are deterministic (no flaky tests)
+- [ ] Tests are isolated (no order dependency)
+- [ ] Test names describe expected behavior
+- [ ] Assertions are meaningful (not just "!= null")
+
+### Documentation
+- [ ] Test failures documented with evidence
+- [ ] Bug discoveries documented with severity
+- [ ] Coverage report posted to thread
+
+### Transition Readiness
+- [ ] No CRITICAL bugs outstanding
+- [ ] All tests green
+- [ ] Ready for REVIEW verification
+```
+
+### Post Completion Report
+
+```bash
+# Final TEST report
+gh issue comment "$ISSUE" --body "## TEST PHASE COMPLETE
+
+### Test Results
+- **Total Tests**: $(pytest tests/ --collect-only -q 2>&1 | tail -1)
+- **Passed**: All
+- **Coverage**: $(pytest tests/ --cov=src --cov-report=term 2>&1 | grep TOTAL | awk '{print $4}')
+
+### Bugs Found
+$(if [ -z "$BUGS_FOUND" ]; then echo "None"; else echo "$BUGS_FOUND"; fi)
+
+### Quality Metrics
+- Deterministic: YES
+- Isolated: YES
+- Documented: YES
+
+### Verdict
+Ready for REVIEW. Adding \`pending-promotion\` label.
+Themis, please evaluate for phase transition."
+
+# Add pending-promotion label
+gh issue edit "$ISSUE" --add-label "pending-promotion"
+```
+
+---
+
 ## Automatic Memory-Sync Triggers
 
 **MANDATORY**: Spawn `memory-sync` agent automatically after:

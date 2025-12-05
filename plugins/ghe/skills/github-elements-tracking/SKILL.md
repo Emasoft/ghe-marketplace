@@ -20,6 +20,40 @@ This skill respects settings in `.claude/ghe.local.md`. Run `/ghe:setup` to conf
 
 ---
 
+## Related GHE Skills
+
+For specific operations, GHE provides specialized skills:
+
+| Skill | Purpose |
+|-------|---------|
+| **ghe-requirements** | Create, version, and link requirements files. Use when starting features. |
+| **ghe-changelog** | Maintain version history with git-diff. Track code, requirements, and design changes. |
+| **ghe-status** | Check thread status and context |
+| **ghe-claim** | Claim a thread for work |
+| **ghe-checkpoint** | Post progress checkpoints |
+| **ghe-transition** | Request phase transitions |
+| **ghe-report** | Generate status reports |
+
+### Key Workflows
+
+**Starting a New Feature:**
+1. Use **ghe-requirements** to create REQ file
+2. Link requirements to DEV issue
+3. Use **ghe-claim** to claim the thread
+4. Follow TDD workflow from DEV manager
+
+**Tracking Changes:**
+1. Use **ghe-changelog** after significant commits
+2. Updates automatically track requirements and code changes
+
+**Requirements-First Development:**
+All DEV threads MUST link to a requirements file. The DEV manager (Hephaestus) enforces:
+- Requirements breakdown into atomic changes
+- TDD cycle for each atomic change (RED-GREEN-REFACTOR)
+- Test coverage verification before transition
+
+---
+
 # GitHub Elements Tracking
 
 GitHub Issues as **permanent memory** for AI agents. Survives compaction, enables collaboration, provides complete traceability.

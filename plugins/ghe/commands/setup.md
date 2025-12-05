@@ -133,6 +133,21 @@ serena_sync: true
 auto_worktree: true
 auto_transcribe: true
 
+# Requirements settings
+require_requirements: true        # Block DEV without requirements file
+requirements_folder: REQUIREMENTS # Folder for REQ files
+auto_serena_backup: true         # Backup requirements to SERENA
+
+# Parallel processing
+autonomous_mode: false           # Enable auto-dispatch
+max_concurrent_dev: 3
+max_concurrent_test: 2
+max_concurrent_review: 2
+
+# TDD enforcement
+enforce_tdd: true               # Require tests before code
+min_coverage: 80                # Minimum test coverage %
+
 # Current tracking state
 current_issue: null
 current_phase: null
@@ -233,6 +248,109 @@ gh label create "epic" --color "5319E7" --description "Epic thread - orchestrate
 echo "GitHub Elements labels created."
 ```
 
+## Step 7.5: Create REQUIREMENTS Folder Structure
+
+Create the requirements management structure:
+
+```bash
+# Create REQUIREMENTS folder structure
+echo "Creating REQUIREMENTS folder structure..."
+mkdir -p REQUIREMENTS/_templates
+mkdir -p REQUIREMENTS/standalone
+mkdir -p GHE-REVIEWS
+
+# Copy template if not exists
+if [ ! -f "REQUIREMENTS/_templates/REQ-TEMPLATE.md" ]; then
+  cat > "REQUIREMENTS/_templates/REQ-TEMPLATE.md" << 'TEMPLATE_EOF'
+---
+req_id: REQ-XXX
+version: 1.0.0
+status: draft
+created: $(date +%Y-%m-%d)
+updated: $(date +%Y-%m-%d)
+epic: null
+wave: null
+linked_issues: []
+author: @$(gh api user --jq '.login')
+---
+
+# REQ-XXX: [Feature Name]
+
+## 1. Overview
+[Brief description]
+
+## 2. User Story
+**As a** [user type], **I want** [goal], **So that** [benefit].
+
+## 3. Acceptance Criteria
+- [ ] **AC-1**: [Criterion]
+- [ ] **AC-2**: [Criterion]
+
+## 4. Technical Requirements
+### 4.1 Functional
+- **FR-1**: [Requirement]
+
+### 4.2 Non-Functional
+- **NFR-1**: [Requirement]
+
+## 5. Atomic Changes
+1. **CHANGE-1**: [Description]
+
+## 6. Test Requirements
+- **TEST-1** for CHANGE-1: [Test description]
+
+## 7. Dependencies
+None.
+
+## 8. Revision History
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0.0 | $(date +%Y-%m-%d) | @author | Initial |
+TEMPLATE_EOF
+  echo "Created REQUIREMENTS template"
+fi
+
+# Create CHANGELOG if not exists
+if [ ! -f "CHANGELOG.md" ]; then
+  cat > "CHANGELOG.md" << 'CHANGELOG_EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Initial project setup
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+### Requirements
+
+### Design
+
+CHANGELOG_EOF
+  echo "Created CHANGELOG.md"
+fi
+
+# Create .gitkeep files
+touch REQUIREMENTS/_templates/.gitkeep
+touch REQUIREMENTS/standalone/.gitkeep
+touch GHE-REVIEWS/.gitkeep
+
+echo "REQUIREMENTS structure created"
+```
+
 ## Step 8: Update .gitignore
 
 Add local settings to gitignore (settings are per-machine):
@@ -264,6 +382,23 @@ Configuration:
 - Auto worktree: Always on
 - Review agent: Hera (ghe:review-thread-manager)
 
+Requirements Management:
+- Requirements required: Yes
+- Requirements folder: REQUIREMENTS/
+- Auto SERENA backup: Yes
+- Template created: REQUIREMENTS/_templates/REQ-TEMPLATE.md
+- CHANGELOG.md created
+
+TDD Enforcement:
+- Tests required before code: Yes
+- Minimum coverage: 80%
+
+Parallel Processing:
+- Autonomous mode: Disabled
+- Max concurrent DEV: 3
+- Max concurrent TEST: 2
+- Max concurrent REVIEW: 2
+
 Labels created: dev, test, review, ready, in-progress,
                blocked, needs-input, completed,
                violation:phase, violation:scope, ci-failure, epic
@@ -271,8 +406,9 @@ Labels created: dev, test, review, ready, in-progress,
 Settings saved to: <repo-path>/.claude/ghe.local.md
 
 Next steps:
-1. Say "lets work on issue #123" to start tracking an issue
-2. Or "lets work on this new issue" to create and track a new one
+1. Create requirements: Use REQUIREMENTS/_templates/REQ-TEMPLATE.md
+2. Say "lets work on issue #123" to start tracking an issue
+3. Or "lets work on this new issue" to create and track a new one
 ```
 
 ## Step 10: Claude GitHub Action Setup

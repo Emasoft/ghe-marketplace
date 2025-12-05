@@ -40,6 +40,7 @@ SEARCH_PATTERN=""
 STATS_MODE=false
 RECOVER_MODE=false
 COMPOUND=""
+TRANSFORM_LINKS="${TRANSFORM_LINKS:-true}"
 
 # Print usage
 usage() {
@@ -194,6 +195,66 @@ get_color() {
     esac
 }
 
+# Transform GitHub links for better context preservation
+transform_links() {
+    local CONTENT="$1"
+    local REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "")
+
+    if [ -z "$REPO" ]; then
+        # Not in a GitHub repo or gh not authenticated, return unchanged
+        echo "$CONTENT"
+        return
+    fi
+
+    # Transform issue references (#123 -> full URL)
+    CONTENT=$(echo "$CONTENT" | sed -E "s/#([0-9]+)/[#\1](https:\/\/github.com\/$REPO\/issues\/\1)/g")
+
+    # Transform PR references (already linked PRs are preserved by regex)
+    # This only transforms bare #123 patterns, not already-linked ones
+
+    # Transform file references (path/to/file.py -> clickable link)
+    # Only transform if file exists in repo
+    local TEMP_FILE=$(mktemp)
+    echo "$CONTENT" > "$TEMP_FILE"
+
+    while IFS= read -r line; do
+        if echo "$line" | grep -qE '\.(py|js|ts|md|yaml|yml|json|sh|tsx|jsx|css|html|txt|conf|cfg)'; then
+            # Extract file path
+            local FILE_PATH=$(echo "$line" | grep -oE '[a-zA-Z0-9_/.@-]+\.(py|js|ts|md|yaml|yml|json|sh|tsx|jsx|css|html|txt|conf|cfg)' | head -1)
+            if [ -n "$FILE_PATH" ] && [ -f "$FILE_PATH" ]; then
+                # Get line number if mentioned
+                local LINE_NUM=$(echo "$line" | grep -oP '(?<=:)\d+' | head -1)
+                if [ -n "$LINE_NUM" ]; then
+                    local LINK="[\`$FILE_PATH:$LINE_NUM\`](https://github.com/$REPO/blob/main/$FILE_PATH#L$LINE_NUM)"
+                else
+                    local LINK="[\`$FILE_PATH\`](https://github.com/$REPO/blob/main/$FILE_PATH)"
+                fi
+                CONTENT=$(echo "$CONTENT" | sed "s|$FILE_PATH|$LINK|g")
+            fi
+        fi
+    done < "$TEMP_FILE"
+    rm -f "$TEMP_FILE"
+
+    # Transform REQUIREMENTS/ directory references
+    CONTENT=$(echo "$CONTENT" | sed -E "s|REQUIREMENTS/([^[:space:]\)]+\.md)|[REQUIREMENTS/\1](https://github.com/$REPO/blob/main/REQUIREMENTS/\1)|g")
+
+    # Transform docs/ directory references
+    CONTENT=$(echo "$CONTENT" | sed -E "s|docs/([^[:space:]\)]+\.(md|txt))|[docs/\1](https://github.com/$REPO/blob/main/docs/\1)|g")
+
+    echo "$CONTENT"
+}
+
+# Apply link transformation to output
+apply_link_transformation() {
+    local OUTPUT="$1"
+
+    if [ "$TRANSFORM_LINKS" = "true" ]; then
+        transform_links "$OUTPUT"
+    else
+        echo "$OUTPUT"
+    fi
+}
+
 # Show element statistics
 show_stats() {
     echo -e "${BOLD}${CYAN}GitHub Elements Statistics: Issue #${ISSUE}${NC}"
@@ -308,15 +369,19 @@ query_by_type() {
         return
     fi
 
-    # Parse and display results
-    echo "$results" | jq -r '
+    # Parse and display results with link transformation
+    local formatted_output
+    formatted_output=$(echo "$results" | jq -r '
         "┌──────────────────────────────────────────────────────────────┐",
         "│ \(.date | split("T")[0]) │ @\(.author)",
         "├──────────────────────────────────────────────────────────────┤",
         (.body | split("\n")[0:15] | .[] | "│ \(.)"),
         "└──────────────────────────────────────────────────────────────┘",
         ""
-    '
+    ')
+
+    # Apply link transformation before displaying
+    apply_link_transformation "$formatted_output"
 }
 
 # Query compound elements (multiple badges)
@@ -363,14 +428,19 @@ query_compound() {
         return
     fi
 
-    echo "$results" | jq -r '
+    # Parse and display results with link transformation
+    local formatted_output
+    formatted_output=$(echo "$results" | jq -r '
         "┌──────────────────────────────────────────────────────────────┐",
         "│ \(.date | split("T")[0]) │ @\(.author)",
         "├──────────────────────────────────────────────────────────────┤",
         (.body | split("\n")[0:15] | .[] | "│ \(.)"),
         "└──────────────────────────────────────────────────────────────┘",
         ""
-    '
+    ')
+
+    # Apply link transformation before displaying
+    apply_link_transformation "$formatted_output"
 }
 
 # Smart recovery mode
@@ -399,6 +469,8 @@ smart_recover() {
     ')
 
     if [[ -n "$first_knowledge" && "$first_knowledge" != "null" ]]; then
+        # Apply link transformation
+        first_knowledge=$(apply_link_transformation "$first_knowledge")
         echo -e "${BLUE}$first_knowledge${NC}"
     else
         echo -e "${YELLOW}No knowledge elements found${NC}"
@@ -421,6 +493,8 @@ smart_recover() {
     ')
 
     if [[ -n "$last_action" && "$last_action" != "null" ]]; then
+        # Apply link transformation
+        last_action=$(apply_link_transformation "$last_action")
         echo -e "${GREEN}$last_action${NC}"
     else
         echo -e "${YELLOW}No action elements found${NC}"
@@ -440,6 +514,8 @@ smart_recover() {
     ')
 
     if [[ -n "$recent_judgements" ]]; then
+        # Apply link transformation
+        recent_judgements=$(apply_link_transformation "$recent_judgements")
         echo -e "${ORANGE}$recent_judgements${NC}"
     else
         echo -e "${YELLOW}No judgement elements found${NC}"

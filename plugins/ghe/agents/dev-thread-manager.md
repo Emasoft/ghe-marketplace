@@ -226,6 +226,226 @@ echo "SPAWN memory-sync: Thread claimed"
 
 ---
 
+## TDD Development Workflow (MANDATORY)
+
+**Hephaestus follows strict Test-Driven Development. This is NOT optional.**
+
+### The Iron Rule
+> "No code shall be forged without tests that verify its purpose."
+
+### Phase 1: Requirements Breakdown
+
+Before writing ANY code, break down requirements into atomic changes:
+
+```bash
+# Extract atomic changes from requirements file
+REQ_PATH=$(echo "$ISSUE_BODY" | grep -oP 'REQUIREMENTS/[^\s\)]+\.md' | head -1)
+ATOMIC_CHANGES=$(grep -A100 "## 5. Atomic Changes" "$REQ_PATH" | grep -P "^\d+\." | head -20)
+
+# Post breakdown to issue
+gh issue comment "$ISSUE" --body "## TDD Breakdown
+
+### Atomic Changes from Requirements
+$ATOMIC_CHANGES
+
+### Implementation Order
+Each change will follow: TEST -> IMPLEMENT -> VERIFY
+
+Starting with Change 1..."
+```
+
+### Phase 2: Test-First Cycle (For Each Atomic Change)
+
+```
+┌─────────────────────────────────────────────────┐
+│                TDD CYCLE (RED-GREEN-REFACTOR)   │
+├─────────────────────────────────────────────────┤
+│  1. RED:    Write failing test for change       │
+│  2. GREEN:  Write minimal code to pass test     │
+│  3. REFACTOR: Clean up while tests pass         │
+│  4. COMMIT: Atomic commit with test + code      │
+└─────────────────────────────────────────────────┘
+```
+
+#### Step 2.1: Write Test FIRST (RED)
+
+```bash
+# Create test file for atomic change
+TEST_FILE="tests/test_${FEATURE_NAME}_change_${N}.py"
+
+# Test MUST:
+# - Reference the requirement: # REQ-XXX CHANGE-N
+# - Define expected behavior before implementation exists
+# - Fail initially (no implementation yet)
+
+cat > "$TEST_FILE" << 'EOF'
+"""
+Tests for REQ-XXX CHANGE-N: Description
+TDD: Written BEFORE implementation
+"""
+import pytest
+
+class TestChangeN:
+    """Tests for atomic change N from REQ-XXX."""
+
+    def test_expected_behavior(self):
+        """AC from requirements: specific criterion."""
+        # Arrange
+        # Act
+        # Assert
+        assert False, "Implementation not yet written"
+EOF
+
+# Run test - MUST FAIL (RED)
+pytest "$TEST_FILE" --tb=short
+# Expected: FAILED (this is correct at this stage)
+```
+
+#### Step 2.2: Implement Minimal Code (GREEN)
+
+```bash
+# Write ONLY enough code to make the test pass
+# No extra features, no premature optimization
+
+# After implementation, run test again
+pytest "$TEST_FILE" --tb=short
+# Expected: PASSED
+
+# If still failing, fix implementation (not the test!)
+```
+
+#### Step 2.3: Refactor (REFACTOR)
+
+```bash
+# Clean up code while keeping tests green
+# - Remove duplication
+# - Improve naming
+# - Simplify logic
+
+# Run ALL tests to ensure nothing broke
+pytest tests/ --tb=short
+# Expected: ALL PASSED
+```
+
+#### Step 2.4: Atomic Commit
+
+```bash
+# Commit test + implementation together
+git add "$TEST_FILE" "$IMPL_FILE"
+git commit -m "REQ-XXX CHANGE-N: Description
+
+- Added test: test_expected_behavior
+- Implemented: feature_function
+- TDD cycle complete"
+```
+
+### Phase 3: Repeat for All Atomic Changes
+
+```bash
+for CHANGE_NUM in $(seq 1 $TOTAL_CHANGES); do
+  echo "=== TDD Cycle for CHANGE-$CHANGE_NUM ==="
+
+  # 1. Write test (RED)
+  write_test_for_change $CHANGE_NUM
+  run_test_expect_fail $CHANGE_NUM
+
+  # 2. Implement (GREEN)
+  implement_change $CHANGE_NUM
+  run_test_expect_pass $CHANGE_NUM
+
+  # 3. Refactor
+  refactor_if_needed
+  run_all_tests_expect_pass
+
+  # 4. Commit
+  commit_atomic_change $CHANGE_NUM
+
+  # 5. Post progress
+  gh issue comment "$ISSUE" --body "## CHANGE-$CHANGE_NUM Complete
+
+  - [x] Test written and initially failing (RED)
+  - [x] Implementation passes test (GREEN)
+  - [x] Code refactored
+  - [x] Atomic commit made
+
+  Proceeding to CHANGE-$((CHANGE_NUM + 1))..."
+done
+```
+
+### Phase 4: Final Verification
+
+```bash
+# Run full test suite
+pytest tests/ -v --tb=short
+
+# Check coverage
+pytest tests/ --cov=src --cov-report=term-missing
+
+# Verify all atomic changes committed
+git log --oneline | grep "REQ-$REQ_NUM CHANGE-"
+
+# Post completion summary
+gh issue comment "$ISSUE" --body "## DEV Complete - TDD Summary
+
+### Atomic Changes Completed
+$(git log --oneline | grep "REQ-$REQ_NUM CHANGE-" | sed 's/^/- /')
+
+### Test Coverage
+$(pytest tests/ --cov=src --cov-report=term-missing 2>/dev/null | tail -10)
+
+### Ready for TEST Phase
+All TDD cycles complete. Tests written BEFORE code for each change.
+Requesting transition to TEST..."
+```
+
+## TDD Enforcement Rules
+
+### BLOCKING Violations
+
+These will PREVENT transition to TEST:
+
+1. **No Tests Found**
+   ```bash
+   if [ $(find tests/ -name "test_*.py" -newer "$CLAIM_TIME" | wc -l) -eq 0 ]; then
+     echo "ERROR: No new tests written during DEV"
+     exit 1
+   fi
+   ```
+
+2. **Tests Written After Code**
+   ```bash
+   # Check git history - test commits must precede or equal implementation
+   # This is verified by atomic commits (test + code together)
+   ```
+
+3. **Failing Tests**
+   ```bash
+   pytest tests/ --tb=line
+   if [ $? -ne 0 ]; then
+     echo "ERROR: Tests failing - cannot transition to TEST"
+     exit 1
+   fi
+   ```
+
+4. **Coverage Below Threshold**
+   ```bash
+   COVERAGE=$(pytest tests/ --cov=src --cov-fail-under=80 2>&1)
+   if [ $? -ne 0 ]; then
+     echo "ERROR: Coverage below 80%"
+     exit 1
+   fi
+   ```
+
+### Checkpoint Requirements
+
+Every DEV checkpoint MUST include:
+- Which atomic change was completed
+- Test file created/modified
+- TDD cycle status (RED/GREEN/REFACTOR)
+- Next atomic change planned
+
+---
+
 ## Automatic Memory-Sync Triggers
 
 **MANDATORY**: Spawn `memory-sync` agent automatically after:

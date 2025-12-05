@@ -346,6 +346,41 @@ This issue tracks the conversation and work done during this development session
 }
 
 #######################################
+# Transform local references to GitHub links for better traceability
+#######################################
+linkify_content() {
+    local CONTENT="$1"
+    local REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)
+
+    if [ -z "$REPO" ]; then
+        echo "$CONTENT"
+        return
+    fi
+
+    # Transform file:line references (e.g., `file.py:42`)
+    CONTENT=$(echo "$CONTENT" | sed -E "s|\`([a-zA-Z0-9_/.-]+\.(py|js|ts|md|yaml|yml|json|sh)):([0-9]+)\`|[\`\1:\3\`](https://github.com/$REPO/blob/main/\1#L\3)|g")
+
+    # Transform bare file paths that exist (check if file exists before linkifying)
+    while IFS= read -r potential_file; do
+        if [ -f "$potential_file" ]; then
+            LINK="[\`$potential_file\`](https://github.com/$REPO/blob/main/$potential_file)"
+            CONTENT=$(echo "$CONTENT" | sed "s|\`$potential_file\`|$LINK|g")
+        fi
+    done <<< "$(echo "$CONTENT" | grep -oE '\`[a-zA-Z0-9_/.-]+\.(py|js|ts|md|yaml|yml)\`' | tr -d '\`')"
+
+    # Transform REQUIREMENTS references
+    CONTENT=$(echo "$CONTENT" | sed -E "s|\bREQUIREMENTS/([^[:space:]\)\"]+\.md)|[REQUIREMENTS/\1](https://github.com/$REPO/blob/main/REQUIREMENTS/\1)|g")
+
+    # Transform REQ-XXX references to search links
+    CONTENT=$(echo "$CONTENT" | sed -E "s|\b(REQ-[0-9]{3})\b|[\1](https://github.com/$REPO/search?q=\1)|g")
+
+    # Transform issue references if not already linked (avoid double-linking)
+    CONTENT=$(echo "$CONTENT" | sed -E "s|([^[])#([0-9]+)([^]])|\1[#\2](https://github.com/$REPO/issues/\2)\3|g")
+
+    echo "$CONTENT"
+}
+
+#######################################
 # Post message to issue
 #######################################
 post_to_issue() {
@@ -360,8 +395,11 @@ post_to_issue() {
     # Redact sensitive data
     local safe_message=$(redact_sensitive "$message")
 
+    # Linkify content (convert local paths to GitHub links)
+    local linkified_message=$(linkify_content "$safe_message")
+
     # Classify element
-    local badges=$(classify_element "$safe_message")
+    local badges=$(classify_element "$linkified_message")
 
     # Format the comment - badges on same line as ---
     local comment
@@ -370,7 +408,7 @@ post_to_issue() {
 **${speaker} said:**
 <br><br>
 
-${safe_message}
+${linkified_message}
 
 --- ${badges}"
 
