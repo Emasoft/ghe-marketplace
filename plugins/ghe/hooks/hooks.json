@@ -47,6 +47,16 @@
     ],
     "PreToolUse": [
       {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/auto_approve.sh",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
