@@ -192,8 +192,24 @@ export BACKGROUND_AGENT_LOG=/custom/path.log
 unset BACKGROUND_AGENT_LOG
 ```
 
+## Implementation Details
+
+For developers implementing similar functionality or debugging issues, see `references/implementation-tricks.md` which documents:
+
+- **Terminal background trick**: Using `do script` without `activate`
+- **Clipboard paste method**: Using `pbcopy` + Cmd+V instead of `keystroke`
+- **Focus restoration**: Capturing current app and switching back
+- **Hook JSON format**: The correct `hookSpecificOutput` wrapper structure
+- **Hook type discovery**: Why `PreToolUse` not `PermissionRequest`
+- **Testing hooks standalone**: Pipe JSON to test without full Claude session
+- **Closing Terminal**: Options for auto-closing after agent completes
+
 ## Resources
 
 ### references/security-model.md
 
 Complete documentation of the auto-approval whitelist, including all allowed tools, bash commands, and path safety rules.
+
+### references/implementation-tricks.md
+
+Technical implementation discoveries and solutions for macOS Terminal automation, AppleScript escaping, and hook development.
