@@ -1467,9 +1467,9 @@ VERDICT
 gh issue close $REVIEW_ISSUE
 gh issue edit $REVIEW_ISSUE --remove-label "in-progress"
 
-# Step 6b: Request Themis to add gate:passed (GATE labels are Themis-only)
-# DO NOT add gate:passed directly - only Themis can add GATE labels
-echo "SPAWN phase-gate: Validate PASS verdict and add gate:passed for issue #${REVIEW_ISSUE}"
+# Step 6b: Request Themis to add completed label (completion labels are Themis-only)
+# DO NOT add completed directly - only Themis can mark issues complete
+echo "SPAWN phase-gate: Validate PASS verdict and mark issue #${REVIEW_ISSUE} as completed"
 
 # Step 7: Approve and merge PR
 PR_NUM=$(gh pr list --head issue-${ISSUE_NUM} --json number --jq '.[0].number')

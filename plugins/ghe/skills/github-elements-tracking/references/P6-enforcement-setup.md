@@ -41,9 +41,8 @@ gh label create "needs-input" -d "Waiting for external input" -c "d93f0b" 2>/dev
 gh label create "review-needed" -d "Ready for review" -c "1d76db" 2>/dev/null || gh label edit "review-needed" -d "Ready for review" -c "1d76db"
 gh label create "completed" -d "Work finished" -c "0e8a16" 2>/dev/null || gh label edit "completed" -d "Work finished" -c "0e8a16"
 
-# Gate labels
-gh label create "gate:passed" -d "All quality gates passed" -c "0e8a16" 2>/dev/null || gh label edit "gate:passed" -d "All quality gates passed" -c "0e8a16"
-gh label create "gate:failed" -d "Quality gate failed" -c "d93f0b" 2>/dev/null || gh label edit "gate:failed" -d "Quality gate failed" -c "d93f0b"
+# Completion label (review passed = completed + closed)
+# Note: gate:passed/failed removed - use completed label and phase transitions instead
 
 # Type labels (thread types)
 gh label create "epic" -d "Epic/meta issue" -c "7057ff" 2>/dev/null || gh label edit "epic" -d "Epic/meta issue" -c "7057ff"

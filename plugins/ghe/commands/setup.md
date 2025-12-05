@@ -216,9 +216,8 @@ gh label create "in-progress" --color "FEF2C0" --description "Work in progress" 
 gh label create "blocked" --color "D93F0B" --description "Has blocker" --force
 gh label create "needs-input" --color "D4C5F9" --description "Waiting for input" --force
 
-# Gate labels (REVIEW outcomes)
-gh label create "gate:passed" --color "0E8A16" --description "Review passed - ready to merge" --force
-gh label create "gate:failed" --color "D93F0B" --description "Review failed - needs more work" --force
+# Completion label
+gh label create "completed" --color "0E8A16" --description "Review passed - merged" --force
 
 # Violation labels
 gh label create "violation:phase" --color "B60205" --description "Phase order violation" --force
@@ -266,7 +265,7 @@ Configuration:
 - Review agent: Hera (ghe:review-thread-manager)
 
 Labels created: dev, test, review, ready, in-progress,
-               blocked, needs-input, gate:passed, gate:failed,
+               blocked, needs-input, completed,
                violation:phase, violation:scope, ci-failure, epic
 
 Settings saved to: <repo-path>/.claude/ghe.local.md

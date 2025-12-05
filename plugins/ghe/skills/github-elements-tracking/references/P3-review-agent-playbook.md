@@ -323,8 +323,10 @@ Approved for merge/release.
 ```
 
 ```bash
-gh issue edit $ISSUE --add-label "gate:passed"
-gh issue close $ISSUE --reason completed
+# Request Themis to mark as completed (only Themis can add completed label)
+echo "SPAWN phase-gate: Mark issue #$ISSUE as completed"
+# Themis will: gh issue edit $ISSUE --add-label "completed" --remove-label "phase:review"
+# Themis will: gh issue close $ISSUE --reason completed
 ```
 
 #### FAIL Verdict
@@ -367,7 +369,8 @@ This review will remain open for re-evaluation.
 ```
 
 ```bash
-gh issue edit $ISSUE --add-label "gate:failed"
+# Demote back to phase:dev (only Themis can do this)
+gh issue edit $ISSUE --remove-label "phase:review" --add-label "phase:dev"
 # Do NOT close - keep open for re-review
 
 # Post to epic
@@ -754,8 +757,8 @@ Found during review of #<issue>
 | Action | Command |
 |--------|---------|
 | Claim review | `gh issue edit N --add-assignee @me --add-label in-progress` |
-| Mark passed | `gh issue edit N --add-label gate:passed && gh issue close N` |
-| Mark failed | `gh issue edit N --add-label gate:failed` |
+| Mark passed | Request Themis: `SPAWN phase-gate: Mark #N as completed` |
+| Mark failed | Request Themis: `SPAWN phase-gate: Demote #N back to phase:dev` |
 | Post finding | `gh issue comment N --body "## Finding: ..."` |
 | Escalate | `gh issue comment EPIC --body "## Review Escalation..."` |
 
@@ -870,7 +873,7 @@ Waiting for maintainer guidance before continuing cycle.
 - [ ] All findings documented
 - [ ] Coverage estimation complete
 - [ ] Clear verdict given: **PASS** or **FAIL**
-- [ ] Labels updated (`gate:passed` or `gate:failed`)
+- [ ] Themis notified for phase transition (completed or back to phase:dev)
 - [ ] **REVIEW thread CLOSED** (one thread at a time rule)
 - [ ] If FAIL: DEV thread reopened (never TEST)
 - [ ] Epic notified of result

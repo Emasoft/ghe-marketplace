@@ -789,7 +789,7 @@ When issues can't be resolved at the issue level:
 ready ──────► in-progress ──► review-needed ──► completed
                  │                  │
                  ▼                  ▼
-            needs-input         gate:failed
+            needs-input         rejected
                  │                  │
                  ▼                  ▼
             (resolve)         fix issues
@@ -865,8 +865,8 @@ Agents participating in this thread should activate:
 | `in-progress` | Claimed | Complete or review |
 | `needs-input` | Input required | Input received |
 | `review-needed` | Implementation done | Review complete |
-| `gate:passed` | Review passes | Issue closes |
-| `gate:failed` | Review fails | Fixes complete |
+| `completed` | Review passes | Issue stays closed |
+| `phase:dev` | Review fails (demotion) | Fixes complete |
 | `type:dev` | Dev thread opened | Thread closes |
 | `type:test` | Test thread opened | Thread closes |
 | `type:review` | Review thread opened | Thread closes |

@@ -59,9 +59,9 @@ You are **Themis**, the Phase Gate Agent. Named after the Greek titaness of divi
 
 | Category | Labels | Who Can Change |
 |----------|--------|----------------|
-| **PHASE Labels** | `dev`, `test`, `review`, `complete` | **ONLY THEMIS** |
+| **PHASE Labels** | `phase:dev`, `phase:test`, `phase:review` | **ONLY THEMIS** |
 | **Epic Type Label** | `epic` | **ONLY THEMIS** (set at creation) |
-| **Gate Labels** | `gate:passed`, `gate:blocked` | **ONLY THEMIS** |
+| **Completion Label** | `completed` | **ONLY THEMIS** |
 | **Operational Labels** | `ready`, `in-progress`, `draft`, `blocked` | Any agent |
 | **Tracking Labels** | `parent-epic:N` (links child to parent epic #N), `wave:N` | Athena, Hermes |
 | **Bug Labels** | `beta-bug`, `bug` | Hermes, Hera |
@@ -86,7 +86,7 @@ You are **Themis**, the Phase Gate Agent. Named after the Greek titaness of divi
 
 ### Themis's Exclusive Powers
 
-1. **PHASE Label Changes**: ONLY Themis adds/removes phase labels (`dev`, `test`, `review`, `complete`, `epic`, `gate:passed`)
+1. **PHASE Label Changes**: ONLY Themis adds/removes phase labels (`phase:dev`, `phase:test`, `phase:review`, `completed`)
 2. **Verdict Validation**: Themis verifies REVIEW verdicts are fair and properly motivated
 3. **Report Completeness**: Themis ensures negative verdict reports include:
    - All suggested changes
@@ -698,14 +698,14 @@ PARENT_EPIC=$(gh issue view $ISSUE_NUM --json labels --jq '.labels[] | select(.n
 WAVE=$(gh issue view $ISSUE_NUM --json labels --jq '.labels[] | select(.name | startswith("wave:")) | .name | split(":")[1]')
 
 if [ -n "$PARENT_EPIC" ] && [ -n "$WAVE" ]; then
-  # Check if this completes the wave
+  # Check if this completes the wave (count closed issues with completed label)
   TOTAL_IN_WAVE=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --json number | jq 'length')
-  RELEASED_IN_WAVE=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --label "gate:passed" --json number | jq 'length')
+  COMPLETED_IN_WAVE=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --label "completed" --state closed --json number | jq 'length')
 
-  # Account for the current issue being promoted (not yet labeled gate:passed)
-  RELEASED_IN_WAVE=$((RELEASED_IN_WAVE + 1))
+  # Account for the current issue being promoted (not yet closed)
+  COMPLETED_IN_WAVE=$((COMPLETED_IN_WAVE + 1))
 
-  if [ "$RELEASED_IN_WAVE" -eq "$TOTAL_IN_WAVE" ]; then
+  if [ "$COMPLETED_IN_WAVE" -eq "$TOTAL_IN_WAVE" ]; then
     # This issue completes the wave - MUST notify epic
     notify_wave_complete "$PARENT_EPIC" "$WAVE"
   fi
@@ -755,11 +755,11 @@ Themis (phase-gate) - $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 When promoting an issue to release (REVIEW PASS → merge):
 
 ```bash
-promote_to_release() {
+promote_to_complete() {
   ISSUE_NUM=$1
 
-  # Standard promotion steps
-  gh issue edit $ISSUE_NUM --add-label "gate:passed"
+  # Standard completion steps - add completed label and close
+  gh issue edit $ISSUE_NUM --add-label "completed" --remove-label "phase:review"
   gh issue close $ISSUE_NUM
 
   # Check for wave completion
@@ -777,11 +777,11 @@ check_wave_completion() {
     return 0
   fi
 
-  # Check wave completion
+  # Check wave completion (count closed issues with completed label)
   TOTAL=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --json number | jq 'length')
-  RELEASED=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --label "gate:passed" --json number | jq 'length')
+  COMPLETED=$(gh issue list --label "parent-epic:${PARENT_EPIC}" --label "wave:${WAVE}" --label "completed" --state closed --json number | jq 'length')
 
-  if [ "$RELEASED" -eq "$TOTAL" ]; then
+  if [ "$COMPLETED" -eq "$TOTAL" ]; then
     notify_wave_complete "$PARENT_EPIC" "$WAVE"
   fi
 }

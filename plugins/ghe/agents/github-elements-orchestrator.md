@@ -1194,13 +1194,13 @@ WAVE_NUM=1
 # Find all issues in a specific wave
 gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --json number,title,state,labels
 
-# Check wave progress
+# Check wave progress (count closed issues with completed label)
 TOTAL=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --json number | jq 'length')
-RELEASED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --label "gate:passed" --json number | jq 'length')
-echo "Wave ${WAVE_NUM} progress: ${RELEASED}/${TOTAL} issues released"
+COMPLETED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --label "completed" --state closed --json number | jq 'length')
+echo "Wave ${WAVE_NUM} progress: ${COMPLETED}/${TOTAL} issues completed"
 
-# Check if wave is complete (all issues have gate:passed)
-if [ "$RELEASED" -eq "$TOTAL" ]; then
+# Check if wave is complete (all issues closed with completed label)
+if [ "$COMPLETED" -eq "$TOTAL" ]; then
   echo "WAVE ${WAVE_NUM} COMPLETE - ready for next wave"
 fi
 ```
@@ -1249,16 +1249,16 @@ echo "SPAWN phase-gate: Validate and execute epic transition DEV → TEST phase 
 
 **CRITICAL**: Epic phase labels and `complete` label are **Themis-only**.
 
-When ALL waves are complete (all child issues have `gate:passed`):
+When ALL waves are complete (all child issues closed with `completed` label):
 
 ```bash
 EPIC_ISSUE=123
 
-# Verify ALL child issues have passed
+# Verify ALL child issues are completed (closed with completed label)
 TOTAL=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --json number | jq 'length')
-PASSED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "gate:passed" --json number | jq 'length')
+COMPLETED=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "completed" --state closed --json number | jq 'length')
 
-if [ "$PASSED" -eq "$TOTAL" ]; then
+if [ "$COMPLETED" -eq "$TOTAL" ]; then
   # Step 1: Athena requests epic completion
   HEADER=$(avatar_header "Athena")
   gh issue comment $EPIC_ISSUE --body "${HEADER}
@@ -1266,7 +1266,7 @@ if [ "$PASSED" -eq "$TOTAL" ]; then
 
 ### Verification
 - Total child issues: ${TOTAL}
-- Passed REVIEW: ${PASSED}
+- Completed: ${COMPLETED}
 - All issues complete: YES
 
 ### Requesting Themis to mark epic complete"
@@ -1276,7 +1276,7 @@ if [ "$PASSED" -eq "$TOTAL" ]; then
   echo "SPAWN phase-gate: Validate and execute epic completion for epic #${EPIC_ISSUE}"
 
   # Themis will:
-  # 1. Validate all child issues have gate:passed
+  # 1. Validate all child issues are closed with completed label
   # 2. Remove phase labels (dev, test, review - whichever is current)
   # 3. Add complete label (epic label stays)
   # 4. Close epic issue

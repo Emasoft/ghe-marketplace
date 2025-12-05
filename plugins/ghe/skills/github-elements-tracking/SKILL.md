@@ -1609,8 +1609,8 @@ gh issue close $REVIEW_ISSUE --comment "PASS - merged to main"
 | OPEN | `needs-input` | Blocked, waiting for decision |
 | CLOSED | `type:dev` | DEV phase complete |
 | CLOSED | `type:test` | TEST phase complete |
-| CLOSED | `gate:passed` | REVIEW passed, merged |
-| CLOSED | `gate:failed` | REVIEW failed, demoted to DEV |
+| CLOSED | `completed` | REVIEW passed, merged |
+| CLOSED | `phase:dev` | REVIEW failed, back to DEV |
 
 #### Critical Rule: One Thread At A Time
 
@@ -1897,8 +1897,7 @@ Wave 2: First Floor
 | `review-needed` | Ready for review |
 | `wave:N` | Part of wave N |
 | `epic:N` | Part of epic N |
-| `gate:passed` | Review passed |
-| `gate:failed` | Review failed |
+| `completed` | Review passed, issue closed |
 
 ### Thread Type Labels
 
@@ -2433,7 +2432,7 @@ Steps must be completed in sequence. But when each step happens doesn't matter. 
 5. checkpoints    → State preserved at changes
 6. work complete  → All tasks done
 7. review-needed  → Ready for review
-8. review done    → gate:passed or gate:failed
+8. review done    → PASS (close + completed) or FAIL (back to phase:dev)
 9. merged/closed  → If passed
 ```
 

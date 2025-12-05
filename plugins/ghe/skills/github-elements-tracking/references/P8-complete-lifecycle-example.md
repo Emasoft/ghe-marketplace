@@ -617,8 +617,8 @@ Closing REVIEW thread. Reopening DEV thread.
 ```
 
 ```bash
-# Add gate:failed label
-$ gh issue edit 201-review --add-label "gate:failed"
+# Demote back to DEV phase (only Themis can do this)
+$ gh issue edit 201-review --remove-label "phase:review" --add-label "phase:dev"
 
 # Close REVIEW thread
 $ gh issue close 201-review
@@ -629,7 +629,7 @@ $ gh issue comment 201 --body "$(cat <<'EOF'
 ## DEV Thread Reopened - Demoted from REVIEW
 
 ### Source
-Demoted from REVIEW thread #201-review (gate:failed)
+Demoted from REVIEW thread #201-review (review rejected)
 
 ### Why DEV (not TEST)?
 Missing tests require DEVELOPMENT work. TEST cannot write tests.
@@ -817,10 +817,8 @@ All previous issues resolved. No new issues found.
 ```
 
 ```bash
-# Add gate:passed label
-$ gh issue edit 201-review-2 --add-label "gate:passed"
-
-# Close REVIEW thread
+# Add completed label and close (Themis does this)
+$ gh issue edit 201-review-2 --add-label "completed" --remove-label "phase:review"
 $ gh issue close 201-review-2 --reason completed
 ```
 
@@ -942,9 +940,9 @@ REVIEW must estimate test coverage. If insufficient → demote to DEV.
 | DEV in progress | `type:dev, in-progress` |
 | TEST in progress | `type:test, in-progress` |
 | REVIEW in progress | `type:review, in-progress` |
-| REVIEW passed | `type:review, gate:passed` |
-| REVIEW failed | `type:review, gate:failed` |
-| Complete | `completed` |
+| REVIEW passed | `completed` (closed) |
+| REVIEW failed | `phase:dev` (back to DEV) |
+| Complete | `completed` (closed) |
 
 ---
 
