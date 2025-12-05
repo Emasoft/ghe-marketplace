@@ -40,10 +40,10 @@ The three element badges are not decorative - they form a **semantic triple-stor
 │  KEY INSIGHT: Only ACTION elements change the project. KNOWLEDGE and JUDGEMENT   │
 │  are discussion/evaluation - they inform but don't alter artifacts.              │
 │                                                                                   │
-│  Badge Format (searchable):                                                       │
-│  ![knowledge](https://img.shields.io/badge/element-knowledge-blue)                │
-│  ![action](https://img.shields.io/badge/element-action-green)                     │
-│  ![judgement](https://img.shields.io/badge/element-judgement-orange)              │
+│  Badge Format (searchable, no alt text):                                          │
+│  ![](https://img.shields.io/badge/element-knowledge-blue)                         │
+│  ![](https://img.shields.io/badge/element-action-green)                           │
+│  ![](https://img.shields.io/badge/element-judgement-orange)                       │
 │                                                                                   │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```

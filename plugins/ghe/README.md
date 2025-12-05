@@ -277,9 +277,9 @@ Each element stored in a GitHub Issue comment is tagged with one or more classif
 
 | Badge | Type | Purpose |
 |-------|------|---------|
-| ![knowledge](https://img.shields.io/badge/element-knowledge-blue) | KNOWLEDGE | Plans, requirements, design, theory |
-| ![action](https://img.shields.io/badge/element-action-green) | ACTION | Code, assets, configs - actual changes |
-| ![judgement](https://img.shields.io/badge/element-judgement-orange) | JUDGEMENT | Reviews, bugs, feedback, test results |
+| ![](https://img.shields.io/badge/element-knowledge-blue) | KNOWLEDGE | Plans, requirements, design, theory |
+| ![](https://img.shields.io/badge/element-action-green) | ACTION | Code, assets, configs - actual changes |
+| ![](https://img.shields.io/badge/element-judgement-orange) | JUDGEMENT | Reviews, bugs, feedback, test results |
 
 ### Key Insight
 

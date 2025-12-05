@@ -53,10 +53,10 @@ get_avatar_url() {
     fi
 }
 
-# Element type badges (GitHub-friendly markdown)
-BADGE_KNOWLEDGE="![knowledge](https://img.shields.io/badge/element-knowledge-blue)"
-BADGE_ACTION="![action](https://img.shields.io/badge/element-action-green)"
-BADGE_JUDGEMENT="![judgement](https://img.shields.io/badge/element-judgement-orange)"
+# Element type badges (GitHub-friendly markdown) - no alt text, just badges
+BADGE_KNOWLEDGE="![](https://img.shields.io/badge/element-knowledge-blue)"
+BADGE_ACTION="![](https://img.shields.io/badge/element-action-green)"
+BADGE_JUDGEMENT="![](https://img.shields.io/badge/element-judgement-orange)"
 
 #######################################
 # Check if we have a GitHub repo
@@ -328,9 +328,7 @@ This issue tracks the conversation and work done during this development session
 
 ### Element Types
 
-- ${BADGE_KNOWLEDGE} - Specs, requirements, design, algorithms, documentation
-- ${BADGE_ACTION} - Code, implementations, file changes, assets
-- ${BADGE_JUDGEMENT} - Reviews, feedback, bug reports, evaluations
+--- ${BADGE_KNOWLEDGE} ${BADGE_ACTION} ${BADGE_JUDGEMENT}
 
 ---
 ")
@@ -365,29 +363,16 @@ post_to_issue() {
     # Classify element
     local badges=$(classify_element "$safe_message")
 
-    # Format the comment
+    # Format the comment - badges on same line as ---
     local comment
-    if [[ "$is_user" == "true" ]]; then
-        comment="<img src=\"${avatar_url}\" width=\"77\" align=\"left\"/>
+    comment="<img src=\"${avatar_url}\" width=\"77\" align=\"left\"/>
 
 **${speaker} said:**
 <br><br>
 
 ${safe_message}
 
----
-${badges}"
-    else
-        comment="<img src=\"${avatar_url}\" width=\"77\" align=\"left\"/>
-
-**${speaker} said:**
-<br><br>
-
-${safe_message}
-
----
-${badges}"
-    fi
+--- ${badges}"
 
     # Post to GitHub
     gh issue comment "$issue_num" --body "$comment"
