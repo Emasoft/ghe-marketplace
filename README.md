@@ -19,6 +19,49 @@
 
 ---
 
+## Table of Contents
+
+- [What is GHE?](#what-is-ghe)
+- [The Element](#the-element)
+  - [Element of Knowledge](#element-of-knowledge)
+  - [Element of Action](#element-of-action)
+  - [Element of Judgement](#element-of-judgement)
+- [Why GHE?](#why-ghe)
+  - [SESSION CONTINUITY](#session-continuity)
+  - [ON TRACK](#on-track)
+  - [ALIGNED TEAM WORK](#aligned-team-work)
+  - [PERFECT MEMORY](#perfect-memory)
+  - [EPIC THREADS](#epic-threads)
+  - [How WAVES Work](#how-waves-work)
+- [Installation](#installation)
+  - [Option 1: Add Marketplace (Recommended)](#option-1-add-marketplace-recommended)
+  - [Option 2: Manual Clone](#option-2-manual-clone)
+- [Post-Installation](#post-installation)
+- [Prerequisites](#prerequisites)
+  - [1. Claude Code](#1-claude-code)
+  - [2. GitHub CLI](#2-github-cli)
+- [Plugin Contents](#plugin-contents)
+  - [GHE v0.2.6-alpha](#ghe-v026-alpha)
+  - [Agents](#agents)
+  - [Argos Panoptes - The All-Seeing Guardian](#argos-panoptes-the-all-seeing-guardian)
+  - [Skills](#skills)
+- [Workflow](#workflow)
+  - [Phase Promotion with Themis](#phase-promotion-with-themis)
+- [Troubleshooting](#troubleshooting)
+  - [Claude doesn't see the plugin](#claude-doesnt-see-the-plugin)
+  - [GitHub CLI says "not logged in"](#github-cli-says-not-logged-in)
+  - [The /ghe:setup command doesn't work](#the-ghesetup-command-doesnt-work)
+  - [Claude forgets everything after compaction](#claude-forgets-everything-after-compaction)
+  - [I see errors about "permission denied"](#i-see-errors-about-permission-denied)
+  - [Still stuck?](#still-stuck)
+- [Updating](#updating)
+- [Uninstalling](#uninstalling)
+- [Contributing](#contributing)
+- [Support](#support)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+
+
 > **ALPHA** - This plugin is in early development. APIs and workflows may change.
 
 ## What is GHE?
