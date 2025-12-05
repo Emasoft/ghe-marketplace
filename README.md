@@ -312,6 +312,58 @@ gh auth login
 | <img src="plugins/ghe/assets/avatars/chronos.png" width="77"/> | **Chronos** | `ghe:ci-issue-opener` | Sounds the alarm when CI fails |
 | <img src="plugins/ghe/assets/avatars/cerberus.png" width="77"/> | **Cerberus** | `ghe:pr-checker` | Guards the gates, validates PRs |
 
+### Argos Panoptes - The All-Seeing Guardian
+
+<table>
+<tr>
+<td width="100" align="center">
+<img src="plugins/ghe/assets/avatars/argos.png" width="77"/>
+</td>
+<td>
+
+**Argos Panoptes** is the foremost guardian and first responder to all GitHub events. Unlike the agents above, Argos is **NOT** a Claude Code plugin agent - it's a **GitHub Action** that runs 24/7 on GitHub's infrastructure.
+
+</td>
+</tr>
+</table>
+
+#### Why Argos is Different
+
+| Plugin Agents | Argos Panoptes |
+|---------------|----------------|
+| Run locally in Claude Code | Runs on GitHub's servers |
+| Active only during your session | Active 24/7, even when you sleep |
+| Respond when you invoke them | Responds automatically to events |
+| Installed via `/plugin install` | Installed by copying workflow files |
+
+**Argos never sleeps.** When a bug report comes in at 3 AM, Argos validates it. When a PR is opened, Argos queues it for review. When CI fails, Argos documents it. The other agents (Hera, Hephaestus, etc.) handle the work when you're online - Argos ensures nothing is missed while you're away.
+
+#### Events Argos Responds To
+
+| Event | Trigger | What Argos Does |
+|-------|---------|-----------------|
+| **PR Opened** | `pull_request: [opened, ready_for_review]` | Creates REVIEW issue for Hera, queues PR for review |
+| **Bug Report** | `issues: [opened, edited]` with `bug` label | Validates bug report, adds phase labels, requests missing info |
+| **Feature Request** | `issues: [opened, edited]` with `enhancement`/`feature` label | Validates feature request, queues for Hephaestus |
+| **Comment Posted** | `issue_comment: [created]` | Monitors for policy violations, warns or flags for Ares |
+| **Possible SPAM** | `issues: [opened]` | Conservative spam detection (requires 3+ indicators) |
+| **CI Failure** | `workflow_run: [completed]` with failure | Creates/updates CI failure issue for Chronos |
+| **Security Alert** | Security events (Dependabot, CodeQL, secrets) | Creates URGENT issue for Hephaestus |
+
+#### Installing Argos Panoptes
+
+Argos requires **manual installation** in your repository. Copy the workflow files from `.github/workflows/`:
+
+```bash
+# From the ghe-marketplace repository, copy all ghe-*.yml files to your repo
+cp .github/workflows/ghe-*.yml /path/to/your-repo/.github/workflows/
+```
+
+**Required secrets** in your repository:
+- `CLAUDE_CODE_OAUTH_TOKEN` - For the Claude Code Action to authenticate
+
+After installation, Argos will automatically respond to events in your repository. All comments from Argos are signed as "**Argos Panoptes (The All-Seeing)**" and use the argos.png avatar.
+
 ### Skills
 
 | Skill | Usage |
