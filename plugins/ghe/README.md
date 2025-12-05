@@ -72,13 +72,15 @@ Each agent has a unique **Greek god/mythology robot avatar** that appears in Git
 | `review-thread-manager` | **Hera** | sonnet | REVIEW thread lifecycle (quality) |
 | `phase-gate` | **Themis** | sonnet | Transition validation (justice) |
 | `memory-sync` | **Mnemosyne** | haiku | SERENA memory sync (memory) |
-| `enforcement` | **Ares** | haiku | Violation detection (enforcement) |
+| `enforcement` | **Argos Panoptes** | haiku | All-seeing workflow enforcement |
+| `ares` | **Ares** | haiku | Moderation and policy violations |
+| `hermes` | **Hermes** | haiku | Routes messages between agents |
+| `reporter` | **Reporter** | haiku | Status reports and metrics |
 | `ci-issue-opener` | **Chronos** | haiku | CI failure issues (time) |
 | `pr-checker` | **Cerberus** | haiku | PR requirements (guardian) |
-| `reporter` | **Hermes** | haiku | Status reports (messenger) |
 
 **Avatar System:**
-- **Agent avatars**: Bundled locally in `assets/avatars/` (13 robot PNGs)
+- **Agent avatars**: Bundled locally in `assets/avatars/` (12 robot PNGs)
 - **User avatars**: Fetched dynamically from GitHub API at runtime
 
 ---
@@ -395,12 +397,14 @@ ghe/
 │   ├── review-thread-manager.md         # Hera
 │   ├── phase-gate.md                    # Themis
 │   ├── memory-sync.md                   # Mnemosyne
-│   ├── enforcement.md                   # Ares
+│   ├── enforcement.md                   # Argos Panoptes
+│   ├── ares.md                          # Ares
+│   ├── hermes.md                        # Hermes
 │   ├── ci-issue-opener.md               # Chronos
 │   ├── pr-checker.md                    # Cerberus
-│   └── reporter.md                      # Hermes
+│   └── reporter.md                      # Reporter
 ├── assets/
-│   ├── avatars/                  # Robot avatar PNGs (13 agents)
+│   ├── avatars/                  # Robot avatar PNGs (12 agents)
 │   ├── element-triangle.svg      # Element concept diagram
 │   └── element-classification.svg # 3-column classification table
 ├── scripts/
