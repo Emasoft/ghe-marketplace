@@ -103,6 +103,9 @@ is_allowed_write_path() {
     local P="$1"
     [[ -z "$P" ]] && return 0
 
+    # /dev/null is always safe (common redirect target)
+    [[ "$P" == "/dev/null" ]] && return 0
+
     # Relative paths are inside project (allowed)
     [[ "$P" != "/"* ]] && [[ "$P" != [A-Za-z]:* ]] && return 0
 

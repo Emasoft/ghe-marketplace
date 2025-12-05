@@ -10,7 +10,7 @@
           },
           {
             "type": "command",
-            "command": "bash -c 'CONFIG=\".claude/ghe.local.md\"; if [[ -f \"$CONFIG\" ]]; then ISSUE=$(grep -E \"^current_issue:\" \"$CONFIG\" 2>/dev/null | head -1 | sed \"s/^[^:]*: *//\" | tr -d '\"' | tr -d \"'\" | tr -d \" \"); if [[ -n \"$ISSUE\" && \"$ISSUE\" != \"null\" ]]; then echo \"GHE: Recovering context from Issue #$ISSUE...\"; bash ${CLAUDE_PLUGIN_ROOT}/scripts/recall-elements.sh --issue \"$ISSUE\" --recover 2>/dev/null || echo \"Element recall not available - run manually: recall-elements.sh --issue $ISSUE --recover\"; fi; fi'",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/session-recover.sh",
             "timeout": 30
           },
           {
