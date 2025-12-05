@@ -29,7 +29,13 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
 # Get project root from current working directory
+# Remove trailing slash for consistent comparison
 PROJECT_ROOT="${CWD:-$(pwd)}"
+PROJECT_ROOT="${PROJECT_ROOT%/}"
+
+# Also track additional allowed directories from CLAUDE_PROJECT_DIRS env var
+# Format: colon-separated paths like /path/one:/path/two
+EXTRA_PROJECT_DIRS="${CLAUDE_PROJECT_DIRS:-}"
 
 # === PLATFORM DETECTION ===
 # Detect OS and set platform-specific paths
@@ -98,6 +104,38 @@ EOF
 
 # === PATH SAFETY CHECKS ===
 
+# Normalize a path for comparison (remove trailing slash, resolve . and ..)
+normalize_path() {
+    local P="$1"
+    # Remove trailing slashes
+    P="${P%/}"
+    # If we have realpath, use it for canonical form (but don't require file to exist)
+    if command -v realpath &>/dev/null; then
+        # -m: don't require file to exist, -s: no symlink resolution (faster)
+        realpath -ms "$P" 2>/dev/null || echo "$P"
+    else
+        echo "$P"
+    fi
+}
+
+# Check if path P starts with prefix DIR (proper directory containment check)
+path_starts_with() {
+    local P="$1"
+    local DIR="$2"
+
+    # Empty dir matches nothing
+    [[ -z "$DIR" ]] && return 1
+
+    # Exact match
+    [[ "$P" == "$DIR" ]] && return 0
+
+    # P is under DIR (ensure we match directory boundary, not just string prefix)
+    # e.g., /home/user/project should match, but /home/user/project2 should not
+    [[ "$P" == "$DIR/"* ]] && return 0
+
+    return 1
+}
+
 # Check if a path is within allowed write directories
 is_allowed_write_path() {
     local P="$1"
@@ -109,27 +147,51 @@ is_allowed_write_path() {
     # Relative paths are inside project (allowed)
     [[ "$P" != "/"* ]] && [[ "$P" != [A-Za-z]:* ]] && return 0
 
-    # Project directory (and subfolders)
-    [[ "$P" == "$PROJECT_ROOT"* ]] && return 0
+    # Normalize the path for consistent comparison
+    local NP
+    NP=$(normalize_path "$P")
+
+    # Log the comparison for debugging
+    [[ -n "$LOG_FILE" ]] && echo "[$(date)] PATH CHECK: '$NP' against PROJECT_ROOT='$PROJECT_ROOT'" >> "$LOG_FILE"
+
+    # Project directory (and subfolders) - use proper containment check
+    if path_starts_with "$NP" "$PROJECT_ROOT"; then
+        [[ -n "$LOG_FILE" ]] && echo "[$(date)] PATH ALLOWED: in PROJECT_ROOT" >> "$LOG_FILE"
+        return 0
+    fi
+
+    # Check extra project directories (colon-separated)
+    if [[ -n "$EXTRA_PROJECT_DIRS" ]]; then
+        IFS=':' read -ra DIRS <<< "$EXTRA_PROJECT_DIRS"
+        for DIR in "${DIRS[@]}"; do
+            DIR=$(normalize_path "$DIR")
+            if path_starts_with "$NP" "$DIR"; then
+                [[ -n "$LOG_FILE" ]] && echo "[$(date)] PATH ALLOWED: in EXTRA_PROJECT_DIRS ($DIR)" >> "$LOG_FILE"
+                return 0
+            fi
+        done
+    fi
 
     # Temp directory - platform specific
     # macOS/Linux: /tmp or /private/tmp
-    [[ "$P" == "/tmp"* ]] && return 0
-    [[ "$P" == "/private/tmp"* ]] && return 0
+    path_starts_with "$NP" "/tmp" && return 0
+    path_starts_with "$NP" "/private/tmp" && return 0
     # Windows: various temp locations
-    [[ -n "$TEMP" ]] && [[ "$P" == "$TEMP"* ]] && return 0
-    [[ -n "$TMP" ]] && [[ "$P" == "$TMP"* ]] && return 0
+    [[ -n "$TEMP" ]] && path_starts_with "$NP" "$TEMP" && return 0
+    [[ -n "$TMP" ]] && path_starts_with "$NP" "$TMP" && return 0
 
     # Claude config directory (~/.claude/)
     # macOS: /Users/<user>/.claude/
     # Linux: /home/<user>/.claude/
     # Windows: C:\Users\<user>\.claude\ (via $HOME)
-    [[ "$P" == "$CLAUDE_DIR"* ]] && return 0
-    [[ "$P" == "$HOME/.claude"* ]] && return 0
-    # Also handle expanded home paths
-    [[ "$P" == *"/.claude/"* ]] && [[ "$P" == "$HOME"* ]] && return 0
+    path_starts_with "$NP" "$CLAUDE_DIR" && return 0
+    path_starts_with "$NP" "$HOME/.claude" && return 0
+
+    # Claude plugins cache (installed plugins)
+    path_starts_with "$NP" "$HOME/.claude/plugins" && return 0
 
     # Not in allowed directories
+    [[ -n "$LOG_FILE" ]] && echo "[$(date)] PATH DENIED: '$NP' not in any allowed directory" >> "$LOG_FILE"
     return 1
 }
 
