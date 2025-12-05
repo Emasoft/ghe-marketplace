@@ -90,7 +90,7 @@ jobs:
                  - Update title to: [ISSUE_NUM][CI] $WORKFLOW_NAME failed on $HEAD_BRANCH
                  - Example: [42][CI] Tests failed on feature/auth
 
-            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Use Argos Panoptes avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos.png
             Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
             You are documenting this CI failure for Chronos (the CI/CD agent) to investigate when the maintainer is online.
             Don't attempt to fix - just document for review.

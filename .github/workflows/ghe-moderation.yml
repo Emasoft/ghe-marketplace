@@ -68,7 +68,7 @@ jobs:
                - If warnings >= 3: Add needs-moderation label
             4. If UNCERTAIN: Do NOTHING. Better to miss a violation than false positive.
 
-            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Use Argos Panoptes avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos.png
             Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
             You are flagging potential violations for Ares (the moderation agent) to review when the maintainer is online.
             Never delete comments or ban users. Only warn and label.

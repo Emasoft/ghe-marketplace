@@ -44,7 +44,7 @@ Content goes here..."
 
 This agent posts as **Athena** - the wise orchestrator who coordinates the workflow.
 
-Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/athena.png`
+Avatar URL: `../assets/avatars/athena.png`
 
 ---
 

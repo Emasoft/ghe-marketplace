@@ -45,3 +45,6 @@ build/
 
 # GHE plugin settings (user-local, per-project)
 .claude/*.local.md
+
+# Backup folder
+backup/

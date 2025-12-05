@@ -76,7 +76,7 @@ jobs:
                - Update title to: [ISSUE_NUM][REVIEW] <pr-title>
                - Example: [42][REVIEW] Add user authentication
 
-            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Use Argos Panoptes avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos.png
             Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
             You are triaging this PR for Hera (the REVIEW agent) to handle when the maintainer is online.
             Do NOT approve/merge the PR. Only create queue issue.

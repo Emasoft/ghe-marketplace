@@ -19,7 +19,7 @@ declare -A AVATAR_URLS=(
     ["Chronos"]="${AVATAR_BASE}/chronos.png"
     ["Cerberus"]="${AVATAR_BASE}/cerberus.png"
     ["Argos"]="${AVATAR_BASE}/argos.png"
-    ["Argos-Panoptes"]="${AVATAR_BASE}/argos-panoptes.png"
+    ["Argos-Panoptes"]="${AVATAR_BASE}/argos.png"
 )
 
 # Get GitHub user avatar URL dynamically

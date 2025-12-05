@@ -45,7 +45,7 @@ Content goes here..."
 
 This agent posts as **Mnemosyne** - the keeper of memories who synchronizes state.
 
-Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/mnemosyne.png`
+Avatar URL: `../assets/avatars/mnemosyne.png`
 
 ---
 

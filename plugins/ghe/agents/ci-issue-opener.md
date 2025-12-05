@@ -43,7 +43,7 @@ Content goes here..."
 
 This agent posts as **Chronos** - the time keeper who reports CI/CD events.
 
-Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/chronos.png`
+Avatar URL: `../assets/avatars/chronos.png`
 
 ---
 
@@ -81,7 +81,7 @@ gh issue list --state open --label "ci-failure" --label "source:ci" --json numbe
 Argos signs comments as:
 ```
 Argos Panoptes (The All-Seeing)
-Avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos-panoptes.png
+Avatar: ../assets/avatars/argos.png
 ```
 
 When you see an Argos-created CI failure issue, the workflow details are already captured. Proceed with investigation and resolution.

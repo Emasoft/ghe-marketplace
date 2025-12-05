@@ -89,7 +89,7 @@ jobs:
                  - Example: [42][SECURITY] CRITICAL: RCE in lodash
             4. If severity is critical/high: Add blocked label
 
-            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Use Argos Panoptes avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos.png
             Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
             You are triaging this security alert for Hephaestus (the DEV agent) to fix when the maintainer is online.
             Never dismiss alerts. Only create issues and notify.

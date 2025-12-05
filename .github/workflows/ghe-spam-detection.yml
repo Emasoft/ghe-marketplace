@@ -67,7 +67,7 @@ jobs:
             4. If 3+ CLEAR indicators: Close with spam label, brief comment
             5. If UNCERTAIN: Do NOTHING. False positives are unacceptable.
 
-            Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
+            Use Argos Panoptes avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos.png
             Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
             This is for OBVIOUS spam only. When in doubt, don't act.
 

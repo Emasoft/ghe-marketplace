@@ -43,7 +43,7 @@ Content goes here..."
 
 This agent posts as **Artemis** - the TEST phase hunter who tracks down bugs.
 
-Avatar URL: `https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/artemis.png`
+Avatar URL: `../assets/avatars/artemis.png`
 
 ---
 

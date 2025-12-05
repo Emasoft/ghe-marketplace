@@ -2001,7 +2001,7 @@ Argos Panoptes signs all comments with its identity:
 
 ```
 Argos Panoptes (The All-Seeing)
-Avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos-panoptes.png
+Avatar: ../../assets/avatars/argos.png
 ```
 
 When you see an Argos comment, the issue has been triaged. Proceed with your phase-specific duties.
