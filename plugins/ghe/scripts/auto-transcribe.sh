@@ -383,37 +383,38 @@ This issue tracks the conversation and work done during this development session
 
 #######################################
 # Transform local references to GitHub links for better traceability
+# NOTE: Uses printf to avoid issues with special characters in content
 #######################################
 linkify_content() {
     local CONTENT="$1"
     local REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)
 
-    if [ -z "$REPO" ]; then
-        echo "$CONTENT"
+    # If no repo or content is empty, return as-is
+    if [ -z "$REPO" ] || [ -z "$CONTENT" ]; then
+        printf '%s' "$CONTENT"
         return
     fi
 
-    # Transform file:line references (e.g., `file.py:42`)
-    CONTENT=$(echo "$CONTENT" | sed -E "s|\`([a-zA-Z0-9_/.-]+\.(py|js|ts|md|yaml|yml|json|sh)):([0-9]+)\`|[\`\1:\3\`](https://github.com/$REPO/blob/main/\1#L\3)|g")
+    # Use a temp file to avoid sed issues with special characters
+    local TMPFILE=$(mktemp)
+    printf '%s' "$CONTENT" > "$TMPFILE"
 
-    # Transform bare file paths that exist (check if file exists before linkifying)
-    while IFS= read -r potential_file; do
-        if [ -f "$potential_file" ]; then
-            LINK="[\`$potential_file\`](https://github.com/$REPO/blob/main/$potential_file)"
-            CONTENT=$(echo "$CONTENT" | sed "s|\`$potential_file\`|$LINK|g")
-        fi
-    done <<< "$(echo "$CONTENT" | grep -oE '\`[a-zA-Z0-9_/.-]+\.(py|js|ts|md|yaml|yml)\`' | tr -d '\`')"
+    # Transform file:line references (e.g., `file.py:42`) - use @ as delimiter
+    sed -i.bak -E "s@\`([a-zA-Z0-9_/.-]+\.(py|js|ts|md|yaml|yml|json|sh)):([0-9]+)\`@[\`\1:\3\`](https://github.com/$REPO/blob/main/\1#L\3)@g" "$TMPFILE" 2>/dev/null || true
 
     # Transform REQUIREMENTS references
-    CONTENT=$(echo "$CONTENT" | sed -E "s|\bREQUIREMENTS/([^[:space:]\)\"]+\.md)|[REQUIREMENTS/\1](https://github.com/$REPO/blob/main/REQUIREMENTS/\1)|g")
+    sed -i.bak -E "s@\bREQUIREMENTS/([^[:space:])\"]+\.md)@[REQUIREMENTS/\1](https://github.com/$REPO/blob/main/REQUIREMENTS/\1)@g" "$TMPFILE" 2>/dev/null || true
 
     # Transform REQ-XXX references to search links
-    CONTENT=$(echo "$CONTENT" | sed -E "s|\b(REQ-[0-9]{3})\b|[\1](https://github.com/$REPO/search?q=\1)|g")
+    sed -i.bak -E "s@\b(REQ-[0-9]{3})\b@[\1](https://github.com/$REPO/search?q=\1)@g" "$TMPFILE" 2>/dev/null || true
 
     # Transform issue references if not already linked (avoid double-linking)
-    CONTENT=$(echo "$CONTENT" | sed -E "s|([^[])#([0-9]+)([^]])|\1[#\2](https://github.com/$REPO/issues/\2)\3|g")
+    # Pattern: non-bracket char + # + digits + non-bracket char
+    sed -i.bak -E "s@([^[])#([0-9]+)([^]])@\1[#\2](https://github.com/$REPO/issues/\2)\3@g" "$TMPFILE" 2>/dev/null || true
 
-    echo "$CONTENT"
+    # Output result and cleanup
+    cat "$TMPFILE"
+    rm -f "$TMPFILE" "${TMPFILE}.bak"
 }
 
 #######################################
