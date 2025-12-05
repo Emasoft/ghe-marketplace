@@ -314,10 +314,10 @@ esac
 
 ### Themis Does NOT
 
-- ❌ Poll for changes
-- ❌ Watch GitHub webhooks directly
-- ❌ Act without being spawned
-- ❌ Make decisions autonomously
+- NO: Poll for changes
+- NO: Watch GitHub webhooks directly
+- NO: Act without being spawned
+- NO: Make decisions autonomously
 
 Themis only acts when explicitly invoked with a specific request.
 
@@ -331,9 +331,9 @@ Themis only acts when explicitly invoked with a specific request.
 EPIC_ISSUE="$1"  # Epic issue number
 
 # Get all threads for this epic
-DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "dev" --state open --json number --jq 'length')
-TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "test" --state open --json number --jq 'length')
-REVIEW_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "review" --state open --json number --jq 'length')
+DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:dev" --state open --json number --jq 'length')
+TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:test" --state open --json number --jq 'length')
+REVIEW_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:review" --state open --json number --jq 'length')
 
 # Count total open threads
 TOTAL_OPEN=$((DEV_OPEN + TEST_OPEN + REVIEW_OPEN))
@@ -663,9 +663,9 @@ audit_epic() {
   echo "## Epic Audit: ${EPIC_ISSUE}"
 
   # Check thread counts
-  DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "dev" --state open --json number --jq 'length')
-  TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "test" --state open --json number --jq 'length')
-  REVIEW_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "review" --state open --json number --jq 'length')
+  DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:dev" --state open --json number --jq 'length')
+  TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:test" --state open --json number --jq 'length')
+  REVIEW_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:review" --state open --json number --jq 'length')
 
   echo "### Thread Status"
   echo "- DEV open: $DEV_OPEN"

@@ -99,7 +99,7 @@ REVIEW_ISSUE=<number>
 EPIC=$(gh issue view $REVIEW_ISSUE --json labels --jq '.labels[] | select(.name | startswith("epic:")) | .name | split(":")[1]')
 
 # CRITICAL: Verify DEV thread is CLOSED
-DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:dev" --state open --json number --jq 'length')
+DEV_OPEN=$(gh issue list --label "epic:$EPIC" --label "phase:dev" --state open --json number --jq 'length')
 if [ "$DEV_OPEN" -gt 0 ]; then
   echo "ERROR: DEV thread still open. Cannot start REVIEW."
   echo "DEV must close → TEST must run and close → then REVIEW"
@@ -107,7 +107,7 @@ if [ "$DEV_OPEN" -gt 0 ]; then
 fi
 
 # CRITICAL: Verify TEST thread is CLOSED
-TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "type:test" --state open --json number --jq 'length')
+TEST_OPEN=$(gh issue list --label "epic:$EPIC" --label "phase:test" --state open --json number --jq 'length')
 if [ "$TEST_OPEN" -gt 0 ]; then
   echo "ERROR: TEST thread still open. Cannot start REVIEW."
   echo "TEST must close first (all tests must pass)."
@@ -115,7 +115,7 @@ if [ "$TEST_OPEN" -gt 0 ]; then
 fi
 
 # Get the closed TEST thread to verify results
-TEST_ISSUE=$(gh issue list --label "epic:$EPIC" --label "type:test" --state closed --json number --jq '.[0].number')
+TEST_ISSUE=$(gh issue list --label "epic:$EPIC" --label "phase:test" --state closed --json number --jq '.[0].number')
 ```
 
 ### Verify TEST Completion
@@ -168,7 +168,7 @@ When you claim the REVIEW issue, document that you verified the phase order:
 
 ```bash
 # Find available review issues
-gh issue list --label "type:review,ready" --no-assignee
+gh issue list --label "phase:review,ready" --no-assignee
 
 # Claim
 ISSUE=<number>
@@ -695,7 +695,7 @@ Flow: DEV → TEST → REVIEW"
 
 # Step 3: Verify only ONE thread is open
 gh issue list --label "epic:$EPIC" --state open --json number,labels | \
-  jq '.[] | select(.labels[].name | startswith("type:"))'
+  jq '.[] | select(.labels[].name | startswith("phase:"))'
 # Should show only the DEV thread
 ```
 
@@ -849,7 +849,7 @@ Waiting for maintainer guidance before continuing cycle.
 - [ ] Only ONE thread (REVIEW) will be open for this feature
 
 ### Starting Review
-- [ ] Claimed issue with `type:review` label
+- [ ] Claimed issue with `phase:review` label
 - [ ] Posted start comment
 - [ ] Gathered context (epic, PRs, previous threads)
 - [ ] Identified criteria source

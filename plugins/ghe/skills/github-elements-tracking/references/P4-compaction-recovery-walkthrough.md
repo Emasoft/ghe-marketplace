@@ -25,7 +25,7 @@ When recovering, you MUST identify which thread type you're resuming:
 | **TEST Thread** | Run tests, bug fixes ONLY - no new tests, no structural changes |
 | **REVIEW Thread** | Evaluation, verdicts, coverage estimation - no implementation |
 
-**Check the thread label**: `type:dev`, `type:test`, or `type:review`
+**Check the thread label**: `phase:dev`, `phase:test`, or `phase:review`
 
 **Verify one thread at a time**: Only ONE thread (DEV, TEST, or REVIEW) should be open per feature.
 
@@ -37,7 +37,7 @@ When recovering, you MUST identify which thread type you're resuming:
 
 **Issue #201**: JWT Token Authentication - DEV Thread (part of Epic #200)
 
-**Thread Type**: `type:dev` (development work)
+**Thread Type**: `phase:dev` (development work)
 
 **The situation:**
 - Agent-1 working on DEV thread for Issue #201
@@ -468,7 +468,7 @@ Agent-2 now works on `addToBlacklist()` with FULL context:
 │                           │                                     │
 │                           ▼                                     │
 │  2. Identify Thread Type                                        │
-│     Check label: type:dev, type:test, or type:review            │
+│     Check label: phase:dev, phase:test, or phase:review         │
 │     Verify: Only ONE thread open for this feature               │
 │                           │                                     │
 │                           ▼                                     │
@@ -600,7 +600,7 @@ Agent-2's recovery comment serves multiple purposes:
 | Don't post recovery comment | Thread shows gap | ALWAYS document recovery |
 | Assume files are pushed | They might not be | ALWAYS verify commits exist |
 | Trust memory | You have none | ONLY trust issue thread |
-| **Ignore thread type label** | Scope violation | Check `type:dev/test/review` first |
+| **Ignore thread type label** | Scope violation | Check `phase:dev/test/review` first |
 | **Write tests in TEST thread recovery** | Phase violation | TEST only RUNS tests, DEV writes them |
 | **Do implementation in REVIEW recovery** | Phase violation | REVIEW only evaluates, no coding |
 | **Two threads open during recovery** | Order violation | Close one before resuming other |
@@ -615,7 +615,7 @@ Agent-2's recovery comment serves multiple purposes:
 
 **The situation:**
 - DEV thread (#201) completed and closed
-- TEST thread (#205) opened with `type:test` label
+- TEST thread (#205) opened with `phase:test` label
 - Agent-3 ran some tests, found 2 bugs, fixed 1
 - Session ended due to context exhaustion
 - Agent-4 must recover the TEST work
@@ -676,16 +676,16 @@ test
 
 ```bash
 # Step 1: Find work
-$ gh issue list --assignee @me --label "in-progress" --label "type:test"
+$ gh issue list --assignee @me --label "in-progress" --label "phase:test"
 
 NUMBER  TITLE                         LABELS
-205     JWT Authentication - TEST     in-progress, type:test, wave:1
+205     JWT Authentication - TEST     in-progress, phase:test, wave:1
 
 # Step 2: Verify thread type and phase order
-$ gh issue list --label "epic:200" --label "type:dev" --state open
+$ gh issue list --label "epic:200" --label "phase:dev" --state open
 # Must be empty (DEV should be closed)
 
-$ gh issue list --label "epic:200" --label "type:review" --state open
+$ gh issue list --label "epic:200" --label "phase:review" --state open
 # Must be empty (REVIEW should not be open yet)
 ```
 
@@ -746,7 +746,7 @@ Fixing bug #2 now, then re-running all tests.
 **The situation:**
 - DEV thread (#201) completed and closed
 - TEST thread (#205) completed and closed (all tests pass)
-- REVIEW thread (#208) opened with `type:review` label
+- REVIEW thread (#208) opened with `phase:review` label
 - Agent-5 started review, found coverage concerns
 - Session ended due to context exhaustion
 - Agent-6 must recover the REVIEW work
@@ -813,16 +813,16 @@ Missing tests = DEV work, not TEST work.
 
 ```bash
 # Step 1: Find work
-$ gh issue list --assignee @me --label "in-progress" --label "type:review"
+$ gh issue list --assignee @me --label "in-progress" --label "phase:review"
 
 NUMBER  TITLE                           LABELS
-208     JWT Authentication - REVIEW     in-progress, type:review, wave:1
+208     JWT Authentication - REVIEW     in-progress, phase:review, wave:1
 
 # Step 2: Verify thread type and phase order
-$ gh issue list --label "epic:200" --label "type:dev" --state open
+$ gh issue list --label "epic:200" --label "phase:dev" --state open
 # Must be empty
 
-$ gh issue list --label "epic:200" --label "type:test" --state open
+$ gh issue list --label "epic:200" --label "phase:test" --state open
 # Must be empty
 ```
 
@@ -947,13 +947,13 @@ Sometimes you recover to find a phase transition is needed:
 # DEV complete → Open TEST
 gh issue close $DEV_ISSUE
 gh issue create --title "Feature X - TEST" \
-  --label "type:test" --label "in-progress" \
+  --label "phase:test" --label "in-progress" \
   --body "TEST thread for Feature X. DEV completed in #$DEV_ISSUE."
 
 # TEST complete → Open REVIEW
 gh issue close $TEST_ISSUE
 gh issue create --title "Feature X - REVIEW" \
-  --label "type:review" --label "in-progress" \
+  --label "phase:review" --label "in-progress" \
   --body "REVIEW thread for Feature X. TEST completed in #$TEST_ISSUE."
 
 # REVIEW fail → Reopen DEV

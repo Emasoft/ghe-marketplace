@@ -867,9 +867,9 @@ Agents participating in this thread should activate:
 | `review-needed` | Implementation done | Review complete |
 | `completed` | Review passes | Issue stays closed |
 | `phase:dev` | Review fails (demotion) | Fixes complete |
-| `type:dev` | Dev thread opened | Thread closes |
-| `type:test` | Test thread opened | Thread closes |
-| `type:review` | Review thread opened | Thread closes |
+| `phase:dev` | Dev thread opened | Thread closes |
+| `phase:test` | Test thread opened | Thread closes |
+| `phase:review` | Review thread opened | Thread closes |
 | `violation:phase` | Phase violation | Retracted |
 | `violation:wave-order` | Wave order violation | Corrected |
 | `violation:self-approval` | Self-approval attempt | PR rejected |

@@ -86,15 +86,15 @@ gh issue view $DEV_ISSUE --json state --jq '.state'
 # Must return "CLOSED"
 
 # 2. Verify only ONE thread is open (TEST thread)
-gh issue list --label "epic:$EPIC" --label "type:dev" --state open
+gh issue list --label "epic:$EPIC" --label "phase:dev" --state open
 # Must return empty
 
-gh issue list --label "epic:$EPIC" --label "type:review" --state open
+gh issue list --label "epic:$EPIC" --label "phase:review" --state open
 # Must return empty
 
 # 3. Verify this TEST thread has correct labels
 gh issue view $TEST_ISSUE --json labels --jq '.labels[].name'
-# Must include "type:test"
+# Must include "phase:test"
 ```
 
 **If DEV is still open**: Do NOT proceed. Wait for DEV to close.
@@ -109,7 +109,7 @@ gh issue view $TEST_ISSUE --json labels --jq '.labels[].name'
 
 ```bash
 # Find TEST threads ready for claiming
-gh issue list --label "type:test" --label "ready" --no-assignee
+gh issue list --label "phase:test" --label "ready" --no-assignee
 ```
 
 ### Step 2: Claim TEST Thread

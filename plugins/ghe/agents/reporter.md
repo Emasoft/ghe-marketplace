@@ -125,9 +125,9 @@ Loops trigger approval prompts. Process issues one at a time.
 
 ```bash
 # Step 1: Get issue numbers by phase (individual commands, not a function)
-gh issue list --label "dev" --state open --json number | jq -r '.[].number'
-gh issue list --label "test" --state open --json number | jq -r '.[].number'
-gh issue list --label "review" --state open --json number | jq -r '.[].number'
+gh issue list --label "phase:dev" --state open --json number | jq -r '.[].number'
+gh issue list --label "phase:test" --state open --json number | jq -r '.[].number'
+gh issue list --label "phase:review" --state open --json number | jq -r '.[].number'
 
 # Step 2: Create TodoWrite list with all issue numbers found
 # Step 3: For EACH issue, run individual view command:
@@ -175,9 +175,9 @@ gh api repos/:owner/:repo/issues/$ISSUE/timeline --jq '
 
 ```bash
 # Count by phase using jq (no wc -l)
-DEV_COUNT=$(gh issue list --label "dev" --state open --json number | jq 'length')
-TEST_COUNT=$(gh issue list --label "test" --state open --json number | jq 'length')
-REVIEW_COUNT=$(gh issue list --label "review" --state open --json number | jq 'length')
+DEV_COUNT=$(gh issue list --label "phase:dev" --state open --json number | jq 'length')
+TEST_COUNT=$(gh issue list --label "phase:test" --state open --json number | jq 'length')
+REVIEW_COUNT=$(gh issue list --label "phase:review" --state open --json number | jq 'length')
 ```
 
 ### Element Statistics (Semantic Recall)

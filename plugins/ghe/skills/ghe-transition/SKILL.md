@@ -46,7 +46,7 @@ description: |
 
 ## Settings Awareness
 
-Respects `.claude/github-elements.local.md`:
+Respects `.claude/ghe.local.md`:
 - `enabled`: If false, skip transition
 - `enforcement_level`: strict (all criteria) / standard (allow override) / lenient (advisory)
 - `serena_sync`: If false, skip SERENA memory bank update

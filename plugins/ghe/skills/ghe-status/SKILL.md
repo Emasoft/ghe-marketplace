@@ -36,7 +36,7 @@ description: |
 
 ## Settings Awareness
 
-Respects `.claude/github-elements.local.md`:
+Respects `.claude/ghe.local.md`:
 - `enabled`: If false, return minimal status
 - `notification_level`: Affects output verbosity
 

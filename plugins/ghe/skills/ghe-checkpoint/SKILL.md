@@ -41,7 +41,7 @@ description: |
 
 ## Settings Awareness
 
-Respects `.claude/github-elements.local.md`:
+Respects `.claude/ghe.local.md`:
 - `enabled`: If false, skip checkpoint
 - `serena_sync`: If false, skip SERENA memory bank update
 - `checkpoint_interval_minutes`: Used for reminder logic

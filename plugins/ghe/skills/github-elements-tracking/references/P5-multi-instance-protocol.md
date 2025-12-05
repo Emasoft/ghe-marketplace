@@ -586,7 +586,7 @@ dev
 # OPTION B: Create new dev thread
 gh issue create \
   --title "[DEV] Fix: $FEATURE - Iteration N" \
-  --label "type:dev,epic:$EPIC,in-progress" \
+  --label "phase:dev,epic:$EPIC,in-progress" \
   --body "## Dev Thread (Iteration N)
 
 ### Original Feature
@@ -612,7 +612,7 @@ dev
 
 # Step 3: Verify only ONE thread is open
 gh issue list --label "epic:$EPIC" --state open --json number,title,labels | \
-  jq '.[] | select(.labels[].name | startswith("type:"))'
+  jq '.[] | select(.labels[].name | startswith("phase:"))'
 # Should show only ONE thread for this feature
 ```
 
@@ -663,7 +663,7 @@ When PR enters a branch phase, open the corresponding thread:
 ```bash
 gh issue create \
   --title "Test: #$ISSUE - $TITLE" \
-  --label "type:test,epic:$EPIC" \
+  --label "phase:test,epic:$EPIC" \
   --body "## Test Thread
 
 ### Source
@@ -693,7 +693,7 @@ Demote to dev branch with dev thread"
 ```bash
 gh issue create \
   --title "Review: #$ISSUE - $TITLE" \
-  --label "type:review,epic:$EPIC" \
+  --label "phase:review,epic:$EPIC" \
   --body "## Review Thread
 
 ### Source

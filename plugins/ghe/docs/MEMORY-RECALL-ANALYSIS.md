@@ -113,7 +113,7 @@ USER MESSAGE: "What were we working on?" or "continue where we left off"
 │              └── Returns list of assigned, in-progress issues           │
 │                                                                         │
 │ Step 2: Identify Thread Type                                            │
-│         Check label: type:dev, type:test, or type:review                │
+│         Check label: phase:dev, phase:test, or phase:review               │
 │              │                                                          │
 │              └── CRITICAL: Different thread types have different scope  │
 │                                                                         │

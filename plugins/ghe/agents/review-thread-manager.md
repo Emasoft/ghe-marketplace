@@ -250,14 +250,14 @@ If an issue has `parent-epic:NNN` and `wave:N` labels, it IS a regular issue (ch
 
 ```bash
 # Find all REVIEW work queued by Argos
-gh issue list --state open --label "ready" --label "review" --json number,title,labels | \
+gh issue list --state open --label "ready" --label "phase:review" --json number,title,labels | \
   jq -r '.[] | "\(.number): \(.title)"'
 
 # Find PR reviews queued by Argos
-gh issue list --state open --label "source:pr" --label "review" --json number,title
+gh issue list --state open --label "source:pr" --label "phase:review" --json number,title
 
 # Find bug reports triaged by Argos and ready for REVIEW
-gh issue list --state open --label "bug" --label "review" --label "ready" --json number,title
+gh issue list --state open --label "bug" --label "phase:review" --label "ready" --json number,title
 ```
 
 ### Argos Label Meanings for REVIEW
@@ -322,14 +322,14 @@ REVIEW_ISSUE=<number>
 EPIC_ISSUE=$(gh issue view $REVIEW_ISSUE --json labels --jq '.labels[] | select(.name | startswith("parent-epic:")) | .name | split(":")[1]')
 
 # DEV must be CLOSED
-DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "dev" --state open --json number --jq 'length')
+DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:dev" --state open --json number --jq 'length')
 if [ "$DEV_OPEN" -gt 0 ]; then
   echo "ERROR: DEV thread still open. Cannot start REVIEW."
   exit 1
 fi
 
 # TEST must be CLOSED
-TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "test" --state open --json number --jq 'length')
+TEST_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:test" --state open --json number --jq 'length')
 if [ "$TEST_OPEN" -gt 0 ]; then
   echo "ERROR: TEST thread still open. Cannot start REVIEW."
   exit 1

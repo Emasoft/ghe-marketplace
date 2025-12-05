@@ -107,13 +107,13 @@ Part of Epic #200 - User Authentication System
 *Status: Ready for claiming*
 ```
 
-Labels: `wave:1, epic:200, ready, type:dev`
+Labels: `wave:1, epic:200, ready, phase:dev`
 
 ### 09:15 - Agent-A Claims DEV Thread
 
 ```bash
-$ gh issue list --label "type:dev,ready" --no-assignee
-201  JWT Token Authentication - DEV  wave:1, epic:200, ready, type:dev
+$ gh issue list --label "phase:dev,ready" --no-assignee
+201  JWT Token Authentication - DEV  wave:1, epic:200, ready, phase:dev
 
 $ gh issue edit 201 --add-assignee alice --add-label "in-progress" --remove-label "ready"
 ```
@@ -302,7 +302,7 @@ $ gh issue comment 201 --body "DEV thread closed. Advancing to TEST phase. See T
 ```bash
 # Create TEST thread (same issue number convention, or new linked issue)
 $ gh issue create --title "JWT Token Authentication - TEST" \
-  --label "type:test,epic:200,in-progress" \
+  --label "phase:test,epic:200,in-progress" \
   --body "$(cat <<'EOF'
 ## Thread: JWT Token Authentication - TEST
 
@@ -493,7 +493,7 @@ $ gh issue comment 201-test --body "TEST thread closed. All tests pass. Advancin
 
 ```bash
 $ gh issue create --title "JWT Token Authentication - REVIEW" \
-  --label "type:review,epic:200,in-progress" \
+  --label "phase:review,epic:200,in-progress" \
   --body "$(cat <<'EOF'
 ## Thread: JWT Token Authentication - REVIEW
 
@@ -936,10 +936,10 @@ REVIEW must estimate test coverage. If insufficient → demote to DEV.
 
 | Phase | Labels |
 |-------|--------|
-| DEV ready | `type:dev, ready, wave:1, epic:200` |
-| DEV in progress | `type:dev, in-progress` |
-| TEST in progress | `type:test, in-progress` |
-| REVIEW in progress | `type:review, in-progress` |
+| DEV ready | `phase:dev, ready, wave:1, epic:200` |
+| DEV in progress | `phase:dev, in-progress` |
+| TEST in progress | `phase:test, in-progress` |
+| REVIEW in progress | `phase:review, in-progress` |
 | REVIEW passed | `completed` (closed) |
 | REVIEW failed | `phase:dev` (back to DEV) |
 | Complete | `completed` (closed) |

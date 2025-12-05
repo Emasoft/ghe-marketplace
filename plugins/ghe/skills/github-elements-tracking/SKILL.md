@@ -5,7 +5,7 @@ description: This skill should be used when the user asks to "track work across 
 
 ## Project Settings
 
-This skill respects settings in `.claude/github-elements.local.md`. Run `/github-elements:setup` to configure.
+This skill respects settings in `.claude/ghe.local.md`. Run `/ghe:setup` to configure.
 
 | Setting | Effect on This Skill |
 |---------|---------------------|
@@ -95,7 +95,7 @@ Understanding the relationship between GitHub entities and workflow concepts:
 | Term | Definition |
 |------|------------|
 | **Issue** | A GitHub Issue - the container/ticket that holds all work history |
-| **Thread** | A phase-specific issue. A "DEV thread" is an issue labeled `type:dev` |
+| **Thread** | A phase-specific issue. A "DEV thread" is an issue labeled `phase:dev` |
 | **Comment** | A reply within an issue - holds checkpoints, decisions, work logs |
 | **Element** | A comment containing Knowledge, Action, and/or Judgement facets |
 
@@ -103,7 +103,7 @@ Understanding the relationship between GitHub entities and workflow concepts:
 - "Issue" emphasizes the GitHub container (the thing with a number like #201)
 - "Thread" emphasizes the phase role (DEV, TEST, or REVIEW work)
 
-**Example**: Issue #201 labeled `type:dev` is the "DEV thread" for JWT authentication. When DEV completes, issue #201 closes and issue #202 (labeled `type:test`) opens as the "TEST thread" for the same feature.
+**Example**: Issue #201 labeled `phase:dev` is the "DEV thread" for JWT authentication. When DEV completes, issue #201 closes and issue #202 (labeled `phase:test`) opens as the "TEST thread" for the same feature.
 
 **One thread per phase**: Each phase (DEV, TEST, REVIEW) gets its own issue. When phase transitions occur, the old issue closes and a new issue opens with the new phase label.
 
@@ -1561,15 +1561,15 @@ feature branch ──► testing branch ──► review branch ──► main
 
 ### Thread Lifecycle Mechanics
 
-Each thread (DEV, TEST, REVIEW) is a separate GitHub issue with the appropriate `type:` label. Here's how threads transition:
+Each thread (DEV, TEST, REVIEW) is a separate GitHub issue with the appropriate `phase:` label. Here's how threads transition:
 
 #### Thread Creation
 
 | When | Action |
 |------|--------|
-| New feature starts | Create DEV issue with `type:dev` label |
-| DEV completes | Close DEV issue, create TEST issue with `type:test` label |
-| TEST completes | Close TEST issue, create REVIEW issue with `type:review` label |
+| New feature starts | Create DEV issue with `phase:dev` label |
+| DEV completes | Close DEV issue, create TEST issue with `phase:test` label |
+| TEST completes | Close TEST issue, create REVIEW issue with `phase:review` label |
 
 #### Thread Transitions
 
@@ -1577,7 +1577,7 @@ Each thread (DEV, TEST, REVIEW) is a separate GitHub issue with the appropriate 
 # DEV → TEST (DEV work complete)
 gh issue close $DEV_ISSUE
 gh issue create --title "Feature X - TEST" \
-  --label "type:test" --label "in-progress" --label "epic:$EPIC" \
+  --label "phase:test" --label "in-progress" --label "epic:$EPIC" \
   --body "TEST thread for Feature X.
 Source DEV thread: #$DEV_ISSUE
 Linked PR: #$PR_NUMBER"
@@ -1585,7 +1585,7 @@ Linked PR: #$PR_NUMBER"
 # TEST → REVIEW (all tests pass)
 gh issue close $TEST_ISSUE
 gh issue create --title "Feature X - REVIEW" \
-  --label "type:review" --label "in-progress" --label "epic:$EPIC" \
+  --label "phase:review" --label "in-progress" --label "epic:$EPIC" \
   --body "REVIEW thread for Feature X.
 Source DEV thread: #$DEV_ISSUE
 Source TEST thread: #$TEST_ISSUE"
@@ -1607,8 +1607,8 @@ gh issue close $REVIEW_ISSUE --comment "PASS - merged to main"
 |-------------|-------------|---------|
 | OPEN | `in-progress` | Active work happening |
 | OPEN | `needs-input` | Blocked, waiting for decision |
-| CLOSED | `type:dev` | DEV phase complete |
-| CLOSED | `type:test` | TEST phase complete |
+| CLOSED | `phase:dev` | DEV phase complete |
+| CLOSED | `phase:test` | TEST phase complete |
 | CLOSED | `completed` | REVIEW passed, merged |
 | CLOSED | `phase:dev` | REVIEW failed, back to DEV |
 
@@ -1619,7 +1619,7 @@ At any moment, only ONE thread (DEV, TEST, or REVIEW) should be OPEN for a featu
 ```bash
 # Check for violations (should return at most 1 result)
 gh issue list --label "epic:$EPIC" --state open --json number,labels | \
-  jq '[.[] | select(.labels[].name | startswith("type:"))]'
+  jq '[.[] | select(.labels[].name | startswith("phase:"))]'
 ```
 
 If this returns more than one issue, there's a phase order violation.
@@ -1903,9 +1903,9 @@ Wave 2: First Floor
 
 | Label | Meaning |
 |-------|---------|
-| `type:dev` | Development thread (no verdicts allowed) |
-| `type:test` | Testing thread (no feature opinions allowed) |
-| `type:review` | Review thread (verdicts allowed) |
+| `phase:dev` | Development thread (no verdicts allowed) |
+| `phase:test` | Testing thread (no feature opinions allowed) |
+| `phase:review` | Review thread (verdicts allowed) |
 
 ### Violation Labels
 

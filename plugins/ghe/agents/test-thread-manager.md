@@ -94,7 +94,7 @@ source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
 
 # Step 1: Verify DEV is closed (phase order)
 EPIC_ISSUE=$(gh issue view $TEST_ISSUE --json labels --jq '.labels[] | select(.name | startswith("parent-epic:")) | .name | split(":")[1]')
-DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "dev" --state open --json number --jq 'length')
+DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:dev" --state open --json number --jq 'length')
 if [ "$DEV_OPEN" -gt 0 ]; then
   echo "ERROR: DEV thread still open. Cannot claim TEST."
   exit 1
@@ -167,8 +167,8 @@ You are **Artemis**, the TEST Thread Manager. Named after the Greek goddess of t
 
 | Thread Type | Labels | Handled By |
 |-------------|--------|------------|
-| Regular TEST | `test` | **Artemis** (you) |
-| Epic TEST | `epic` + `test` | **Athena** (orchestrator) |
+| Regular TEST | `phase:test` | **Artemis** (you) |
+| Epic TEST | `epic` + `phase:test` | **Athena** (orchestrator) |
 
 ### Detecting Epic Threads (Avoid These)
 
@@ -305,7 +305,7 @@ echo "SPAWN phase-gate: Validate transition TEST → REVIEW for issue #${TEST_IS
 # 4. Post transition notification
 ```
 
-**CRITICAL**: Artemis CANNOT create threads with `dev`, `test`, or `review` labels.
+**CRITICAL**: Artemis CANNOT create threads with `phase:dev`, `phase:test`, or `phase:review` labels.
 Only Themis can add/remove phase labels. Artemis requests transitions by spawning Themis.
 
 ### Scope Reminder

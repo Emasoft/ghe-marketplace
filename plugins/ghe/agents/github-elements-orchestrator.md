@@ -145,7 +145,7 @@ DEV ───► TEST ───► REVIEW ───► DEV...
 
 | Level | Thread Labels | Scope | Managed By |
 |-------|---------------|-------|------------|
-| **Regular** | `dev`, `test`, `review` | Single issue | Hephaestus, Artemis, Hera |
+| **Regular** | `phase:dev`, `phase:test`, `phase:review` | Single issue | Hephaestus, Artemis, Hera |
 | **Epic** | `epic` + `dev`, `epic` + `test`, `epic` + `review` | Group of issues | **ATHENA ONLY** |
 
 ### CRITICAL: Athena Owns ALL Epic Phases
@@ -330,7 +330,7 @@ echo "SPAWN phase-gate: Validate and execute epic demotion TEST → DEV phase fo
 
 ```bash
 # When a new bug report is filed during beta testing:
-ACTIVE_BETA_EPIC=$(gh issue list --label "epic" --label "test" --state open --json number --jq '.[0].number')
+ACTIVE_BETA_EPIC=$(gh issue list --label "epic" --label "phase:test" --state open --json number --jq '.[0].number')
 
 if [ -n "$ACTIVE_BETA_EPIC" ]; then
   # Route to the active beta epic
@@ -682,7 +682,7 @@ for DRAFT_FILE in "$REQUIREMENTS_DIR"/DRAFT-*.md; do
   # Create issue with draft label (not claimable)
   ISSUE_NUM=$(gh issue create \
     --title "[DEV] $(echo $SHORT_NAME | tr '-' ' ')" \
-    --label "dev" \
+    --label "phase:dev" \
     --label "draft" \
     --label "parent-epic:${EPIC_ISSUE}" \
     --label "wave:${WAVE_NUM}" \
@@ -991,7 +991,7 @@ $(head -50 "$REQ_FILE" | tail -40)"
   # Create the issue
   gh issue create \
     --title "[DEV] ${FEATURE_NAME}" \
-    --label "dev" \
+    --label "phase:dev" \
     --label "parent-epic:${EPIC_ISSUE}" \
     --label "wave:${WAVE_NUM}" \
     --label "ready" \
@@ -1102,7 +1102,7 @@ HEADER=$(avatar_header "Athena")
 gh issue create \
   --title "[EPIC] [DEV] ${EPIC_TYPE}: ${EPIC_TITLE}" \
   --label "epic" \
-  --label "dev" \
+  --label "phase:dev" \
   --label "${EPIC_TYPE}" \
   --label "ready" \
   --body "${HEADER}
@@ -1148,7 +1148,7 @@ WAVE_NUM=1
 for FEATURE in "Database schema" "User model" "Password hashing"; do
   gh issue create \
     --title "[DEV] ${FEATURE}" \
-    --label "dev" \
+    --label "phase:dev" \
     --label "parent-epic:${EPIC_ISSUE}" \
     --label "wave:${WAVE_NUM}" \
     --label "ready" \

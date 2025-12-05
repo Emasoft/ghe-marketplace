@@ -39,7 +39,7 @@ description: |
 
 ## Settings Awareness
 
-Respects `.claude/github-elements.local.md`:
+Respects `.claude/ghe.local.md`:
 - `enabled`: If false, skip claim operation
 - `enforcement_level`: Affects phase-gate strictness
 - `auto_worktree`: If true, auto-create git worktree

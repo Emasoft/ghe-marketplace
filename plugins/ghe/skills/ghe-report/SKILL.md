@@ -52,7 +52,7 @@ description: |
 
 ## Settings Awareness
 
-Respects `.claude/github-elements.local.md`:
+Respects `.claude/ghe.local.md`:
 - `enabled`: If false, return minimal report
 - `notification_level`: verbose/normal/quiet - affects detail level
 - `stale_threshold_hours`: Used for stale thread detection

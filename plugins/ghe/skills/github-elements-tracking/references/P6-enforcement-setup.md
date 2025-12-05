@@ -47,9 +47,9 @@ gh label create "completed" -d "Work finished" -c "0e8a16" 2>/dev/null || gh lab
 # Type labels (thread types)
 gh label create "epic" -d "Epic/meta issue" -c "7057ff" 2>/dev/null || gh label edit "epic" -d "Epic/meta issue" -c "7057ff"
 gh label create "type:implementation" -d "Implementation task" -c "0075ca" 2>/dev/null || gh label edit "type:implementation" -d "Implementation task" -c "0075ca"
-gh label create "type:dev" -d "Development thread" -c "0075ca" 2>/dev/null || gh label edit "type:dev" -d "Development thread" -c "0075ca"
-gh label create "type:test" -d "Testing thread" -c "ffc107" 2>/dev/null || gh label edit "type:test" -d "Testing thread" -c "ffc107"
-gh label create "type:review" -d "Review thread" -c "c5def5" 2>/dev/null || gh label edit "type:review" -d "Review thread" -c "c5def5"
+gh label create "phase:dev" -d "Development thread" -c "0075ca" 2>/dev/null || gh label edit "phase:dev" -d "Development thread" -c "0075ca"
+gh label create "phase:test" -d "Testing thread" -c "ffc107" 2>/dev/null || gh label edit "phase:test" -d "Testing thread" -c "ffc107"
+gh label create "phase:review" -d "Review thread" -c "c5def5" 2>/dev/null || gh label edit "phase:review" -d "Review thread" -c "c5def5"
 gh label create "sub-issue" -d "Part of larger issue" -c "bfd4f2" 2>/dev/null || gh label edit "sub-issue" -d "Part of larger issue" -c "bfd4f2"
 
 # Violation labels
@@ -462,7 +462,7 @@ on:
 jobs:
   validate-thread-init:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'type:dev') || contains(github.event.issue.labels.*.name, 'type:test') || contains(github.event.issue.labels.*.name, 'type:review')
+    if: contains(github.event.issue.labels.*.name, 'phase:dev') || contains(github.event.issue.labels.*.name, 'phase:test') || contains(github.event.issue.labels.*.name, 'phase:review')
     permissions:
       issues: write
     steps:
@@ -523,7 +523,7 @@ jobs:
       issues: write
     steps:
       - name: Check for Verdict in Dev Thread
-        if: contains(github.event.issue.labels.*.name, 'type:dev')
+        if: contains(github.event.issue.labels.*.name, 'phase:dev')
         uses: actions/github-script@v7
         with:
           script: |
@@ -590,7 +590,7 @@ on:
 jobs:
   enforce-test-scope:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'type:test')
+    if: contains(github.event.issue.labels.*.name, 'phase:test')
     permissions:
       issues: write
     steps:
@@ -700,7 +700,7 @@ on:
 jobs:
   enforce-demotion-direction:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'type:review')
+    if: contains(github.event.issue.labels.*.name, 'phase:review')
     permissions:
       issues: write
     steps:

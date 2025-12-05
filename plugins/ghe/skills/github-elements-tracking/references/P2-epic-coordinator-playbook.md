@@ -82,7 +82,7 @@ gh issue view 200
 
 **When creating wave issues**, always reference the epic by number:
 ```bash
-gh issue create --label "wave:1,epic:200,type:dev" ...
+gh issue create --label "wave:1,epic:200,phase:dev" ...
 ```
 
 ---
@@ -334,7 +334,7 @@ WAVE=1
 
 gh issue create \
   --title "<Issue Title>" \
-  --label "wave:$WAVE,epic:$EPIC,ready,type:implementation" \
+  --label "wave:$WAVE,epic:$EPIC,ready,phase:implementation" \
   --body "$(cat <<'EOF'
 # <Issue Title>
 
@@ -528,7 +528,7 @@ EPIC=200
 # Testing issue
 gh issue create \
   --title "Review: Load Testing for Epic #$EPIC" \
-  --label "wave:eval,epic:$EPIC,type:review,ready" \
+  --label "wave:eval,epic:$EPIC,phase:review,ready" \
   --body "$(cat <<'EOF'
 # Load Testing Review
 
@@ -558,7 +558,7 @@ EOF
 # Security issue
 gh issue create \
   --title "Review: Security Audit for Epic #$EPIC" \
-  --label "wave:eval,epic:$EPIC,type:review,ready" \
+  --label "wave:eval,epic:$EPIC,phase:review,ready" \
   --body "$(cat <<'EOF'
 # Security Audit Review
 
@@ -653,14 +653,14 @@ Creating fix issues:
 ```bash
 gh issue create \
   --title "Fix: JWT token expiration" \
-  --label "wave:fix,epic:$EPIC,type:implementation"
+  --label "wave:fix,epic:$EPIC,phase:implementation"
 ```
 
 #### Fix Issue 2
 ```bash
 gh issue create \
   --title "Fix: Implement rate limiting" \
-  --label "wave:fix,epic:$EPIC,type:implementation"
+  --label "wave:fix,epic:$EPIC,phase:implementation"
 ```
 
 ### Epic Status
@@ -733,7 +733,7 @@ gh issue close $EPIC --reason completed
 | Propagate decision | `gh issue comment AFFECTED --body "Decision from #SOURCE: MSG"` |
 | Launch wave | Update checklist, remove "ready" from issues |
 | Complete wave | Verify all issues closed, post summary |
-| Spawn reviews | Create evaluation issues with `type:review` label |
+| Spawn reviews | Create evaluation issues with `phase:review` label |
 | Close epic | `gh issue close EPIC --reason completed` |
 
 ---

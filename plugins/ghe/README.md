@@ -1,6 +1,6 @@
 # GitHub Elements Plugin (GHE)
 
-[![Version](https://img.shields.io/badge/version-0.2.6-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.2.6)
+[![Version](https://img.shields.io/badge/version-0.2.10-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/v0.2.10)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GitHub Issues](https://img.shields.io/github/issues/Emasoft/ghe-marketplace)](https://github.com/Emasoft/ghe-marketplace/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/Emasoft/ghe-marketplace)](https://github.com/Emasoft/ghe-marketplace/stargazers)
@@ -461,21 +461,21 @@ ghe/
 
 ## Configuration
 
-GitHub Elements supports per-project configuration via `.claude/github-elements.local.md`.
+GitHub Elements supports per-project configuration via `.claude/ghe.local.md`.
 
 ### Quick Setup
 
 Run the setup command to configure interactively:
 
 ```
-/github-elements:setup
+/ghe:setup
 ```
 
 This prompts for your preferences and creates the settings file.
 
 ### Manual Configuration
 
-Create `.claude/github-elements.local.md` in your project:
+Create `.claude/ghe.local.md` in your project:
 
 ```markdown
 ---
@@ -524,7 +524,7 @@ Settings files are user-local and should not be committed:
 
 ### Changing Settings
 
-After editing `.claude/github-elements.local.md`, restart Claude Code for changes to take effect. Hooks cannot be hot-swapped within a session.
+After editing `.claude/ghe.local.md`, restart Claude Code for changes to take effect. Hooks cannot be hot-swapped within a session.
 
 ## Prerequisites
 
