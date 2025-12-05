@@ -1,0 +1,94 @@
+# GHE Automation: Event A - PR Opened → REVIEW Issue
+# Creates a REVIEW issue for Hera when a PR is opened.
+# SECURITY: All user inputs via environment variables.
+
+name: "GHE: PR Review Queue"
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+concurrency:
+  group: ghe-pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  create-review-issue:
+    # Run if: not a draft AND (not a bot OR is dependabot)
+    if: |
+      github.event.pull_request.draft == false &&
+      (!contains(github.actor, '[bot]') || github.actor == 'dependabot[bot]')
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check for existing review issue
+        id: check-existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          existing=$(gh issue list \
+            --label "source:pr" \
+            --search "PR #${PR_NUMBER}" \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -n "$existing" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Found existing review issue #$existing"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create review issue for PR
+        if: steps.check-existing.outputs.exists == 'false'
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          IS_BOT_PR: ${{ github.actor == 'dependabot[bot]' }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Create a REVIEW issue for PR #$PR_NUMBER (for Hera agent).
+
+            Steps:
+            1. Get PR info: gh pr view $PR_NUMBER --json title,body,files,author
+            2. Create issue with title: [REVIEW] <pr-title>
+               - Do NOT include phase labels in title (they're in labels)
+            3. Labels: phase:review, source:pr, ready (add bot-pr if $IS_BOT_PR is true)
+            4. Body: PR link, author, summary of changes, file list, review checklist
+            5. Comment on PR linking to the new issue
+            6. IMPORTANT: After creating the issue, update its title to include the issue number:
+               - Get the created issue number from the output
+               - Update title to: [ISSUE_NUM][REVIEW] <pr-title>
+               - Example: [42][REVIEW] Add user authentication
+
+            Use Argos Panoptes avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos.png
+            Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
+            You are triaging this PR for Hera (the REVIEW agent) to handle when the maintainer is online.
+            Do NOT approve/merge the PR. Only create queue issue.
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          gh issue create \
+            --title "[URGENT #${RUN_ID}] GHE: PR Review automation failed for PR #${PR_NUMBER}" \
+            --label "urgent,ci-failure" \
+            --body "PR review queue automation failed for PR #$PR_NUMBER (run #$RUN_ID). Check workflow run for details."

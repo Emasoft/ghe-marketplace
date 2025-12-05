@@ -351,7 +351,65 @@ touch GHE-REVIEWS/.gitkeep
 echo "REQUIREMENTS structure created"
 ```
 
-## Step 8: Update .gitignore
+## Step 8: Copy GHE Automation Workflows
+
+Copy the GHE GitHub Action workflows to the user's repository.
+These workflows enable 24/7 automation via Argos Panoptes:
+
+```bash
+cd <repo-path>
+
+# Create workflows directory if needed
+mkdir -p .github/workflows
+
+# Copy GHE automation workflows from plugin templates
+# ${CLAUDE_PLUGIN_ROOT} points to plugins/ghe/ within the installed plugin
+cp "${CLAUDE_PLUGIN_ROOT}/templates/workflows/ghe-"*.yml .github/workflows/
+
+# Verify copy
+echo "Copied GHE workflows:"
+ls -la .github/workflows/ghe-*.yml
+```
+
+**Workflows copied:**
+| Workflow | Trigger | Function |
+|----------|---------|----------|
+| `ghe-bug-triage.yml` | Issue opened with `bug` label | Validates bug reports for Hera |
+| `ghe-feature-triage.yml` | Issue opened with `enhancement` label | Validates feature requests |
+| `ghe-pr-review.yml` | PR opened | Creates REVIEW queue issue |
+| `ghe-ci-failure.yml` | Workflow failed | Creates CI failure issue for Chronos |
+| `ghe-security-alert.yml` | Dependabot alert | Creates security issue |
+| `ghe-spam-detection.yml` | Issue/comment created | Detects obvious spam |
+| `ghe-moderation.yml` | Comment created | Monitors for policy violations |
+
+**Important**: These workflows require the `CLAUDE_CODE_OAUTH_TOKEN` secret.
+The `/install-github-app` command will configure this automatically.
+
+## Step 8.5: Copy Avatar Assets (Optional)
+
+For self-contained deployments, copy avatar images to user's repo:
+
+```bash
+cd <repo-path>
+
+# Create assets directory
+mkdir -p assets/ghe/avatars
+
+# Copy avatar images from plugin
+cp "${CLAUDE_PLUGIN_ROOT}/assets/avatars/"*.png assets/ghe/avatars/
+
+# Verify copy
+echo "Copied avatars:"
+ls -la assets/ghe/avatars/
+```
+
+**Note**: Avatar images are also hosted at:
+`https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/`
+
+The workflows use the hosted URLs by default, so copying is optional.
+Copy only if you need offline/self-contained operation.
+
+## Step 9: Update .gitignore
 
 Add local settings to gitignore (settings are per-machine):
 

@@ -1,0 +1,114 @@
+# GHE Automation: Event B - Bug Report → Validate + REVIEW
+# Validates bug reports and queues for Hera.
+# SECURITY: All user inputs via environment variables.
+
+name: "GHE: Bug Triage"
+
+on:
+  issues:
+    types: [opened, edited]
+
+concurrency:
+  group: ghe-bug-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-bug-report:
+    # Only run for issues with 'bug' label, not from bots
+    if: |
+      contains(github.event.issue.labels.*.name, 'bug') &&
+      !contains(github.actor, '[bot]')
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Normalize issue title with [NUM][BUG] format
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          # Get current title
+          current_title=$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')
+
+          # Check if title already has [NUM][BUG] format
+          if [[ "$current_title" =~ ^\[[0-9]+\]\[BUG\] ]]; then
+            echo "Title already normalized: $current_title"
+            exit 0
+          fi
+
+          # Remove existing [BUG] prefix if present (from template)
+          clean_title=$(echo "$current_title" | sed 's/^\[BUG\] *//')
+
+          # Create normalized title: [NUM][BUG] description
+          new_title="[${ISSUE_NUMBER}][BUG] ${clean_title}"
+
+          # Update the issue title
+          gh issue edit "$ISSUE_NUMBER" --title "$new_title"
+          echo "Title normalized to: $new_title"
+
+      - name: Check if already processed
+        id: check-status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          labels=$(gh issue view "$ISSUE_NUMBER" --json labels --jq '.labels[].name' | tr '\n' ',')
+          if echo "$labels" | grep -q "phase:review"; then
+            echo "status=processed" >> $GITHUB_OUTPUT
+          elif echo "$labels" | grep -q "needs-info"; then
+            echo "status=revalidate" >> $GITHUB_OUTPUT
+          else
+            echo "status=new" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate and triage bug report
+        if: steps.check-status.outputs.status != 'processed'
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          IS_REVALIDATE: ${{ steps.check-status.outputs.status == 'revalidate' }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Validate bug report #$ISSUE_NUM for Hera (REVIEW agent).
+
+            Steps:
+            1. Read issue: gh issue view $ISSUE_NUM --json body,title
+            2. Check for required fields:
+               - Description of the bug
+               - Steps to reproduce
+               - Expected vs actual behavior
+               - Environment/version info
+            3. If ALL fields present:
+               - Add labels: phase:review, ready
+               - Remove needs-info label if present
+               - Comment confirmation
+            4. If fields MISSING:
+               - Add label: needs-info
+               - Comment listing what's missing (be polite and welcoming)
+
+            Use Argos Panoptes avatar: https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars/argos.png
+            Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.
+            You are triaging this bug for Hera (the REVIEW agent) to handle when the maintainer is online.
+            Never close issues. Only label and comment.
+            If $IS_REVALIDATE is true, user edited after needs-info.
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --body "An error occurred during validation. A maintainer will review manually."
