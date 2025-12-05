@@ -177,6 +177,7 @@ add_changelog_entry() {
     awk -v entry="$new_entry" '
     /^_No entries yet_/ && in_changelog {
         print entry
+        in_changelog = 0
         next
     }
     /^## Changelog \(DEV\)/ {
@@ -228,6 +229,7 @@ add_testlog_entry() {
     awk -v entry="$new_entry" '
     /^_Phase not started_/ && in_testlog {
         print entry
+        in_testlog = 0
         next
     }
     /^## Test Log \(TEST\)/ {
@@ -275,6 +277,7 @@ add_reviewlog_entry() {
     awk -v entry="$new_entry" '
     /^_Phase not started_/ && in_reviewlog {
         print entry
+        in_reviewlog = 0
         next
     }
     /^## Review Log \(REVIEW\)/ {
