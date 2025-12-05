@@ -14,7 +14,142 @@ This skill enables spawning Claude Code agents in background Terminal windows th
 - **macOS only** (uses Terminal.app and AppleScript)
 - **Claude Code CLI** installed
 - **jq** for JSON parsing in hooks
-- **GHE plugin** installed
+
+## Installation
+
+This feature is included in the GHE plugin. Install or update GHE:
+
+```bash
+# Add marketplace (if not already added)
+claude marketplace add https://github.com/Emasoft/ghe-marketplace
+
+# Install/update the plugin
+claude plugin install ghe@ghe-marketplace
+```
+
+After installation, restart Claude Code to load the hooks.
+
+## Verify Installation
+
+### Step 1: Check Plugin is Installed
+
+```bash
+claude plugin list | grep ghe
+```
+
+Expected output should show `ghe@ghe-marketplace` as installed.
+
+### Step 2: Check Hook is Registered
+
+```bash
+cat ~/.claude/plugins/cache/ghe/hooks/hooks.json | jq '.hooks.PreToolUse[0]'
+```
+
+Expected output:
+```json
+{
+  "matcher": ".*",
+  "hooks": [
+    {
+      "type": "command",
+      "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/auto_approve.sh",
+      "timeout": 10000
+    }
+  ]
+}
+```
+
+### Step 3: Check Scripts are Present
+
+```bash
+ls -la ~/.claude/plugins/cache/ghe/scripts/ | grep -E "(auto_approve|spawn_background)"
+```
+
+Expected output should show both `auto_approve.sh` and `spawn_background.sh`.
+
+### Step 4: Check jq is Installed
+
+```bash
+which jq
+```
+
+If not installed:
+```bash
+brew install jq
+```
+
+### Step 5: Test the Hook Standalone
+
+```bash
+echo '{"tool_name":"Read","tool_input":{"file_path":"test.md"},"cwd":"/tmp"}' | \
+    bash ~/.claude/plugins/cache/ghe/scripts/auto_approve.sh
+```
+
+Expected output:
+```json
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"Safe read-only tool"}}
+```
+
+### Step 6: Test Security (Write Outside Project)
+
+```bash
+echo '{"tool_name":"Write","tool_input":{"file_path":"/etc/test"},"cwd":"/tmp"}' | \
+    bash ~/.claude/plugins/cache/ghe/scripts/auto_approve.sh
+```
+
+Expected output (should DENY):
+```json
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Write outside project: /etc/test"}}
+```
+
+## First Run Test
+
+To verify everything works end-to-end:
+
+### 1. Create Test Directory
+
+```bash
+mkdir -p ~/test-background-agents/agents_reports
+cd ~/test-background-agents
+```
+
+### 2. Start Claude in Test Directory
+
+```bash
+claude
+```
+
+### 3. Ask Claude to Spawn a Test Agent
+
+Type this in the Claude session:
+
+```
+Please spawn a background agent to write "SUCCESS" to agents_reports/test.md
+```
+
+### 4. Wait and Check
+
+Wait ~15 seconds, then check:
+
+```bash
+cat ~/test-background-agents/agents_reports/test.md
+```
+
+Expected: File contains "SUCCESS" or similar confirmation.
+
+### 5. Check Hook Log
+
+```bash
+cat /tmp/background_agent_hook.log | tail -5
+```
+
+Should show ALLOW decisions for the Write operation.
+
+### 6. Cleanup
+
+```bash
+rm -rf ~/test-background-agents
+```
 
 ## Quick Start
 
