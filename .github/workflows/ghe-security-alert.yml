@@ -80,7 +80,9 @@ jobs:
             2. If $HAS_EXISTING is true:
                - Comment on issue #$EXISTING_ISSUE with new alert info
             3. If $HAS_EXISTING is false:
-               - Create issue: [SECURITY] Security vulnerability detected
+               - Create issue with title: [SECURITY #ALERT_NUM] <severity>: <vulnerability_type> in <package_name>
+               - The title MUST include the alert number and be meaningful enough to understand the security issue
+               - Example: [SECURITY #42] CRITICAL: Remote Code Execution in lodash
                - Labels: phase:dev, urgent, security
                - Body: Alert type, severity, affected component, remediation guidance
             4. If severity is critical/high: Add blocked label
@@ -94,8 +96,10 @@ jobs:
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           gh issue create \
-            --title "[URGENT] GHE: Security alert handling failed" \
+            --title "[URGENT #${RUN_ID}] GHE: Security alert handling failed ($EVENT_NAME)" \
             --label "urgent,security,ci-failure" \
-            --body "Security alert automation failed. MANUAL REVIEW REQUIRED. Check workflow run for details."
+            --body "Security alert automation failed for event: $EVENT_NAME (run #$RUN_ID). MANUAL REVIEW REQUIRED. Check workflow run for details."

@@ -170,6 +170,20 @@ When you're offline, Argos automatically processes these events and queues work 
 4. **Prevent Infinite Loops**: Argos workflows exclude bot actors and other GHE workflows to prevent cascading triggers
 5. **No Deletions**: Issues are closed and labeled, never deleted (preserves complete audit trail)
 6. **Clear Identity**: Always signs as "Argos Panoptes (The All-Seeing)" and explains which specialist will handle the work
+7. **Meaningful Issue Titles**: All issues include an identifier number and descriptive context
+
+### Issue Title Format
+
+All issues created by Argos follow this pattern to ensure they are immediately understandable:
+
+| Type | Format | Example |
+|------|--------|---------|
+| PR Review | `[REVIEW] PR #<num>: <title>` | `[REVIEW] PR #42: Add user authentication` |
+| Security | `[SECURITY #<alert>] <severity>: <vuln> in <pkg>` | `[SECURITY #15] CRITICAL: RCE in lodash` |
+| CI Failure | `[CI #<run>] <workflow> failed on <branch>` | `[CI #8827] Tests failed on feature/auth` |
+| Urgent/Meta | `[URGENT #<run>] GHE: <description>` | `[URGENT #9901] GHE: PR Review failed for PR #42` |
+
+**Why this matters**: Issue titles should be meaningful enough to understand the issue at a glance without opening it.
 
 ### What Argos Does NOT Flag as Violations
 

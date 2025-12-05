@@ -80,8 +80,10 @@ jobs:
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           gh issue create \
-            --title "[URGENT] GHE: PR Review automation failed" \
+            --title "[URGENT #${RUN_ID}] GHE: PR Review automation failed for PR #${PR_NUMBER}" \
             --label "urgent,ci-failure" \
-            --body "PR review queue automation failed. Check workflow run for details."
+            --body "PR review queue automation failed for PR #$PR_NUMBER (run #$RUN_ID). Check workflow run for details."

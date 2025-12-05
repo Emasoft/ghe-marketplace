@@ -82,7 +82,8 @@ jobs:
                  - Count of consecutive failures
                - If this is 3+ consecutive failures: Add urgent label
             4. If $HAS_EXISTING is false:
-               - Create issue: [CI] $WORKFLOW_NAME failed on $HEAD_BRANCH
+               - Create issue with title: [CI #RUN_ID] $WORKFLOW_NAME failed on $HEAD_BRANCH ($HEAD_SHA_SHORT)
+               - The title MUST include the run ID and be meaningful enough to understand what failed
                - Labels: phase:review, ci-failure, source:ci
                - Body: Branch, commit SHA, failed jobs, error summary, run link
 
@@ -96,8 +97,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          ORIG_RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           gh issue create \
-            --title "[URGENT] GHE: CI failure tracking failed" \
+            --title "[URGENT #${RUN_ID}] GHE: CI failure tracking failed for ${WORKFLOW_NAME} (run #${ORIG_RUN_ID})" \
             --label "urgent,ci-failure" \
-            --body "CI failure tracking automation failed for workflow: $WORKFLOW_NAME. Check workflow run for details."
+            --body "CI failure tracking automation failed for workflow: $WORKFLOW_NAME (original run #$ORIG_RUN_ID, tracking run #$RUN_ID). Check workflow run for details."
