@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/Emasoft/ghe-marketplace/discussions
+    about: For questions or discussions, please use GitHub Discussions instead

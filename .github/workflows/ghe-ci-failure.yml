@@ -82,10 +82,13 @@ jobs:
                  - Count of consecutive failures
                - If this is 3+ consecutive failures: Add urgent label
             4. If $HAS_EXISTING is false:
-               - Create issue with title: [CI #RUN_ID] $WORKFLOW_NAME failed on $HEAD_BRANCH ($HEAD_SHA_SHORT)
-               - The title MUST include the run ID and be meaningful enough to understand what failed
+               - Create issue with title: [CI] $WORKFLOW_NAME failed on $HEAD_BRANCH
                - Labels: phase:review, ci-failure, source:ci
-               - Body: Branch, commit SHA, failed jobs, error summary, run link
+               - Body: Branch, commit SHA, failed jobs, error summary, run link, run ID: $RUN_ID
+               - IMPORTANT: After creating the issue, update its title to include the issue number:
+                 - Get the created issue number from the output
+                 - Update title to: [ISSUE_NUM][CI] $WORKFLOW_NAME failed on $HEAD_BRANCH
+                 - Example: [42][CI] Tests failed on feature/auth
 
             Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
             Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.

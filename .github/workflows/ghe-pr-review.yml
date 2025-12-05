@@ -66,10 +66,15 @@ jobs:
 
             Steps:
             1. Get PR info: gh pr view $PR_NUMBER --json title,body,files,author
-            2. Create issue with title: [REVIEW] PR #$PR_NUMBER: <pr-title>
+            2. Create issue with title: [REVIEW] <pr-title>
+               - Do NOT include phase labels in title (they're in labels)
             3. Labels: phase:review, source:pr, ready (add bot-pr if $IS_BOT_PR is true)
             4. Body: PR link, author, summary of changes, file list, review checklist
             5. Comment on PR linking to the new issue
+            6. IMPORTANT: After creating the issue, update its title to include the issue number:
+               - Get the created issue number from the output
+               - Update title to: [ISSUE_NUM][REVIEW] <pr-title>
+               - Example: [42][REVIEW] Add user authentication
 
             Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
             Sign comments as "Argos Panoptes (The All-Seeing)" - you are the 24/7 monitoring system.

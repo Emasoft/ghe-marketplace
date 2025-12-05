@@ -174,16 +174,20 @@ When you're offline, Argos automatically processes these events and queues work 
 
 ### Issue Title Format
 
-All issues created by Argos follow this pattern to ensure they are immediately understandable:
+All issues use the format `[NUM][TYPE] description` - issue number first, then type:
 
 | Type | Format | Example |
 |------|--------|---------|
-| PR Review | `[REVIEW] PR #<num>: <title>` | `[REVIEW] PR #42: Add user authentication` |
-| Security | `[SECURITY #<alert>] <severity>: <vuln> in <pkg>` | `[SECURITY #15] CRITICAL: RCE in lodash` |
-| CI Failure | `[CI #<run>] <workflow> failed on <branch>` | `[CI #8827] Tests failed on feature/auth` |
-| Urgent/Meta | `[URGENT #<run>] GHE: <description>` | `[URGENT #9901] GHE: PR Review failed for PR #42` |
+| Bug Report | `[<num>][BUG] <description>` | `[42][BUG] Login fails on Safari` |
+| Feature | `[<num>][FEATURE] <description>` | `[43][FEATURE] Add dark mode` |
+| PR Review | `[<num>][REVIEW] <title>` | `[44][REVIEW] Add user authentication` |
+| Security | `[<num>][SECURITY] <sev>: <vuln>` | `[45][SECURITY] CRITICAL: RCE in lodash` |
+| CI Failure | `[<num>][CI] <workflow> on <branch>` | `[46][CI] Tests failed on feature/auth` |
 
-**Why this matters**: Issue titles should be meaningful enough to understand the issue at a glance without opening it.
+**Why this format?**
+- Issue number FIRST for quick reference
+- Type in brackets for visual scanning
+- No redundant info (phase labels like DEV/TEST/REVIEW are in labels, not titles)
 
 ### What Argos Does NOT Flag as Violations
 
@@ -270,6 +274,26 @@ For any feature/epic, only ONE thread can be open at a time:
 - **REVIEW -> DEV**: Always (for any fixes)
 - **TEST -> DEV**: When structural changes needed
 - **REVIEW -> TEST**: NEVER (must go to DEV)
+
+### Phase Promotion with Themis
+
+When a thread manager (Hephaestus/Artemis/Hera) believes their phase is complete:
+
+```
+1. Manager writes completion report to issue
+2. Manager adds `pending-promotion` label
+3. Themis sees the label and reads the report
+4. Themis decides: PROMOTE or REJECT
+```
+
+**Critical Rule**: The manager MUST write the report BEFORE adding the `pending-promotion` label. Themis looks for the label and immediately reads the last report to make a decision.
+
+| Label | Added By | Meaning |
+|-------|----------|---------|
+| `pending-promotion` | Thread Manager | "I think my phase is done, Themis please evaluate" |
+| `phase:dev` | Themis | Currently in DEV phase |
+| `phase:test` | Themis | Currently in TEST phase |
+| `phase:review` | Themis | Currently in REVIEW phase |
 
 ## Element Classification System
 

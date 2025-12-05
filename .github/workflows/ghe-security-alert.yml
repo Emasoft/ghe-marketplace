@@ -80,11 +80,13 @@ jobs:
             2. If $HAS_EXISTING is true:
                - Comment on issue #$EXISTING_ISSUE with new alert info
             3. If $HAS_EXISTING is false:
-               - Create issue with title: [SECURITY #ALERT_NUM] <severity>: <vulnerability_type> in <package_name>
-               - The title MUST include the alert number and be meaningful enough to understand the security issue
-               - Example: [SECURITY #42] CRITICAL: Remote Code Execution in lodash
+               - Create issue with title: [SECURITY] <severity>: <vulnerability_type> in <package_name>
                - Labels: phase:dev, urgent, security
                - Body: Alert type, severity, affected component, remediation guidance
+               - IMPORTANT: After creating the issue, update its title to include the issue number:
+                 - Get the created issue number from the output
+                 - Update title to: [ISSUE_NUM][SECURITY] <severity>: <vuln> in <pkg>
+                 - Example: [42][SECURITY] CRITICAL: RCE in lodash
             4. If severity is critical/high: Add blocked label
 
             Use Argos Panoptes avatar: https://robohash.org/argos-panoptes.png?size=77x77&set=set3
