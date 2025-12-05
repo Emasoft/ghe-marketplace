@@ -241,26 +241,62 @@ classify_element() {
 
 #######################################
 # Extract explicit issue number from text
-# Patterns: [Currently discussing issue n.X], issue #X, #X
+# Patterns expanded to recognize:
+#   - Context marker: [Currently discussing issue n.123]
+#   - Bracketed: [issue #123], [Issue #123]
+#   - GitHub URLs: https://github.com/OWNER/REPO/issues/123
+#   - Action words with #: work on #123, claim #123, fix #123
+#   - Action words without #: work on issue 123, claim 123
+#   - Simple: issue 123, Issue 123
+#   - Standalone hash: #123 (word boundary)
 #######################################
 extract_explicit_issue() {
     local text="$1"
     local issue_num=""
 
-    # Pattern 1: [Currently discussing issue n.123]
+    # Pattern 1: [Currently discussing issue n.123] - context marker
     if [[ "$text" =~ \[Currently\ discussing\ issue\ n\.([0-9]+)\] ]]; then
         issue_num="${BASH_REMATCH[1]}"
-    # Pattern 2: [issue #123] or [Issue #123]
+
+    # Pattern 2: [issue #123] or [Issue #123] - bracketed format
     elif [[ "$text" =~ \[[Ii]ssue\ \#([0-9]+)\] ]]; then
         issue_num="${BASH_REMATCH[1]}"
-    # Pattern 3: working on issue #123 or work on #123
+
+    # Pattern 3: GitHub URL - https://github.com/OWNER/REPO/issues/123
+    elif [[ "$text" =~ github\.com/[^/]+/[^/]+/issues/([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[1]}"
+
+    # Pattern 4: Action words with # - work on #123, working on issue #123
     elif [[ "$text" =~ [Ww]ork(ing)?\ on\ (issue\ )?\#([0-9]+) ]]; then
         issue_num="${BASH_REMATCH[3]}"
-    # Pattern 4: lets work on issue #123
+
+    # Pattern 5: Action words with # - lets work on #123
     elif [[ "$text" =~ [Ll]ets?\ work\ on\ (issue\ )?\#([0-9]+) ]]; then
         issue_num="${BASH_REMATCH[2]}"
-    # Pattern 5: claim issue #123 or claim #123
-    elif [[ "$text" =~ [Cc]laim\ (issue\ )?\#([0-9]+) ]]; then
+
+    # Pattern 6: claim/fix/resume/close/check with # - claim #123, fix #123
+    elif [[ "$text" =~ ([Cc]laim|[Ff]ix|[Rr]esume|[Cc]lose|[Cc]heck)\ (issue\ )?\#([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[3]}"
+
+    # Pattern 7: Action words WITHOUT # - work on issue 123, work on 123
+    elif [[ "$text" =~ [Ww]ork(ing)?\ on\ (issue\ )?([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[3]}"
+
+    # Pattern 8: lets work on issue 123 or lets work on 123
+    elif [[ "$text" =~ [Ll]ets?\ work\ on\ (issue\ )?([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[2]}"
+
+    # Pattern 9: claim/fix/resume/close/check WITHOUT # - claim 123, fix issue 123
+    elif [[ "$text" =~ ([Cc]laim|[Ff]ix|[Rr]esume|[Cc]lose|[Cc]heck)\ (issue\ )?([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[3]}"
+
+    # Pattern 10: Simple "issue 123" or "Issue 123" (case insensitive)
+    elif [[ "$text" =~ [Ii]ssue\ ([0-9]+) ]]; then
+        issue_num="${BASH_REMATCH[1]}"
+
+    # Pattern 11: Standalone #123 at word boundary (not part of other text)
+    # Must be at start, after space, or end of string
+    elif [[ "$text" =~ (^|[[:space:]])\#([0-9]+)($|[[:space:]]) ]]; then
         issue_num="${BASH_REMATCH[2]}"
     fi
 
@@ -516,7 +552,14 @@ remove_claude_md_reminder() {
 }
 
 #######################################
-# Set current issue explicitly
+# Set current issue for MAIN THREAD transcription
+#
+# This is for the FOREGROUND conversation between USER and CLAUDE.
+# It only enables transcription - NO agents are spawned here.
+# The main thread is just Claude posting verbatim exchanges.
+#
+# For feature/bug DEVELOPMENT threads (with agents), use:
+#   create-feature-thread.sh
 #######################################
 set_current_issue() {
     local issue_num="$1"
@@ -528,24 +571,43 @@ set_current_issue() {
     ensure_config
 
     # Verify issue exists
-    if gh issue view "$issue_num" --json number --jq '.number' 2>/dev/null | grep -q "$issue_num"; then
-        set_config "current_issue" "$issue_num"
-
-        # Inject reminder into CLAUDE.md
-        inject_claude_md_reminder "$issue_num"
-
-        echo -e "${GREEN}Current issue set to #$issue_num${NC}"
-        echo ""
-        echo "TRANSCRIPTION IS NOW ACTIVE"
-        echo "All conversation will be posted to issue #$issue_num"
-        echo ""
-        echo "Include in your responses:"
-        echo "  Currently discussing issue n.$issue_num"
-        return 0
-    else
+    if ! gh issue view "$issue_num" --json number --jq '.number' 2>/dev/null | grep -q "$issue_num"; then
         echo "Issue #$issue_num not found" >&2
         return 1
     fi
+
+    # SAVE the previous issue BEFORE switching (for resume functionality)
+    local previous=$(get_config "current_issue" "")
+    if [[ -n "$previous" && "$previous" != "null" && "$previous" != "$issue_num" ]]; then
+        save_last_active_issue "$previous"
+        echo -e "${YELLOW}Saved previous issue #$previous${NC}"
+    fi
+
+    echo -e "${GREEN}Setting main conversation thread to issue #$issue_num${NC}"
+
+    # Update config - this is the MAIN thread (user + Claude conversation)
+    set_config "current_issue" "$issue_num"
+    set_config "current_phase" "CONVERSATION"  # Special phase for main thread
+
+    # Inject reminder into CLAUDE.md
+    inject_claude_md_reminder "$issue_num"
+
+    # Mark issue as active conversation (NOT phase:dev - that's for feature threads)
+    gh issue edit "$issue_num" --add-label "conversation" 2>/dev/null || true
+    gh issue edit "$issue_num" --add-label "in-progress" 2>/dev/null || true
+
+    echo ""
+    echo -e "${GREEN}Issue #$issue_num is now the MAIN CONVERSATION THREAD${NC}"
+    echo ""
+    echo "TRANSCRIPTION IS NOW ACTIVE"
+    echo "All exchanges between you and Claude will be posted VERBATIM to issue #$issue_num"
+    echo ""
+    echo "This is the foreground thread - NO agents will be spawned here."
+    echo "To develop a feature/fix a bug, ask Claude and a BACKGROUND thread will be created."
+    echo ""
+    echo "Include in your responses:"
+    echo "  Currently discussing issue n.$issue_num"
+    return 0
 }
 
 #######################################
@@ -568,10 +630,93 @@ get_current_issue() {
 }
 
 #######################################
+# Save current issue to last_active_issue.json
+# This enables "resume last issue" functionality
+#######################################
+save_last_active_issue() {
+    local issue_num="$1"
+    local last_active_file=".claude/last_active_issue.json"
+
+    # Only save if we have a valid issue number
+    if [[ -z "$issue_num" || "$issue_num" == "null" ]]; then
+        return 0
+    fi
+
+    # Get issue title from GitHub
+    local title=$(gh issue view "$issue_num" --json title --jq '.title' 2>/dev/null || echo "Unknown")
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    # Ensure .claude directory exists
+    mkdir -p .claude
+
+    # Save to JSON file
+    cat > "$last_active_file" << EOF
+{
+  "issue": $issue_num,
+  "title": "$title",
+  "last_active": "$timestamp"
+}
+EOF
+
+    echo "Saved last active issue: #$issue_num"
+}
+
+#######################################
+# Get last active issue from JSON file
+#######################################
+get_last_active_issue() {
+    local last_active_file=".claude/last_active_issue.json"
+
+    if [[ ! -f "$last_active_file" ]]; then
+        echo -e "${YELLOW}No last active issue found${NC}"
+        echo ""
+        echo "No previous session recorded in .claude/last_active_issue.json"
+        return 1
+    fi
+
+    local issue=$(jq -r '.issue' "$last_active_file" 2>/dev/null)
+    local title=$(jq -r '.title' "$last_active_file" 2>/dev/null)
+    local last_active=$(jq -r '.last_active' "$last_active_file" 2>/dev/null)
+
+    if [[ -z "$issue" || "$issue" == "null" ]]; then
+        echo -e "${YELLOW}Invalid last active issue file${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}Last Active Issue Found${NC}"
+    echo ""
+    echo "  Issue:       #$issue"
+    echo "  Title:       $title"
+    echo "  Last Active: $last_active"
+    echo ""
+    echo "To resume: set-issue $issue"
+
+    # Return just the issue number for scripting use
+    return 0
+}
+
+#######################################
+# Get last issue number only (for scripting)
+#######################################
+get_last_issue_number() {
+    local last_active_file=".claude/last_active_issue.json"
+
+    if [[ -f "$last_active_file" ]]; then
+        jq -r '.issue' "$last_active_file" 2>/dev/null
+    fi
+}
+
+#######################################
 # Clear current issue (stop transcription)
 #######################################
 clear_current_issue() {
     ensure_config
+
+    # SAVE the current issue BEFORE clearing (for resume functionality)
+    local current=$(get_config "current_issue" "")
+    if [[ -n "$current" && "$current" != "null" ]]; then
+        save_last_active_issue "$current"
+    fi
 
     # Remove from config
     set_config "current_issue" "null"
@@ -581,6 +726,12 @@ clear_current_issue() {
 
     echo -e "${YELLOW}TRANSCRIPTION STOPPED${NC}"
     echo "No issue is now active for transcription"
+
+    if [[ -n "$current" && "$current" != "null" ]]; then
+        echo ""
+        echo "Previous issue #$current has been saved."
+        echo "To resume later: get-last-issue"
+    fi
 }
 
 #######################################
@@ -605,11 +756,28 @@ case "${1:-}" in
     "clear-issue")
         clear_current_issue
         ;;
+    "get-last-issue")
+        get_last_active_issue
+        ;;
+    "last-issue-number")
+        # Returns ONLY the issue number (for scripting/piping)
+        get_last_issue_number
+        ;;
+    "resume")
+        # Convenience: Resume the last active issue
+        LAST=$(get_last_issue_number)
+        if [[ -n "$LAST" && "$LAST" != "null" ]]; then
+            set_current_issue "$LAST"
+        else
+            echo "No previous issue to resume"
+            exit 1
+        fi
+        ;;
     "check")
         check_github_repo && echo "GitHub repo OK" || echo "No GitHub repo"
         ;;
     *)
-        echo "Usage: $0 {user|assistant|find-issue|set-issue|get-issue|clear-issue|check} [message] [agent]"
+        echo "Usage: $0 {user|assistant|find-issue|set-issue|get-issue|clear-issue|get-last-issue|resume|check} [message] [agent]"
         echo ""
         echo "Commands:"
         echo "  user <message>              Post user message to current issue"
@@ -618,6 +786,9 @@ case "${1:-}" in
         echo "  set-issue <number>          Set current issue and activate transcription"
         echo "  get-issue                   Show current issue status"
         echo "  clear-issue                 Stop transcription and clear current issue"
+        echo "  get-last-issue              Show the last active issue (from previous session)"
+        echo "  last-issue-number           Get only the issue number (for scripting)"
+        echo "  resume                      Resume transcription to the last active issue"
         echo "  check                       Verify GitHub repo is configured"
         echo ""
         echo "IMPORTANT: Transcription only happens AFTER set-issue is called!"
@@ -628,6 +799,11 @@ case "${1:-}" in
         echo "  working on issue #123"
         echo "  lets work on #123"
         echo "  claim #123"
+        echo ""
+        echo "Resume workflow:"
+        echo "  1. User says: 'what were we working on?' or 'resume last issue'"
+        echo "  2. Claude checks: auto-transcribe.sh get-last-issue"
+        echo "  3. Claude resumes: auto-transcribe.sh resume (or set-issue N)"
         exit 1
         ;;
 esac
