@@ -76,12 +76,13 @@ BADGE_JUDGEMENT="![](https://img.shields.io/badge/element-judgement-orange)"
 # Check if we have a GitHub repo
 #######################################
 check_github_repo() {
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    # Use REPO_ROOT for all git operations (handles nested repos)
+    if ! git -C "$REPO_ROOT" rev-parse --git-dir > /dev/null 2>&1; then
         echo "Not a git repository" >&2
         return 1
     fi
 
-    local remote=$(git remote get-url origin 2>/dev/null || echo "")
+    local remote=$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null || echo "")
     if [[ -z "$remote" ]] || [[ ! "$remote" =~ github\.com ]]; then
         echo "No GitHub remote found" >&2
         return 1
@@ -94,6 +95,14 @@ check_github_repo() {
     fi
 
     return 0
+}
+
+#######################################
+# Run gh commands from REPO_ROOT
+# This ensures gh finds the correct GitHub remote
+#######################################
+run_gh() {
+    (cd "$REPO_ROOT" && gh "$@")
 }
 
 #######################################
@@ -327,7 +336,7 @@ find_or_create_issue() {
     local explicit_issue=$(extract_explicit_issue "$topic")
     if [[ -n "$explicit_issue" ]]; then
         # Verify it exists (open or closed - we can still post to closed issues)
-        if gh issue view "$explicit_issue" --json number --jq '.number' 2>/dev/null | grep -q "$explicit_issue"; then
+        if run_gh issue view "$explicit_issue" --json number --jq '.number' 2>/dev/null | grep -q "$explicit_issue"; then
             set_config "current_issue" "$explicit_issue"
             echo "$explicit_issue"
             return 0
@@ -339,7 +348,7 @@ find_or_create_issue() {
     # If we have an active issue, use it
     if [[ -n "$current_issue" && "$current_issue" != "null" ]]; then
         # Verify it still exists and is open
-        if gh issue view "$current_issue" --json state --jq '.state' 2>/dev/null | grep -q "OPEN"; then
+        if run_gh issue view "$current_issue" --json state --jq '.state' 2>/dev/null | grep -q "OPEN"; then
             echo "$current_issue"
             return 0
         fi
@@ -349,7 +358,7 @@ find_or_create_issue() {
     local keywords=$(echo "$topic" | tr '[:upper:]' '[:lower:]' | grep -oE '[a-z]{4,}' | head -5 | tr '\n' ' ')
 
     if [[ -n "$keywords" ]]; then
-        local found_issue=$(gh issue list --state open --limit 10 --json number,title,body | \
+        local found_issue=$(run_gh issue list --state open --limit 10 --json number,title,body | \
             jq -r --arg kw "$keywords" '.[] | select((.title + " " + .body) | ascii_downcase | contains($kw | split(" ")[0])) | .number' | head -1)
 
         if [[ -n "$found_issue" ]]; then
@@ -364,7 +373,7 @@ find_or_create_issue() {
     local title="[SESSION] Development Session $session_id"
 
     # Create issue and capture the URL, then extract issue number
-    local issue_url=$(gh issue create \
+    local issue_url=$(run_gh issue create \
         --title "$title" \
         --label "session" \
         --body "## Development Session
@@ -401,7 +410,7 @@ This issue tracks the conversation and work done during this development session
 #######################################
 linkify_content() {
     local CONTENT="$1"
-    local REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)
+    local REPO=$(run_gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)
 
     # If no repo or content is empty, return as-is
     if [ -z "$REPO" ] || [ -z "$CONTENT" ]; then
@@ -464,7 +473,7 @@ ${linkified_message}
 --- ${badges}"
 
     # Post to GitHub
-    gh issue comment "$issue_num" --body "$comment"
+    run_gh issue comment "$issue_num" --body "$comment"
 }
 
 #######################################
@@ -513,7 +522,7 @@ get_posting_agent() {
     fi
 
     # Check if epic issue (has epic label)
-    local labels=$(gh issue view "$issue_num" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+    local labels=$(run_gh issue view "$issue_num" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
     if echo "$labels" | grep -qi "epic"; then
         echo "Athena"
         return
@@ -620,7 +629,7 @@ set_current_issue() {
     ensure_config
 
     # Verify issue exists
-    if ! gh issue view "$issue_num" --json number --jq '.number' 2>/dev/null | grep -q "$issue_num"; then
+    if ! run_gh issue view "$issue_num" --json number --jq '.number' 2>/dev/null | grep -q "$issue_num"; then
         echo "Issue #$issue_num not found" >&2
         return 1
     fi
@@ -642,8 +651,8 @@ set_current_issue() {
     inject_claude_md_reminder "$issue_num"
 
     # Mark issue as active conversation (NOT phase:dev - that's for feature threads)
-    gh issue edit "$issue_num" --add-label "conversation" 2>/dev/null || true
-    gh issue edit "$issue_num" --add-label "in-progress" 2>/dev/null || true
+    run_gh issue edit "$issue_num" --add-label "conversation" 2>/dev/null || true
+    run_gh issue edit "$issue_num" --add-label "in-progress" 2>/dev/null || true
 
     echo ""
     echo -e "${GREEN}Issue #$issue_num is now the MAIN CONVERSATION THREAD${NC}"
@@ -692,7 +701,7 @@ save_last_active_issue() {
     fi
 
     # Get issue title from GitHub
-    local title=$(gh issue view "$issue_num" --json title --jq '.title' 2>/dev/null || echo "Unknown")
+    local title=$(run_gh issue view "$issue_num" --json title --jq '.title' 2>/dev/null || echo "Unknown")
     local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
     # Ensure .claude directory exists
