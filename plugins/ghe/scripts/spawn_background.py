@@ -23,6 +23,7 @@ import subprocess
 import tempfile
 import uuid
 import shutil
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
@@ -31,8 +32,11 @@ from typing import Optional, Tuple
 def log_message(log_file: Path, agent_id: str, message: str) -> None:
     """Log a message with timestamp and agent ID."""
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with open(log_file, 'a', encoding='utf-8') as f:
-        f.write(f"[{timestamp}] [{agent_id}] {message}\n")
+    try:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"[{timestamp}] [{agent_id}] {message}\n")
+    except (IOError, OSError):
+        pass  # Logging is best-effort, don't fail if log can't be written
 
 
 def get_security_prefix(working_dir: str, parent_dir: str) -> str:
@@ -65,18 +69,38 @@ def get_temp_dir() -> str:
     return '/tmp'
 
 
+def escape_for_applescript(s: str) -> str:
+    """Escape a string for use inside AppleScript double quotes."""
+    # Escape backslashes first, then double quotes
+    return s.replace('\\', '\\\\').replace('"', '\\"')
+
+
+def escape_for_shell(s: str) -> str:
+    """Escape a string for use inside single quotes in shell."""
+    # Replace single quotes with '\'' (end quote, escaped quote, start quote)
+    return s.replace("'", "'\\''")
+
+
+def sanitize_session_name(name: str) -> str:
+    """Sanitize a string for use as tmux session name."""
+    # tmux session names: alphanumeric, underscore, dash only
+    # Replace invalid chars with underscore, truncate to 20 chars
+    sanitized = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
+    return sanitized[:20]
+
+
 def detect_linux_terminal() -> Optional[str]:
     """Detect available terminal emulator on Linux."""
     terminals = [
-        ('gnome-terminal', ['gnome-terminal', '--']),
-        ('konsole', ['konsole', '-e']),
-        ('xfce4-terminal', ['xfce4-terminal', '-e']),
-        ('mate-terminal', ['mate-terminal', '-e']),
-        ('terminator', ['terminator', '-e']),
-        ('xterm', ['xterm', '-e']),
-        ('tmux', ['tmux', 'new-session', '-d']),
+        'gnome-terminal',
+        'konsole',
+        'xfce4-terminal',
+        'mate-terminal',
+        'terminator',
+        'xterm',
+        'tmux',
     ]
-    for name, _ in terminals:
+    for name in terminals:
         if shutil.which(name):
             return name
     return None
@@ -84,12 +108,16 @@ def detect_linux_terminal() -> Optional[str]:
 
 def spawn_macos(full_cmd: str, agent_id: str, log_file: Path) -> Tuple[str, str]:
     """Spawn background terminal on macOS using AppleScript."""
+    # Escape the command for AppleScript double-quoted string
+    escaped_cmd = escape_for_applescript(full_cmd)
+    escaped_agent_id = escape_for_applescript(agent_id)
+
     applescript = f'''
 tell application "Terminal"
     -- ATOMIC: Command is bound to this tab at creation time
-    set newTab to do script "{full_cmd}"
+    set newTab to do script "{escaped_cmd}"
     set newWindow to first window whose tabs contains newTab
-    set custom title of newTab to "{agent_id}"
+    set custom title of newTab to "{escaped_agent_id}"
     return (id of newWindow as text) & "|" & (tty of newTab)
 end tell
 '''
@@ -108,24 +136,33 @@ end tell
 
 def spawn_windows(full_cmd: str, agent_id: str, working_dir: str, log_file: Path) -> Tuple[str, str]:
     """Spawn background terminal on Windows."""
+    # Windows-specific subprocess flags
+    CREATE_NEW_PROCESS_GROUP = 0x00000200
+    DETACHED_PROCESS = 0x00000008
+    creation_flags = CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS
+
     # Check for Windows Terminal first (modern)
     if shutil.which('wt'):
         # Windows Terminal with new tab
         subprocess.Popen(
             ['wt', 'new-tab', '--title', agent_id, '-d', working_dir, 'cmd', '/c', full_cmd],
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+            creationflags=creation_flags
         )
         return "wt", "Windows Terminal"
     else:
         # Fallback to cmd.exe with START
         # START /MIN runs minimized (background-like)
-        bat_content = f'@echo off\ncd /d "{working_dir}"\n{full_cmd}\n'
+        # Write batch file to avoid complex escaping
+        bat_content = f'@echo off\r\ncd /d "{working_dir}"\r\n{full_cmd}\r\n'
         bat_file = Path(get_temp_dir()) / f'claude_spawn_{agent_id}.bat'
         bat_file.write_text(bat_content, encoding='utf-8')
+
+        # Use string command for shell=True to avoid escaping issues
+        start_cmd = f'start /MIN "{agent_id}" "{bat_file}"'
         subprocess.Popen(
-            ['cmd', '/c', 'start', '/MIN', f'"{agent_id}"', str(bat_file)],
+            start_cmd,
             shell=True,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+            creationflags=creation_flags
         )
         return "cmd", "Command Prompt"
 
@@ -140,7 +177,7 @@ def spawn_linux(full_cmd: str, agent_id: str, working_dir: str, log_file: Path) 
 
     if terminal == 'tmux':
         # tmux runs truly in background
-        session_name = agent_id.replace('-', '_')[:20]
+        session_name = sanitize_session_name(agent_id)
         subprocess.run([
             'tmux', 'new-session', '-d', '-s', session_name, '-c', working_dir,
             'bash', '-c', full_cmd
@@ -157,17 +194,33 @@ def spawn_linux(full_cmd: str, agent_id: str, working_dir: str, log_file: Path) 
             'konsole', '--workdir', working_dir, '-e', 'bash', '-c', full_cmd
         ])
         return "konsole", "Konsole"
+    elif terminal == 'xfce4-terminal':
+        subprocess.Popen([
+            'xfce4-terminal', '--title', agent_id, '--working-directory', working_dir,
+            '-e', f'bash -c "{escape_for_shell(full_cmd)}"'
+        ])
+        return "xfce4-terminal", "XFCE Terminal"
+    elif terminal == 'mate-terminal':
+        subprocess.Popen([
+            'mate-terminal', '--title', agent_id, '--working-directory', working_dir,
+            '-e', f'bash -c "{escape_for_shell(full_cmd)}"'
+        ])
+        return "mate-terminal", "MATE Terminal"
+    elif terminal == 'terminator':
+        subprocess.Popen([
+            'terminator', '--title', agent_id, '--working-directory', working_dir,
+            '-e', f'bash -c "{escape_for_shell(full_cmd)}"'
+        ])
+        return "terminator", "Terminator"
     elif terminal == 'xterm':
         subprocess.Popen([
-            'xterm', '-title', agent_id, '-e', 'bash', '-c', f'cd "{working_dir}" && {full_cmd}'
-        ])
+            'xterm', '-title', agent_id, '-e', 'bash', '-c', full_cmd
+        ], cwd=working_dir)
         return "xterm", "XTerm"
     else:
-        # Generic fallback
-        subprocess.Popen([terminal, '-e', 'bash', '-c', f'cd "{working_dir}" && {full_cmd}'])
-        return terminal, terminal
-
-    return "unknown", "unknown"
+        # Should not reach here, but handle gracefully
+        print(f"ERROR: Unhandled terminal: {terminal}", file=sys.stderr)
+        sys.exit(1)
 
 
 def spawn_background_agent(prompt: str, working_dir: str) -> None:
@@ -221,11 +274,16 @@ def spawn_background_agent(prompt: str, working_dir: str) -> None:
     # It is PHYSICALLY IMPOSSIBLE for the prompt to go to a different window.
     if system == "Windows":
         # Windows uses type instead of cat, and del instead of rm
-        prompt_file_path_win = prompt_file_path.replace('/', '\\')
-        full_cmd = f'type "{prompt_file_path_win}" | claude --dangerously-skip-permissions & del "{prompt_file_path_win}"'
+        # Use Path to get proper Windows path format
+        prompt_file_path_win = str(Path(prompt_file_path))
+        # Use && so del only runs if type succeeds
+        full_cmd = f'type "{prompt_file_path_win}" | claude --dangerously-skip-permissions && del "{prompt_file_path_win}"'
     else:
         # macOS and Linux use cat and rm
-        full_cmd = f"cd '{working_dir}' && cat '{prompt_file_path}' | claude --dangerously-skip-permissions; rm -f '{prompt_file_path}'"
+        # Escape paths for shell safety
+        escaped_working_dir = escape_for_shell(working_dir)
+        escaped_prompt_path = escape_for_shell(prompt_file_path)
+        full_cmd = f"cd '{escaped_working_dir}' && cat '{escaped_prompt_path}' | claude --dangerously-skip-permissions; rm -f '{escaped_prompt_path}'"
 
     try:
         # Platform-specific spawn
