@@ -578,8 +578,9 @@ python generate_toc.py --min-level 1 --max-level 4 README.md
 |--------|---------|
 | `scripts/release.py` | Marketplace release automation |
 | `scripts/generate_toc.py` | Markdown TOC generator |
+| `scripts/validate_plugin.py` | Plugin validation tool |
 
-Both scripts are fully portable - copy them to any Claude Code marketplace project.
+All scripts are fully portable - copy them to any Claude Code marketplace project.
 
 ---
 

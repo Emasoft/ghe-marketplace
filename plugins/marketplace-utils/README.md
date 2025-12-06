@@ -15,6 +15,7 @@ Portable utility tools for Claude Code plugin marketplaces.
 - [Scripts](#scripts)
   - [release.py](#releasepy)
   - [generate_toc.py](#generate_tocpy)
+  - [validate_plugin.py](#validate_pluginpy)
 - [Portability](#portability)
 - [License](#license)
 
@@ -220,11 +221,36 @@ python scripts/generate_toc.py README.md
 - Python 3.6+
 - No external dependencies
 
+### validate_plugin.py
+
+Plugin validation tool that wraps `claude plugin validate`:
+
+```bash
+# Validate a specific plugin
+python "${CLAUDE_PLUGIN_ROOT}/scripts/validate_plugin.py" ghe
+
+# Validate all plugins in the marketplace
+python "${CLAUDE_PLUGIN_ROOT}/scripts/validate_plugin.py" --all
+
+# Show version
+python "${CLAUDE_PLUGIN_ROOT}/scripts/validate_plugin.py" --version
+```
+
+**Features:**
+- Individual plugin validation
+- Batch validation with `--all` flag
+- Summary report with pass/fail status
+- Colored terminal output
+
+**Prerequisites:**
+- Claude Code CLI (`claude plugin validate` command)
+- Run from marketplace root directory
+
 ---
 
 ## Portability
 
-Both scripts are fully portable:
+All scripts are fully portable:
 - **No hardcoded paths** - All paths relative or from config
 - **No project-specific values** - Reads from marketplace.json/plugin.json
 - **Standard Python** - No external dependencies

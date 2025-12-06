@@ -11,6 +11,7 @@ Usage:
     python generate_toc.py docs/*.md
     python generate_toc.py --recursive .
     python generate_toc.py --dry-run --min-level 2 --max-level 4 file.md
+    python generate_toc.py --version
 
 Options:
     --dry-run       Print TOC without modifying files
@@ -21,6 +22,7 @@ Options:
     --recursive     Process .md files recursively
     --insert MODE   Insertion mode: 'auto', 'top', 'marker' (default: auto)
     --marker TEXT   Custom marker for insertion (default: <!-- TOC -->)
+    --version       Show script version and exit
 """
 
 import argparse
@@ -29,6 +31,10 @@ import re
 import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
+
+# Script version - automatically updated by release.py when releasing marketplace-utils
+__version__ = "1.0.0"
+SCRIPT_NAME = "generate_toc.py"
 
 
 class Colors:
@@ -59,6 +65,13 @@ def warn(msg: str) -> None:
 def error(msg: str) -> None:
     """Print error message."""
     print(f"{Colors.RED}[ERROR]{Colors.NC} {msg}", file=sys.stderr)
+
+
+def print_version() -> None:
+    """Print version information."""
+    print(f"{Colors.CYAN}{SCRIPT_NAME}{Colors.NC} v{__version__}")
+    print(f"Universal Markdown TOC generator")
+    print()
 
 
 def header_to_anchor(header: str) -> str:
@@ -476,7 +489,21 @@ Insertion Modes:
         help='Custom marker for marker insertion mode'
     )
 
+    parser.add_argument(
+        '--version', '-v',
+        action='store_true',
+        help='Show script version and exit'
+    )
+
     args = parser.parse_args()
+
+    # Handle --version
+    if args.version:
+        print_version()
+        return
+
+    # Print version banner
+    print_version()
 
     # Validate level range
     if args.min_level > args.max_level:

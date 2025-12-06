@@ -56,11 +56,32 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/release.py" --list
 1. **Validates prerequisites** - Checks gh CLI, git repo, uncommitted changes
 2. **Validates plugin** - Runs `claude plugin validate` to ensure plugin is correct
 3. **Bumps plugin version** - In both marketplace.json and the plugin's plugin.json
-4. **Updates READMEs** - Plugin README badges + marketplace README version table
-5. **Creates commit** - With release message
-6. **Creates git tag** - Plugin-specific tag: `<plugin-name>-v<version>`
-7. **Pushes to remote** - Both commit and tag
-8. **Creates GitHub release** - With installation instructions
+4. **Updates script versions** - Automatically updates `__version__` in all scripts (marketplace-utils only)
+5. **Updates READMEs** - Plugin README badges + marketplace README version table
+6. **Creates commit** - With release message
+7. **Creates git tag** - Plugin-specific tag: `<plugin-name>-v<version>`
+8. **Pushes to remote** - Both commit and tag
+9. **Creates GitHub release** - With installation instructions
+
+## Plugin Validation
+
+Before releasing, validate your plugin to catch errors early:
+
+```bash
+# Validate a specific plugin
+python "${CLAUDE_PLUGIN_ROOT}/scripts/validate_plugin.py" ghe
+
+# Validate all plugins
+python "${CLAUDE_PLUGIN_ROOT}/scripts/validate_plugin.py" --all
+
+# Show version
+python "${CLAUDE_PLUGIN_ROOT}/scripts/validate_plugin.py" --version
+```
+
+The validation script wraps `claude plugin validate` and provides:
+- Individual plugin validation
+- Batch validation with `--all`
+- Summary report of all results
 
 ## Independent Versioning
 

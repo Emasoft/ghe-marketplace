@@ -10,6 +10,7 @@ Usage:
     python release.py minor <plugin-name> "Add new feature"
     python release.py major <plugin-name> "Breaking changes"
     python release.py --list                    # List all plugins and versions
+    python release.py --version                 # Show script version
 
 Examples:
     python release.py patch ghe "Fix avatar loading"
@@ -30,6 +31,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
+
+# Script version - automatically updated by release.py when releasing marketplace-utils
+__version__ = "1.0.0"
+SCRIPT_NAME = "release.py"
 
 
 class Colors:
@@ -61,6 +66,13 @@ def error(msg: str) -> None:
     """Print error and exit."""
     print(f"{Colors.RED}[ERROR]{Colors.NC} {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+def print_version() -> None:
+    """Print version information."""
+    print(f"{Colors.CYAN}{SCRIPT_NAME}{Colors.NC} v{__version__}")
+    print(f"Marketplace release automation tool")
+    print()
 
 
 def run_cmd(cmd: str, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess:
@@ -285,6 +297,33 @@ def update_plugin_json(config: MarketplaceConfig, plugin_name: str, new_version:
     success(f"Updated {rel_path}")
 
 
+def update_script_versions(config: MarketplaceConfig, plugin_name: str, new_version: str) -> None:
+    """Update __version__ in all Python scripts for marketplace-utils plugin."""
+    if plugin_name != 'marketplace-utils':
+        return  # Only update script versions for marketplace-utils
+
+    plugin_path = config.get_plugin_path(plugin_name)
+    if not plugin_path:
+        return
+
+    scripts_dir = plugin_path / 'scripts'
+    if not scripts_dir.exists():
+        return
+
+    version_pattern = re.compile(r'^__version__\s*=\s*["\'][\d.]+["\']', re.MULTILINE)
+
+    for script_path in scripts_dir.glob('*.py'):
+        with open(script_path) as f:
+            content = f.read()
+
+        if '__version__' in content:
+            new_content = version_pattern.sub(f'__version__ = "{new_version}"', content)
+            if new_content != content:
+                with open(script_path, 'w') as f:
+                    f.write(new_content)
+                success(f"Updated version in {script_path.name}")
+
+
 def update_readme_for_plugin(config: MarketplaceConfig, plugin_name: str, old_version: str, new_version: str) -> None:
     """Update version references in the plugin's README."""
     readme_path = config.get_plugin_readme_path(plugin_name)
@@ -483,10 +522,13 @@ Examples:
   python release.py minor marketplace-utils "Add TOC generator"
   python release.py major ghe "Breaking API changes"
   python release.py --list
+  python release.py --version
 
 Each plugin maintains its own version independently.
         """
     )
+    parser.add_argument('--version', '-v', action='store_true',
+                        help='Show script version and exit')
     parser.add_argument('--list', '-l', action='store_true',
                         help='List all plugins and their versions')
     parser.add_argument('bump_type', nargs='?', choices=['patch', 'minor', 'major'],
@@ -497,6 +539,14 @@ Each plugin maintains its own version independently.
                         help='Release notes (brief description)')
 
     args = parser.parse_args()
+
+    # Handle --version
+    if args.version:
+        print_version()
+        return
+
+    # Print version banner
+    print_version()
 
     # Use current working directory as repo root
     repo_root = Path.cwd()
@@ -562,32 +612,36 @@ Each plugin maintains its own version independently.
     print()
 
     # Step 1: Validate plugin
-    info("Step 1/6: Validating plugin...")
+    info("Step 1/7: Validating plugin...")
     validate_plugin(config, args.plugin_name)
 
     # Step 2: Update JSON files
-    info("Step 2/6: Updating JSON files...")
+    info("Step 2/7: Updating JSON files...")
     update_marketplace_json_for_plugin(config, args.plugin_name, new_version)
     update_plugin_json(config, args.plugin_name, new_version)
+
+    # Step 3: Update script versions (only for marketplace-utils)
+    info("Step 3/7: Updating script versions...")
+    update_script_versions(config, args.plugin_name, new_version)
 
     # Reload config to get updated version for README generation
     config = MarketplaceConfig(repo_root)
 
-    # Step 3: Update READMEs
-    info("Step 3/6: Updating READMEs...")
+    # Step 4: Update READMEs
+    info("Step 4/7: Updating READMEs...")
     update_readme_for_plugin(config, args.plugin_name, current_version, new_version)
     update_marketplace_readme(config)
 
-    # Step 4: Create commit
-    info("Step 4/6: Creating commit...")
+    # Step 5: Create commit
+    info("Step 5/7: Creating commit...")
     create_commit(args.plugin_name, new_version, args.notes)
 
-    # Step 5: Create and push tag
-    info("Step 5/6: Creating and pushing tag...")
+    # Step 6: Create and push tag
+    info("Step 6/7: Creating and pushing tag...")
     create_tag(args.plugin_name, new_version, args.notes)
 
-    # Step 6: Create GitHub release
-    info("Step 6/6: Creating GitHub release...")
+    # Step 7: Create GitHub release
+    info("Step 7/7: Creating GitHub release...")
     create_release(config, args.plugin_name, new_version, args.notes)
 
     print()
