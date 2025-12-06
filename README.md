@@ -6,7 +6,7 @@
 
 **Persistent Memory for Claude Code**
 
-[![Version](https://img.shields.io/badge/version-0.5.4-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/ghe-v0.5.4)
+[![Version](https://img.shields.io/badge/version-0.5.5-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/ghe-v0.5.4)
 [![Release](https://img.shields.io/github/v/release/Emasoft/ghe-marketplace?include_prereleases&label=release)](https://github.com/Emasoft/ghe-marketplace/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
@@ -18,6 +18,18 @@
 </div>
 
 ---
+
+<!-- PLUGIN-VERSIONS-START -->
+## Plugin Versions
+
+| Plugin | Version | Description |
+|--------|---------|-------------|
+| ghe | 0.5.5 | GHE (GitHub-Elements) - Automated project management for ... |
+| marketplace-utils | 1.0.0 | Portable utility tools for Claude Code plugin marketplace... |
+
+*Last updated: 2025-12-07*
+
+<!-- PLUGIN-VERSIONS-END -->
 
 ## Table of Contents
 
