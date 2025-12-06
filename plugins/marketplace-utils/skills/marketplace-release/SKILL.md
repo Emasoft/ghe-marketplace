@@ -54,12 +54,13 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/release.py" --list
 ## What It Does
 
 1. **Validates prerequisites** - Checks gh CLI, git repo, uncommitted changes
-2. **Bumps plugin version** - In both marketplace.json and the plugin's plugin.json
-3. **Updates README** - Version badges and release links (plugin-specific)
-4. **Creates commit** - With release message
-5. **Creates git tag** - Plugin-specific tag: `<plugin-name>-v<version>`
-6. **Pushes to remote** - Both commit and tag
-7. **Creates GitHub release** - With installation instructions
+2. **Validates plugin** - Runs `claude plugin validate` to ensure plugin is correct
+3. **Bumps plugin version** - In both marketplace.json and the plugin's plugin.json
+4. **Updates READMEs** - Plugin README badges + marketplace README version table
+5. **Creates commit** - With release message
+6. **Creates git tag** - Plugin-specific tag: `<plugin-name>-v<version>`
+7. **Pushes to remote** - Both commit and tag
+8. **Creates GitHub release** - With installation instructions
 
 ## Independent Versioning
 
@@ -179,7 +180,35 @@ ghe                       0.5.4           ./plugins/ghe
 marketplace-utils         1.0.0           ./plugins/marketplace-utils
 ```
 
+## Marketplace README Version Table
+
+The release script automatically maintains a version table in the marketplace README.md:
+
+```markdown
+<!-- PLUGIN-VERSIONS-START -->
+## Plugin Versions
+
+| Plugin | Version | Description |
+|--------|---------|-------------|
+| ghe | 0.5.4 | GHE (GitHub-Elements) - Automated project manag... |
+| marketplace-utils | 1.0.0 | Portable utility tools for Claude Code plugin m... |
+
+*Last updated: 2025-01-15*
+
+<!-- PLUGIN-VERSIONS-END -->
+```
+
+This section is automatically:
+- **Inserted** before the Table of Contents (if no markers exist)
+- **Updated** in place (if markers already exist)
+- **Kept current** with each release
+
+The main version badge in the README header is also updated to match the first plugin's version.
+
 ## Troubleshooting
+
+### "Plugin validation failed"
+The plugin has issues that must be fixed before release. Check the error message and fix the plugin.json or structure.
 
 ### "marketplace.json not found"
 Run from marketplace root directory, not plugin subdirectory.

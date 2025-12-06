@@ -27,6 +27,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -197,6 +198,21 @@ def check_prerequisites() -> None:
     success("Prerequisites check passed")
 
 
+def validate_plugin(config: MarketplaceConfig, plugin_name: str) -> None:
+    """Validate plugin using Claude Code plugin validator."""
+    info(f"Validating plugin '{plugin_name}'...")
+
+    plugin_path = config.get_plugin_path(plugin_name)
+    if not plugin_path:
+        error(f"Cannot find plugin path for '{plugin_name}'")
+
+    result = run_cmd(f"claude plugin validate \"{plugin_path}\"", check=False, capture=True)
+    if result.returncode != 0:
+        error(f"Plugin validation failed:\n{result.stdout}\n{result.stderr}")
+
+    success(f"Plugin '{plugin_name}' validation passed")
+
+
 def parse_version(version: str) -> tuple:
     """Parse version string into (base_version, suffix)."""
     match = re.match(r'^(\d+\.\d+\.\d+)(-.*)?$', version)
@@ -301,6 +317,93 @@ def update_readme_for_plugin(config: MarketplaceConfig, plugin_name: str, old_ve
         f.write(content)
 
     success(f"Updated {readme_path.name}")
+
+
+def update_marketplace_readme(config: MarketplaceConfig) -> None:
+    """Update the main marketplace README with current plugin versions."""
+    readme_path = config.repo_root / 'README.md'
+    if not readme_path.exists():
+        warn("Marketplace README.md not found")
+        return
+
+    with open(readme_path) as f:
+        content = f.read()
+
+    # Generate version table
+    today = datetime.now().strftime('%Y-%m-%d')
+    version_section = f"""<!-- PLUGIN-VERSIONS-START -->
+## Plugin Versions
+
+| Plugin | Version | Description |
+|--------|---------|-------------|
+"""
+    for plugin in config.plugins:
+        name = plugin.get('name', 'unknown')
+        version = plugin.get('version', '0.0.0')
+        desc = plugin.get('description', '')
+        # Truncate description to keep table readable
+        if len(desc) > 60:
+            desc = desc[:57] + '...'
+        version_section += f"| {name} | {version} | {desc} |\n"
+
+    version_section += f"""
+*Last updated: {today}*
+
+<!-- PLUGIN-VERSIONS-END -->
+
+"""
+
+    # Check if version section already exists
+    version_start = '<!-- PLUGIN-VERSIONS-START -->'
+    version_end = '<!-- PLUGIN-VERSIONS-END -->'
+
+    if version_start in content and version_end in content:
+        # Replace existing section
+        pattern = re.compile(
+            re.escape(version_start) + r'.*?' + re.escape(version_end),
+            re.DOTALL
+        )
+        content = pattern.sub(version_section.strip(), content)
+    else:
+        # Insert before TOC or after first ---
+        toc_marker = '## Table of Contents'
+        first_hr = '\n---\n'
+
+        if toc_marker in content:
+            # Insert before TOC
+            content = content.replace(toc_marker, version_section + toc_marker)
+        elif first_hr in content:
+            # Insert after first horizontal rule (after header section)
+            idx = content.find(first_hr)
+            if idx != -1:
+                insert_pos = idx + len(first_hr)
+                content = content[:insert_pos] + '\n' + version_section + content[insert_pos:]
+        else:
+            warn("Could not find insertion point for version table in README")
+            return
+
+    # Also update the main version badge if present
+    # Find shields.io version badge and update with the first plugin's version (usually main plugin)
+    if config.plugins:
+        main_plugin = config.plugins[0]
+        main_version = main_plugin.get('version', '0.0.0')
+        base, suffix = parse_version(main_version)
+        suffix_escaped = suffix.replace('-', '--') if suffix else ''
+
+        # Update version badge - handles both with and without suffix
+        badge_pattern = r'(version-)\d+\.\d+\.\d+(?:--[a-zA-Z0-9]+)?(-blue)'
+        new_badge = f'\\g<1>{base}{suffix_escaped}\\g<2>'
+        content = re.sub(badge_pattern, new_badge, content)
+
+        # Update release tag links
+        old_tag_pattern = r'(releases/tag/)v?\d+\.\d+\.\d+(?:-[a-zA-Z0-9]+)?'
+        new_tag = f'\\g<1>{main_plugin.get("name")}-v{main_version}'
+        content = re.sub(old_tag_pattern, new_tag, content)
+
+    with open(readme_path, 'w') as f:
+        f.write(content)
+
+    success("Updated marketplace README.md with version table")
 
 
 def create_commit(plugin_name: str, new_version: str, notes: str) -> None:
@@ -458,25 +561,33 @@ Each plugin maintains its own version independently.
 
     print()
 
-    # Step 1: Update JSON files
-    info("Step 1/5: Updating JSON files...")
+    # Step 1: Validate plugin
+    info("Step 1/6: Validating plugin...")
+    validate_plugin(config, args.plugin_name)
+
+    # Step 2: Update JSON files
+    info("Step 2/6: Updating JSON files...")
     update_marketplace_json_for_plugin(config, args.plugin_name, new_version)
     update_plugin_json(config, args.plugin_name, new_version)
 
-    # Step 2: Update README
-    info("Step 2/5: Updating README...")
-    update_readme_for_plugin(config, args.plugin_name, current_version, new_version)
+    # Reload config to get updated version for README generation
+    config = MarketplaceConfig(repo_root)
 
-    # Step 3: Create commit
-    info("Step 3/5: Creating commit...")
+    # Step 3: Update READMEs
+    info("Step 3/6: Updating READMEs...")
+    update_readme_for_plugin(config, args.plugin_name, current_version, new_version)
+    update_marketplace_readme(config)
+
+    # Step 4: Create commit
+    info("Step 4/6: Creating commit...")
     create_commit(args.plugin_name, new_version, args.notes)
 
-    # Step 4: Create and push tag
-    info("Step 4/5: Creating and pushing tag...")
+    # Step 5: Create and push tag
+    info("Step 5/6: Creating and pushing tag...")
     create_tag(args.plugin_name, new_version, args.notes)
 
-    # Step 5: Create GitHub release
-    info("Step 5/5: Creating GitHub release...")
+    # Step 6: Create GitHub release
+    info("Step 6/6: Creating GitHub release...")
     create_release(config, args.plugin_name, new_version, args.notes)
 
     print()
