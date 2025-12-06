@@ -5,7 +5,9 @@
 set -e
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$0")")}"
-CONFIG_FILE=".claude/ghe.local.md"
+# Find git repo root to locate config file (handles running from any directory)
+GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+CONFIG_FILE="${GIT_ROOT}/.claude/ghe.local.md"
 GITHUB_USER="${GITHUB_OWNER:-Emasoft}"
 
 # Colors for terminal output
