@@ -127,12 +127,34 @@ class MarketplaceConfig:
         """Get primary plugin's plugin.json path."""
         return self.primary_plugin_path / '.claude-plugin' / 'plugin.json'
 
+    def get_all_plugin_paths(self) -> list:
+        """Get paths to all plugins in the marketplace."""
+        paths = []
+        for plugin in self.plugins:
+            source = plugin.get('source', '')
+            if source:
+                plugin_path = self.repo_root / source.lstrip('./')
+                if plugin_path.exists():
+                    paths.append(plugin_path)
+        return paths
+
+    def get_all_plugin_json_paths(self) -> list:
+        """Get paths to all plugin.json files."""
+        paths = []
+        for plugin_path in self.get_all_plugin_paths():
+            json_path = plugin_path / '.claude-plugin' / 'plugin.json'
+            if json_path.exists():
+                paths.append(json_path)
+        return paths
+
     def get_readme_paths(self) -> list:
         """Get all README paths that need version updates."""
         paths = [self.repo_root / 'README.md']
-        plugin_readme = self.primary_plugin_path / 'README.md'
-        if plugin_readme.exists():
-            paths.append(plugin_readme)
+        # Include READMEs from ALL plugins
+        for plugin_path in self.get_all_plugin_paths():
+            plugin_readme = plugin_path / 'README.md'
+            if plugin_readme.exists():
+                paths.append(plugin_readme)
         return paths
 
 
@@ -218,25 +240,32 @@ def update_marketplace_json(config: MarketplaceConfig, new_version: str) -> None
     success(f"Updated {config.marketplace_json_path.name}")
 
 
-def update_plugin_json(config: MarketplaceConfig, new_version: str) -> None:
-    """Update version in plugin.json."""
-    plugin_json_path = config.primary_plugin_json_path
+def update_all_plugin_jsons(config: MarketplaceConfig, new_version: str) -> None:
+    """Update version in ALL plugin.json files to match marketplace.json."""
+    version_with_suffix = f"{new_version}{config.version_suffix}"
+    plugin_json_paths = config.get_all_plugin_json_paths()
 
-    if not plugin_json_path.exists():
-        warn(f"Plugin JSON not found: {plugin_json_path}")
+    if not plugin_json_paths:
+        warn("No plugin.json files found")
         return
 
-    with open(plugin_json_path) as f:
-        data = json.load(f)
+    for plugin_json_path in plugin_json_paths:
+        try:
+            with open(plugin_json_path) as f:
+                data = json.load(f)
 
-    # Plugin.json typically uses version without suffix
-    data['version'] = new_version
+            # Use version WITH suffix to match marketplace.json entries
+            data['version'] = version_with_suffix
 
-    with open(plugin_json_path, 'w') as f:
-        json.dump(data, f, indent=2)
-        f.write('\n')
+            with open(plugin_json_path, 'w') as f:
+                json.dump(data, f, indent=2)
+                f.write('\n')
 
-    success(f"Updated {plugin_json_path.name}")
+            # Show relative path for cleaner output
+            rel_path = plugin_json_path.relative_to(config.repo_root)
+            success(f"Updated {rel_path}")
+        except Exception as e:
+            warn(f"Failed to update {plugin_json_path}: {e}")
 
 
 def update_readme_files(config: MarketplaceConfig, old_version: str, new_version: str) -> None:
@@ -380,10 +409,10 @@ Configuration is read from:
 
     print()
 
-    # Step 1: Update JSON files
+    # Step 1: Update JSON files (marketplace.json + all plugin.json files)
     info("Step 1/5: Updating JSON files...")
     update_marketplace_json(config, new_version)
-    update_plugin_json(config, new_version)
+    update_all_plugin_jsons(config, new_version)
 
     # Step 2: Update README files
     info("Step 2/5: Updating README files...")
