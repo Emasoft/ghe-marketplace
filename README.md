@@ -45,6 +45,9 @@
   - [Agents](#agents)
   - [Argos Panoptes - The All-Seeing Guardian](#argos-panoptes-the-all-seeing-guardian)
   - [Skills](#skills)
+- [Marketplace Utils Plugin](#marketplace-utils-plugin)
+  - [marketplace-release](#marketplace-release)
+  - [markdown-toc](#markdown-toc)
 - [Workflow](#workflow)
   - [Phase Promotion with Themis](#phase-promotion-with-themis)
 - [Troubleshooting](#troubleshooting)
@@ -495,6 +498,88 @@ cp path/to/ghe-plugin/examples/github-actions/ghe-*.yml .github/workflows/
 | Skill | Usage |
 |-------|-------|
 | `github-elements-tracking` | Full workflow documentation |
+
+---
+
+## Marketplace Utils Plugin
+
+<table>
+<tr>
+<td width="80" align="center">
+<img src="https://img.icons8.com/fluency/96/maintenance.png" width="48"/>
+</td>
+<td>
+
+### Portable Utilities for Plugin Marketplaces
+
+**marketplace-utils** provides portable tools that work with any Claude Code plugin marketplace. No hardcoded values - all configuration read from standard files.
+
+</td>
+</tr>
+</table>
+
+### Installation
+
+```bash
+/plugin install marketplace-utils@ghe-marketplace
+```
+
+### Skills
+
+#### marketplace-release
+
+**Triggers**: "release", "bump version", "create release", "publish plugin"
+
+Release automation with **independent plugin versioning**:
+
+```bash
+# Release a specific plugin
+python release.py patch ghe "Fix avatar loading"
+python release.py minor marketplace-utils "Add new feature"
+
+# List all plugins and versions
+python release.py --list
+```
+
+| Feature | Description |
+|---------|-------------|
+| Plugin validation | Runs `claude plugin validate` before release |
+| Independent versions | Each plugin versioned separately |
+| README auto-update | Maintains version table in marketplace README |
+| GitHub releases | Creates tagged releases with install instructions |
+
+#### markdown-toc
+
+**Triggers**: "generate toc", "update toc", "table of contents"
+
+Universal Table of Contents generator:
+
+```bash
+# Single file (preview)
+python generate_toc.py --dry-run README.md
+
+# Batch processing
+python generate_toc.py --recursive docs/
+
+# Custom header levels
+python generate_toc.py --min-level 1 --max-level 4 README.md
+```
+
+| Feature | Description |
+|---------|-------------|
+| Smart insertion | Auto-detects best TOC location |
+| Marker mode | Update TOC between `<!-- TOC -->` markers |
+| GitHub anchors | Generates compatible anchor links |
+| Batch processing | Process multiple files with globs |
+
+### Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/release.py` | Marketplace release automation |
+| `scripts/generate_toc.py` | Markdown TOC generator |
+
+Both scripts are fully portable - copy them to any Claude Code marketplace project.
 
 ---
 
