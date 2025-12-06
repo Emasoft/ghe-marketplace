@@ -34,50 +34,22 @@ ARG4="${4:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Source shared library
+source "${SCRIPT_DIR}/lib/ghe-common.sh"
 
-# Find project root
-find_project_root() {
-    local dir="$(pwd)"
-    while [[ "$dir" != "/" ]]; do
-        if [[ -f "$dir/.claude/ghe.local.md" ]]; then
-            echo "$dir"
-            return 0
-        fi
-        dir="$(dirname "$dir")"
-    done
-    echo "$(pwd)"
-}
+# Initialize GHE environment (loads config file and repo root)
+ghe_init
 
-PROJECT_ROOT="$(find_project_root)"
-CONFIG_PATH="$PROJECT_ROOT/.claude/ghe.local.md"
+# Use library color constants
+RED="${GHE_RED}"
+GREEN="${GHE_GREEN}"
+YELLOW="${GHE_YELLOW}"
+NC="${GHE_NC}"
+
+# Calculate project root from repo path
+PROJECT_ROOT="${GHE_REPO_ROOT}"
+CONFIG_PATH="${GHE_CONFIG_FILE}"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-
-# Config helpers
-get_config() {
-    local key="$1"
-    local default="$2"
-    if [[ -f "$CONFIG_PATH" ]]; then
-        local value=$(sed -n '/^---$/,/^---$/p' "$CONFIG_PATH" | grep "^${key}:" | head -1 | sed 's/^[^:]*: *//' | tr -d '"' | tr -d "'")
-        echo "${value:-$default}"
-    else
-        echo "$default"
-    fi
-}
-
-set_config() {
-    local key="$1"
-    local value="$2"
-    if [[ -f "$CONFIG_PATH" ]]; then
-        if grep -q "^${key}:" "$CONFIG_PATH"; then
-            sed -i.bak "s/^${key}:.*/${key}: ${value}/" "$CONFIG_PATH" && rm -f "${CONFIG_PATH}.bak"
-        fi
-    fi
-}
 
 # Valid phases
 PHASES=("DEV" "TEST" "REVIEW" "MERGE")
@@ -128,7 +100,7 @@ is_valid_transition() {
 # Get current phase from issue labels
 get_issue_phase() {
     local issue="$1"
-    local labels=$(gh issue view "$issue" --json labels --jq '.labels[].name' 2>/dev/null)
+    local labels=$(ghe_gh issue view "$issue" --json labels --jq '.labels[].name' 2>/dev/null)
 
     if echo "$labels" | grep -q "phase:review"; then
         echo "REVIEW"
@@ -163,7 +135,7 @@ request_transition() {
     target_phase=$(echo "$target_phase" | tr '[:lower:]' '[:upper:]')
 
     if [[ -z "$issue" ]]; then
-        issue=$(get_config "current_issue" "")
+        issue=$(ghe_get_setting "current_issue" "")
     fi
 
     if [[ -z "$issue" || "$issue" == "null" ]]; then
@@ -206,7 +178,7 @@ validate_transition() {
     to=$(echo "$to" | tr '[:lower:]' '[:upper:]')
 
     if [[ -z "$issue" ]]; then
-        issue=$(get_config "current_issue" "")
+        issue=$(ghe_get_setting "current_issue" "")
     fi
 
     echo "Validating transition: $from -> $to for issue #$issue"
@@ -224,10 +196,10 @@ validate_transition() {
             # Check that code changes exist
             local worktree_path="../ghe-worktrees/issue-$issue"
             if [[ -d "$worktree_path" ]]; then
-                local changes=$(git -C "$worktree_path" status --porcelain 2>/dev/null | wc -l)
+                local changes=$(ghe_git -C "$worktree_path" status --porcelain 2>/dev/null | wc -l)
                 if [[ "$changes" -eq 0 ]]; then
                     # Check for commits ahead of main
-                    local commits=$(git -C "$worktree_path" log --oneline origin/main..HEAD 2>/dev/null | wc -l)
+                    local commits=$(ghe_git -C "$worktree_path" log --oneline origin/main..HEAD 2>/dev/null | wc -l)
                     if [[ "$commits" -eq 0 ]]; then
                         echo -e "${YELLOW}WARNING: No changes detected. Proceeding anyway.${NC}"
                     fi
@@ -269,7 +241,7 @@ execute_transition() {
     target_phase=$(echo "$target_phase" | tr '[:lower:]' '[:upper:]')
 
     if [[ -z "$issue" ]]; then
-        issue=$(get_config "current_issue" "")
+        issue=$(ghe_get_setting "current_issue" "")
     fi
 
     if [[ -z "$issue" || "$issue" == "null" ]]; then
@@ -286,17 +258,14 @@ execute_transition() {
     # Remove current phase label
     local current_label="${PHASE_LABELS[$current_phase]:-}"
     if [[ -n "$current_label" ]]; then
-        gh issue edit "$issue" --remove-label "$current_label" 2>/dev/null || true
+        ghe_gh issue edit "$issue" --remove-label "$current_label" 2>/dev/null || true
     fi
 
     # Add new phase label
     local new_label="${PHASE_LABELS[$target_phase]:-}"
     if [[ -n "$new_label" ]]; then
-        gh issue edit "$issue" --add-label "$new_label" 2>/dev/null || true
+        ghe_gh issue edit "$issue" --add-label "$new_label" 2>/dev/null || true
     fi
-
-    # Update config
-    set_config "current_phase" "$target_phase"
 
     # Spawn the appropriate agent
     local target_agent="${PHASE_AGENTS[$target_phase]:-}"
@@ -315,7 +284,7 @@ execute_transition() {
         HEADER=""
     fi
 
-    gh issue comment "$issue" --body "${HEADER}
+    ghe_gh issue comment "$issue" --body "${HEADER}
 ## Phase Transition Complete
 
 | Field | Value |
@@ -340,7 +309,7 @@ demote_to_dev() {
     local reason="$2"
 
     if [[ -z "$issue" ]]; then
-        issue=$(get_config "current_issue" "")
+        issue=$(ghe_get_setting "current_issue" "")
     fi
 
     if [[ -z "$issue" || "$issue" == "null" ]]; then

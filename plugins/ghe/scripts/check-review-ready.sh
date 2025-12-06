@@ -17,39 +17,19 @@ set -e
 
 MODE="${1:-list}"
 
-# Paths
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}"
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "${SCRIPT_DIR}/lib/ghe-common.sh"
 
-# Find project root
-find_project_root() {
-    local dir="$(pwd)"
-    while [[ "$dir" != "/" ]]; do
-        if [[ -f "$dir/.claude/ghe.local.md" ]]; then
-            echo "$dir"
-            return 0
-        fi
-        dir="$(dirname "$dir")"
-    done
-    echo "$(pwd)"
-}
+# Initialize GHE environment
+ghe_init
 
-PROJECT_ROOT="$(find_project_root)"
-THREADS_FILE="$PROJECT_ROOT/.claude/ghe-background-threads.json"
-CONFIG_PATH="$PROJECT_ROOT/.claude/ghe.local.md"
-
-# Colors
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+# Use library-provided directories and colors
+THREADS_FILE="${GHE_REPO_ROOT}/.claude/ghe-background-threads.json"
+GREEN="${GHE_GREEN}"
+YELLOW="${GHE_YELLOW}"
 CYAN='\033[0;36m'
-NC='\033[0m'
-
-# Get current main thread issue
-get_main_issue() {
-    if [[ -f "$CONFIG_PATH" ]]; then
-        sed -n '/^---$/,/^---$/p' "$CONFIG_PATH" | grep "^current_issue:" | head -1 | sed 's/^[^:]*: *//' | tr -d '"' | tr -d "'"
-    fi
-}
+NC="${GHE_NC}"
 
 # Check threads file
 if [[ ! -f "$THREADS_FILE" ]]; then
@@ -82,7 +62,7 @@ if [[ -z "$REVIEW_THREADS" ]]; then
     if [[ "$MODE" == "--json" ]]; then
         echo "$REVIEW_ISSUES" | jq '{review_ready: ., count: length}'
     elif [[ "$MODE" == "--notify" ]]; then
-        MAIN_ISSUE=$(get_main_issue)
+        MAIN_ISSUE=$(ghe_get_setting "current_issue" "")
         echo ""
         echo -e "${YELLOW}========================================${NC}"
         echo -e "${YELLOW}   FEATURE(S) READY FOR REVIEW!${NC}"
@@ -115,7 +95,7 @@ case "$MODE" in
         ;;
 
     "--notify")
-        MAIN_ISSUE=$(get_main_issue)
+        MAIN_ISSUE=$(ghe_get_setting "current_issue" "")
         echo ""
         echo -e "${YELLOW}========================================${NC}"
         echo -e "${YELLOW}   FEATURE(S) READY FOR REVIEW!${NC}"

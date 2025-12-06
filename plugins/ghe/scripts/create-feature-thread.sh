@@ -20,6 +20,17 @@
 
 set -e
 
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "${SCRIPT_DIR}/lib/ghe-common.sh"
+
+# Initialize GHE environment
+ghe_init
+
+# Plugin root from library initialization
+PLUGIN_ROOT="${GHE_PLUGIN_ROOT}"
+PROJECT_ROOT="${GHE_REPO_ROOT}"
+
 THREAD_TYPE="${1:-feature}"  # feature or bug
 TITLE="${2:-}"
 DESCRIPTION="${3:-}"
@@ -31,25 +42,8 @@ if [[ -z "$TITLE" ]]; then
     exit 1
 fi
 
-# Paths
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}"
-
-# Find project root
-find_project_root() {
-    local dir="$(pwd)"
-    while [[ "$dir" != "/" ]]; do
-        if [[ -f "$dir/.claude/ghe.local.md" ]]; then
-            echo "$dir"
-            return 0
-        fi
-        dir="$(dirname "$dir")"
-    done
-    echo "$(pwd)"
-}
-
-PROJECT_ROOT="$(find_project_root)"
-CONFIG_PATH="$PROJECT_ROOT/.claude/ghe.local.md"
+# Derived paths (using library-initialized GHE_REPO_ROOT)
+CONFIG_PATH="${GHE_CONFIG_FILE}"
 THREADS_FILE="$PROJECT_ROOT/.claude/ghe-background-threads.json"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 TIMESTAMP_SHORT=$(date +%Y%m%d_%H%M%S)
@@ -60,18 +54,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
-
-# Config helpers
-get_config() {
-    local key="$1"
-    local default="$2"
-    if [[ -f "$CONFIG_PATH" ]]; then
-        local value=$(sed -n '/^---$/,/^---$/p' "$CONFIG_PATH" | grep "^${key}:" | head -1 | sed 's/^[^:]*: *//' | tr -d '"' | tr -d "'")
-        echo "${value:-$default}"
-    else
-        echo "$default"
-    fi
-}
 
 # Ensure threads tracking file exists
 ensure_threads_file() {
@@ -176,8 +158,8 @@ BODY+="
 *This is a background development thread managed by GHE agents.*
 *Requirements will be posted by Athena below.*"
 
-# Create issue
-NEW_ISSUE=$(gh issue create \
+# Create issue using ghe_gh to run in correct repo
+NEW_ISSUE=$(ghe_gh issue create \
     --title "$TITLE" \
     --body "$BODY" \
     --label "$TYPE_LABEL" \
@@ -203,11 +185,11 @@ BRANCH_NAME="issue-$NEW_ISSUE-dev"
 echo "Creating worktree..."
 mkdir -p "$WORKTREE_BASE"
 
-if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME" 2>/dev/null; then
-    git worktree add "$WORKTREE_PATH" "$BRANCH_NAME" 2>/dev/null || true
+if ghe_git show-ref --verify --quiet "refs/heads/$BRANCH_NAME" 2>/dev/null; then
+    ghe_git worktree add "$WORKTREE_PATH" "$BRANCH_NAME" 2>/dev/null || true
 else
-    local base_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
-    git worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME" "$base_branch" 2>/dev/null || true
+    local base_branch=$(ghe_git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+    ghe_git worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME" "$base_branch" 2>/dev/null || true
 fi
 
 if [[ -d "$WORKTREE_PATH" ]]; then

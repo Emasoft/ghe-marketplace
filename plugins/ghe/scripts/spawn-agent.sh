@@ -48,22 +48,15 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}"
 
-# Find project root (where .claude/ghe.local.md should be)
-find_project_root() {
-    local dir="$(pwd)"
-    while [[ "$dir" != "/" ]]; do
-        if [[ -f "$dir/.claude/ghe.local.md" ]]; then
-            echo "$dir"
-            return 0
-        fi
-        dir="$(dirname "$dir")"
-    done
-    # Fallback to current directory
-    echo "$(pwd)"
-}
+# Source shared library
+source "${SCRIPT_DIR}/lib/ghe-common.sh"
 
-PROJECT_ROOT="$(find_project_root)"
-CONFIG_PATH="${GHE_CONFIG_PATH:-$PROJECT_ROOT/.claude/ghe.local.md}"
+# Initialize GHE environment
+ghe_init
+
+# Use library-provided values
+PROJECT_ROOT="${GHE_REPO_ROOT}"
+CONFIG_PATH="${GHE_CONFIG_FILE}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Agent metadata - maps agent names to their Greek identities and roles
@@ -103,20 +96,11 @@ fi
 
 PHASE="${AGENT_PHASE[$AGENT_NAME]}"
 
-# Read current config
-read_config() {
-    local key="$1"
-    if [[ -f "$CONFIG_PATH" ]]; then
-        # Extract YAML frontmatter and parse
-        sed -n '/^---$/,/^---$/p' "$CONFIG_PATH" | grep "^${key}:" | head -1 | sed 's/^[^:]*: *//' | tr -d '"'
-    fi
-}
-
-# Get config values
-REPO_REMOTE=$(read_config "repo_remote")
-REPO_OWNER=$(read_config "repo_owner")
-CURRENT_ISSUE=$(read_config "current_issue")
-CURRENT_PHASE=$(read_config "current_phase")
+# Get config values using shared library
+REPO_REMOTE=$(ghe_get_setting "repo_remote" "")
+REPO_OWNER=$(ghe_get_setting "repo_owner" "")
+CURRENT_ISSUE=$(ghe_get_setting "current_issue" "")
+CURRENT_PHASE=$(ghe_get_setting "current_phase" "")
 
 # Use provided issue number or current issue
 ISSUE_NUM="${ISSUE_NUM:-$CURRENT_ISSUE}"

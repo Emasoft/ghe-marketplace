@@ -40,24 +40,15 @@ if [[ -z "$TARGET_AGENT" ]] || [[ -z "$ISSUE_NUM" ]]; then
     exit 1
 fi
 
-# Determine paths
+# Source shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}"
+source "${SCRIPT_DIR}/lib/ghe-common.sh"
 
-# Find project root
-find_project_root() {
-    local dir="$(pwd)"
-    while [[ "$dir" != "/" ]]; do
-        if [[ -f "$dir/.claude/ghe.local.md" ]]; then
-            echo "$dir"
-            return 0
-        fi
-        dir="$(dirname "$dir")"
-    done
-    echo "$(pwd)"
-}
+# Initialize GHE environment
+ghe_init
 
-PROJECT_ROOT="$(find_project_root)"
+# Use GHE_REPO_ROOT from library
+PROJECT_ROOT="$GHE_REPO_ROOT"
 SPAWN_LOG="$PROJECT_ROOT/agents_reports/spawn_requests.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -146,7 +137,7 @@ if [[ -n "$ISSUE_NUM" ]] && [[ "$ISSUE_NUM" != "null" ]]; then
     fi
 
     # Post notification (non-blocking, ignore errors)
-    gh issue comment "$ISSUE_NUM" --body "${HEADER}
+    ghe_gh issue comment "$ISSUE_NUM" --body "${HEADER}
 **Agent Spawned**
 
 $TARGET_NAME has been spawned to continue work on this issue.

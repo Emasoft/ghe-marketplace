@@ -2,7 +2,9 @@
 # GHE Safeguards - Comprehensive error prevention and recovery
 # Source this file to use safeguard functions in your scripts
 #
-# Usage: source safeguards.sh
+# Usage:
+#   source safeguards.sh
+#   ghe_init  # Initialize GHE environment
 #
 # Functions provided:
 #   - verify_worktree_health <path>
@@ -16,6 +18,10 @@
 #   - pre_flight_check <issue_num>
 
 set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/ghe-common.sh"
 
 # Configuration
 LOCK_TTL=${LOCK_TTL:-900}           # 15 minutes default
@@ -66,13 +72,13 @@ verify_worktree_health() {
     fi
 
     # Check 4: Git recognizes it as worktree
-    if ! git worktree list 2>/dev/null | grep -q "$(realpath "$worktree_path")"; then
+    if ! ghe_git worktree list 2>/dev/null | grep -q "$(realpath "$worktree_path")"; then
         log_warn "Git does not recognize worktree: $worktree_path"
         log_info "Attempting repair with: git worktree prune"
-        git worktree prune
+        ghe_git worktree prune
 
         # Re-check after prune
-        if ! git worktree list 2>/dev/null | grep -q "$(realpath "$worktree_path")"; then
+        if ! ghe_git worktree list 2>/dev/null | grep -q "$(realpath "$worktree_path")"; then
             log_error "Worktree still not recognized after prune"
             return 1
         fi
@@ -109,7 +115,7 @@ safe_worktree_cleanup() {
     # Step 1: Check if directory exists at all
     if [ ! -d "$worktree_path" ]; then
         log_info "Worktree directory already removed: $worktree_path"
-        git worktree prune 2>/dev/null || true
+        ghe_git worktree prune 2>/dev/null || true
         return 0
     fi
 
@@ -126,7 +132,7 @@ safe_worktree_cleanup() {
     fi
 
     # Step 3: Try normal removal first
-    if git worktree remove "$worktree_path" 2>/dev/null; then
+    if ghe_git worktree remove "$worktree_path" 2>/dev/null; then
         log_ok "Worktree removed successfully: $worktree_path"
         return 0
     fi
@@ -139,7 +145,7 @@ safe_worktree_cleanup() {
         rm -f "$worktree_path/.git" 2>/dev/null || true
 
         # Prune stale worktrees from git's tracking
-        git worktree prune 2>/dev/null || true
+        ghe_git worktree prune 2>/dev/null || true
 
         # Remove directory
         rm -rf "$worktree_path"
@@ -164,9 +170,9 @@ acquire_merge_lock_safe() {
 
     log_info "Attempting to acquire merge lock for issue #$issue_num"
 
-    # Check for existing lock
+    # Check for existing lock (using ghe_gh to run from correct repo root)
     local existing_lock
-    existing_lock=$(gh issue list --label "$lock_label" --state open --json number,updatedAt 2>/dev/null) || true
+    existing_lock=$(ghe_gh issue list --label "$lock_label" --state open --json number,updatedAt 2>/dev/null) || true
 
     if [ -n "$existing_lock" ] && [ "$existing_lock" != "[]" ]; then
         local lock_issue
@@ -187,7 +193,7 @@ acquire_merge_lock_safe() {
             if [ $lock_age -gt $LOCK_TTL ]; then
                 log_warn "Stale lock detected on issue #$lock_issue (age: ${lock_age}s > TTL: ${LOCK_TTL}s)"
                 log_info "Force-releasing stale lock..."
-                gh issue edit "$lock_issue" --remove-label "$lock_label" 2>/dev/null || true
+                ghe_gh issue edit "$lock_issue" --remove-label "$lock_label" 2>/dev/null || true
             else
                 log_warn "Lock held by issue #$lock_issue (age: ${lock_age}s, TTL: ${LOCK_TTL}s)"
                 log_info "Wait for lock release or TTL expiry"
@@ -195,12 +201,12 @@ acquire_merge_lock_safe() {
             fi
         else
             log_warn "Could not parse lock timestamp, assuming stale"
-            gh issue edit "$lock_issue" --remove-label "$lock_label" 2>/dev/null || true
+            ghe_gh issue edit "$lock_issue" --remove-label "$lock_label" 2>/dev/null || true
         fi
     fi
 
     # Acquire lock
-    if ! gh issue edit "$issue_num" --add-label "$lock_label" 2>/dev/null; then
+    if ! ghe_gh issue edit "$issue_num" --add-label "$lock_label" 2>/dev/null; then
         log_error "Failed to add merge lock label"
         return 1
     fi
@@ -210,12 +216,12 @@ acquire_merge_lock_safe() {
 
     # Verify we're the only lock holder (race condition check)
     local holders
-    holders=$(gh issue list --label "$lock_label" --state open --json number 2>/dev/null | jq '. | length') || holders=0
+    holders=$(ghe_gh issue list --label "$lock_label" --state open --json number 2>/dev/null | jq '. | length') || holders=0
 
     if [ "$holders" -gt 1 ]; then
         log_error "Race condition detected - multiple lock holders!"
         log_info "Releasing our lock to avoid deadlock..."
-        gh issue edit "$issue_num" --remove-label "$lock_label" 2>/dev/null || true
+        ghe_gh issue edit "$issue_num" --remove-label "$lock_label" 2>/dev/null || true
         return 1
     fi
 
@@ -231,7 +237,7 @@ release_merge_lock_safe() {
     log_info "Releasing merge lock for issue #$issue_num"
 
     # Remove lock label (ignore errors - lock might already be released)
-    gh issue edit "$issue_num" --remove-label "$lock_label" 2>/dev/null || true
+    ghe_gh issue edit "$issue_num" --remove-label "$lock_label" 2>/dev/null || true
 
     log_ok "Merge lock released for issue #$issue_num"
 }
@@ -242,7 +248,7 @@ heartbeat_merge_lock() {
 
     # Update issue to refresh updatedAt timestamp
     # Use a hidden comment to minimize noise
-    gh issue comment "$issue_num" --body "<!-- ghe-merge-heartbeat: $(date -u +%Y-%m-%dT%H:%M:%SZ) -->" 2>/dev/null || true
+    ghe_gh issue comment "$issue_num" --body "<!-- ghe-merge-heartbeat: $(date -u +%Y-%m-%dT%H:%M:%SZ) -->" 2>/dev/null || true
 }
 
 # Wait for merge lock with timeout
@@ -284,47 +290,47 @@ atomic_commit_push() {
 
     log_info "Atomic commit-push: ${#files[@]} files to branch $branch"
 
-    # Create savepoint
+    # Create savepoint (using ghe_git to operate on correct repo)
     local savepoint
-    savepoint=$(git rev-parse HEAD)
+    savepoint=$(ghe_git rev-parse HEAD)
     log_info "Savepoint: $savepoint"
 
     # Stage files
     for file in "${files[@]}"; do
         if [ ! -e "$file" ]; then
             log_error "File does not exist: $file"
-            git reset HEAD 2>/dev/null || true
+            ghe_git reset HEAD 2>/dev/null || true
             return 1
         fi
 
-        if ! git add "$file"; then
+        if ! ghe_git add "$file"; then
             log_error "Failed to stage: $file"
-            git reset HEAD 2>/dev/null || true
+            ghe_git reset HEAD 2>/dev/null || true
             return 1
         fi
     done
 
     # Check if there's anything to commit
-    if git diff --cached --quiet; then
+    if ghe_git diff --cached --quiet; then
         log_warn "No changes to commit"
         return 0
     fi
 
     # Commit
-    if ! git commit -m "$message"; then
+    if ! ghe_git commit -m "$message"; then
         log_error "Commit failed, rolling back staged changes"
-        git reset HEAD 2>/dev/null || true
+        ghe_git reset HEAD 2>/dev/null || true
         return 1
     fi
 
     local commit_hash
-    commit_hash=$(git rev-parse HEAD)
+    commit_hash=$(ghe_git rev-parse HEAD)
     log_info "Committed: $commit_hash"
 
     # Push
-    if ! git push origin "$branch"; then
+    if ! ghe_git push origin "$branch"; then
         log_error "Push failed, rolling back commit"
-        git reset --hard "$savepoint"
+        ghe_git reset --hard "$savepoint"
         return 1
     fi
 
@@ -338,23 +344,24 @@ atomic_commit_push() {
 
 # Reconcile ghe.local.md state with actual GitHub state
 reconcile_ghe_state() {
-    local config_file="${1:-.claude/ghe.local.md}"
+    # Use library to find config file (no need to pass it manually)
+    local config_file="${GHE_CONFIG_FILE:-$(ghe_find_config_file)}"
 
     log_info "Reconciling GHE state..."
 
     if [ ! -f "$config_file" ]; then
-        log_warn "Config file not found: $config_file"
+        log_warn "Config file not found"
         return 0
     fi
 
-    # Read current state from config
+    # Read current state from config using library function
     local config_issue
-    config_issue=$(grep '^current_issue:' "$config_file" | sed 's/current_issue: *//' | tr -d '"') || true
+    config_issue=$(ghe_get_setting "current_issue" "") || true
 
     # Check if referenced issue is still open
     if [ -n "$config_issue" ] && [ "$config_issue" != "null" ]; then
         local issue_state
-        issue_state=$(gh issue view "$config_issue" --json state --jq '.state' 2>/dev/null) || issue_state="UNKNOWN"
+        issue_state=$(ghe_gh issue view "$config_issue" --json state --jq '.state' 2>/dev/null) || issue_state="UNKNOWN"
 
         if [ "$issue_state" = "CLOSED" ]; then
             log_warn "ghe.local.md references closed issue #$config_issue"
@@ -379,7 +386,7 @@ reconcile_ghe_state() {
                 issue_num=$(basename "$wt" | sed 's/issue-//')
 
                 local issue_state
-                issue_state=$(gh issue view "$issue_num" --json state --jq '.state' 2>/dev/null) || issue_state="UNKNOWN"
+                issue_state=$(ghe_gh issue view "$issue_num" --json state --jq '.state' 2>/dev/null) || issue_state="UNKNOWN"
 
                 if [ "$issue_state" = "CLOSED" ]; then
                     log_warn "Orphaned worktree found for closed issue #$issue_num: $wt"
@@ -390,8 +397,8 @@ reconcile_ghe_state() {
         done
     fi
 
-    # Prune any stale worktrees
-    git worktree prune 2>/dev/null || true
+    # Prune any stale worktrees (using ghe_git)
+    ghe_git worktree prune 2>/dev/null || true
 
     log_ok "State reconciliation complete"
 }
@@ -441,7 +448,7 @@ pre_flight_check() {
     # Check 1: Issue exists and is open
     echo -n "[1/6] Issue #$issue_num status: "
     local issue_state
-    issue_state=$(gh issue view "$issue_num" --json state --jq '.state' 2>/dev/null) || issue_state="NOT_FOUND"
+    issue_state=$(ghe_gh issue view "$issue_num" --json state --jq '.state' 2>/dev/null) || issue_state="NOT_FOUND"
 
     if [ "$issue_state" = "OPEN" ]; then
         echo -e "${GREEN}OPEN${NC}"
@@ -493,7 +500,7 @@ pre_flight_check() {
     # Check 5: No active merge lock (unless it's ours)
     echo -n "[5/6] Merge lock: "
     local lock_holder
-    lock_holder=$(gh issue list --label "merge:active" --state open --json number --jq '.[0].number' 2>/dev/null) || lock_holder=""
+    lock_holder=$(ghe_gh issue list --label "merge:active" --state open --json number --jq '.[0].number' 2>/dev/null) || lock_holder=""
 
     if [ -z "$lock_holder" ]; then
         echo -e "${GREEN}FREE${NC}"

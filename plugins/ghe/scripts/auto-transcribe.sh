@@ -4,29 +4,24 @@
 
 set -e
 
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$0")")}"
+# Determine script directory and source shared library
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "${SCRIPT_DIR}/lib/ghe-common.sh"
 
-# Find the correct repo root for config file
-# Strategy: The plugin is at REPO/plugins/ghe/, so go up 2 levels from plugin root
-# This handles the case where we're running from a parent repo (like SKILL_FACTORY)
-# that contains this repo as a subdirectory
-REPO_ROOT="$(cd "$PLUGIN_ROOT/../.." 2>/dev/null && pwd)"
+# Initialize GHE environment (sets GHE_CONFIG_FILE, GHE_REPO_ROOT, etc.)
+ghe_init
 
-# Verify this is the correct repo by checking for .claude/ghe.local.md
-if [[ -f "${REPO_ROOT}/.claude/ghe.local.md" ]]; then
-    CONFIG_FILE="${REPO_ROOT}/.claude/ghe.local.md"
-else
-    # Fallback to git rev-parse for repos where plugin is at a different depth
-    GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-    CONFIG_FILE="${GIT_ROOT}/.claude/ghe.local.md"
-fi
+# Legacy aliases for compatibility with existing code
+PLUGIN_ROOT="$GHE_PLUGIN_ROOT"
+CONFIG_FILE="$GHE_CONFIG_FILE"
+REPO_ROOT="$GHE_REPO_ROOT"
 GITHUB_USER="${GITHUB_OWNER:-Emasoft}"
 
-# Colors for terminal output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Colors (using library colors)
+RED="$GHE_RED"
+GREEN="$GHE_GREEN"
+YELLOW="$GHE_YELLOW"
+NC="$GHE_NC"
 
 # Avatar URLs - Agent avatars are hosted locally in plugin assets
 # User avatars are fetched dynamically from GitHub
