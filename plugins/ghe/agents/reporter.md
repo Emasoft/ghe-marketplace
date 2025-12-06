@@ -5,6 +5,13 @@ model: haiku
 color: green
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -69,23 +76,18 @@ Check `.claude/ghe.local.md` for report formatting:
 
 **MANDATORY**: All GitHub issue comments MUST include the avatar banner for visual identity.
 
-### Loading Avatar Helper
-
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
-```
-
 ### Posting with Avatar
 
 ```bash
-# Simple post
-post_issue_comment $ISSUE_NUM "Hermes" "Your message content here"
+# Simple post using Python script
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" \
+  --issue "$ISSUE_NUM" \
+  --agent "Hermes" \
+  --message "Your message content here"
 
-# Complex post
-HEADER=$(avatar_header "Hermes")
-gh issue comment $ISSUE_NUM --body "${HEADER}
-## Status Report
-Content goes here..."
+# Alternative: Use as Python module in a Python script
+# from post_with_avatar import post_issue_comment, format_comment, get_avatar_header
+# post_issue_comment(ISSUE_NUM, "Hermes", "Your message here")
 ```
 
 ### Agent Identity
@@ -233,7 +235,7 @@ Use `recall-elements.sh` for element-based statistics on any issue:
 
 ```bash
 # Get element distribution for an issue
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/recall-elements.sh --issue $ISSUE --stats
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/recall_elements.py --issue $ISSUE --stats
 
 # Output shows:
 # - KNOWLEDGE count (plans, specs, design)

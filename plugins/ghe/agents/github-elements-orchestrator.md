@@ -5,6 +5,13 @@ model: opus
 color: blue
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -68,23 +75,29 @@ Check `.claude/ghe.local.md` for project settings:
 
 **MANDATORY**: All GitHub issue comments MUST include the avatar banner for visual identity.
 
-### Loading Avatar Helper
+### Using Avatar Helper (Python)
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+```python
+# Import the helper functions
+from post_with_avatar import post_issue_comment, format_comment, get_avatar_header
+
+# Simple post - automatically includes avatar
+post_issue_comment(ISSUE_NUM, "Athena", "Your message content here")
+
+# Get header only for manual formatting
+header = get_avatar_header("Athena")
+# Then use with gh CLI:
+# gh issue comment ISSUE_NUM --body "${header}\n## Your Content..."
 ```
 
-### Posting with Avatar
+### Posting from Bash
 
 ```bash
-# Simple post
-post_issue_comment $ISSUE_NUM "Athena" "Your message content here"
-
-# Complex post
-HEADER=$(avatar_header "Athena")
-gh issue comment $ISSUE_NUM --body "${HEADER}
-## Orchestrator Update
-Content goes here..."
+# Use Python directly
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" \
+  --issue "$ISSUE_NUM" \
+  --agent "Athena" \
+  --message "Your message content here"
 ```
 
 ### Agent Identity

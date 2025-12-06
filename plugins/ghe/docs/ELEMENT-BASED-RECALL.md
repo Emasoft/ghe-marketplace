@@ -401,27 +401,27 @@ Comments with MULTIPLE badges are often:
 ### Proposed CLI
 
 ```bash
-# recall-elements.sh - Element-based memory recall
+# recall_elements.py - Element-based memory recall
 
 # Get all elements of a type
-recall-elements.sh --issue 201 --type knowledge
-recall-elements.sh --issue 201 --type action
-recall-elements.sh --issue 201 --type judgement
+recall_elements.py --issue 201 --type knowledge
+recall_elements.py --issue 201 --type action
+recall_elements.py --issue 201 --type judgement
 
 # Get last N elements of a type
-recall-elements.sh --issue 201 --type action --last 5
+recall_elements.py --issue 201 --type action --last 5
 
 # Get element statistics
-recall-elements.sh --issue 201 --stats
+recall_elements.py --issue 201 --stats
 
 # Get smart recovery summary
-recall-elements.sh --issue 201 --recover
+recall_elements.py --issue 201 --recover
 
 # Search within elements
-recall-elements.sh --issue 201 --type action --search "jwt"
+recall_elements.py --issue 201 --type action --search "jwt"
 
 # Get compound elements (multiple badges)
-recall-elements.sh --issue 201 --compound "knowledge+action"
+recall_elements.py --issue 201 --compound "knowledge+action"
 ```
 
 ### Recovery Output Format
@@ -533,7 +533,7 @@ NEW CONVERSATION EXCHANGE
 
 ## Implementation Priority
 
-### Phase 1: recall-elements.sh (HIGH)
+### Phase 1: recall_elements.py (HIGH)
 Create the CLI tool for element-based queries.
 
 ### Phase 2: SessionStart Integration (HIGH)

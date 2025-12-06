@@ -214,6 +214,8 @@ All thread titles MUST follow this standard format:
 
 ### Thread Message Structure
 
+> **Reference**: See [references/templates/issue-comment-format.md](references/templates/issue-comment-format.md) for detailed comment formatting templates with avatar URLs and examples.
+
 **CRITICAL**: The first message (issue body) is an INDEX, not a changelog. Updates go in REPLIES.
 
 #### First Message (Issue Body) = Living Index

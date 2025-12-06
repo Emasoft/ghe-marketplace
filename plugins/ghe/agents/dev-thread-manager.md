@@ -5,6 +5,13 @@ model: opus
 color: green
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -68,23 +75,26 @@ Check `.claude/ghe.local.md` for project settings:
 
 **MANDATORY**: All GitHub issue comments MUST include the avatar banner for visual identity.
 
-### Loading Avatar Helper
+### Using Avatar Helper
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+```python
+# In Python scripts - import the module
+from post_with_avatar import post_issue_comment, format_comment, get_avatar_header
+
+# Simple post from Python
+post_issue_comment(ISSUE_NUM, "Hephaestus", "Your message content here")
+
+# Get header only for manual formatting
+header = get_avatar_header("Hephaestus")
+message = f"{header}\n## Your Section Title\nContent goes here..."
 ```
 
-### Posting with Avatar
-
 ```bash
-# Simple post
-post_issue_comment $ISSUE_NUM "Hephaestus" "Your message content here"
-
-# Complex post with heredoc
-HEADER=$(avatar_header "Hephaestus")
-gh issue comment $ISSUE_NUM --body "${HEADER}
-## Your Section Title
-Content goes here..."
+# In bash scripts - call Python script directly
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" \
+  --issue "$ISSUE_NUM" \
+  --agent "Hephaestus" \
+  --message "Your message content here"
 ```
 
 ### Agent Identity
@@ -230,9 +240,6 @@ fi
 ```bash
 DEV_ISSUE=<issue number>
 
-# Source avatar helper
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
-
 # Step 0: VERIFY REQUIREMENTS FILE FIRST (see above)
 # (Run Requirements Check Protocol before proceeding)
 
@@ -253,9 +260,11 @@ gh issue edit $DEV_ISSUE \
   --remove-label "ready"
 
 # Step 3: Post claim comment WITH AVATAR BANNER
-HEADER=$(avatar_header "Hephaestus")
-gh issue comment $DEV_ISSUE --body "${HEADER}
-## [DEV Session 1] $(date -u +%Y-%m-%d) $(date -u +%H:%M) UTC
+# Use Python script to post with avatar
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" \
+  --issue "$DEV_ISSUE" \
+  --agent "Hephaestus" \
+  --message "## [DEV Session 1] $(date -u +%Y-%m-%d) $(date -u +%H:%M) UTC
 
 ### Claimed
 Starting DEV work on this thread.

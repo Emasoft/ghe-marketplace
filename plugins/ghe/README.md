@@ -329,16 +329,16 @@ When you need to recover specific information, query by element type:
 
 ```bash
 # Find CODE/ASSETS (what we built)
-recall-elements.sh --issue 201 --type action
+recall_elements.py --issue 201 --type action
 
 # Find REQUIREMENTS/SPECS (what we planned)
-recall-elements.sh --issue 201 --type knowledge
+recall_elements.py --issue 201 --type knowledge
 
 # Find BUGS/ISSUES (what went wrong)
-recall-elements.sh --issue 201 --type judgement
+recall_elements.py --issue 201 --type judgement
 
 # Smart session recovery (all context)
-recall-elements.sh --issue 201 --recover
+recall_elements.py --issue 201 --recover
 ```
 
 | What You Want to Recall | Element Type |
@@ -442,12 +442,12 @@ ghe/
 │   ├── element-triangle.svg      # Element concept diagram
 │   └── element-classification.svg # 3-column classification table
 ├── scripts/
-│   ├── auto-transcribe.sh    # Issue auto-transcription with element classification
-│   ├── recall-elements.sh    # Element-based memory recall CLI
-│   ├── post-with-avatar.sh   # Avatar comment helper
-│   ├── parse-settings.sh     # Settings parser
-│   ├── safeguards.sh         # Safety checks
-│   └── check-issue-set.sh    # Issue validation
+│   ├── auto_transcribe.py    # Issue auto-transcription with element classification
+│   ├── recall_elements.py    # Element-based memory recall CLI
+│   ├── post_with_avatar.py   # Avatar comment helper
+│   ├── parse_settings.py     # Settings parser
+│   ├── safeguards.py         # Safety checks
+│   └── check_issue_set.py    # Issue validation
 ├── hooks/
 │   └── hooks.json            # Hook definitions
 ├── commands/

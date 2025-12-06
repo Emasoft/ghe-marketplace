@@ -143,7 +143,7 @@ In rare cases, critical issues during beta testing may require demoting the enti
 EPIC_ISSUE=<epic issue number>
 
 # Source avatar helper
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py"
 
 # Step 1: Request demotion (Athena to Themis)
 HEADER=$(avatar_header "Athena")

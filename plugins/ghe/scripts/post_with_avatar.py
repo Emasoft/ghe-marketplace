@@ -15,46 +15,22 @@ Usage as CLI:
 """
 
 import argparse
-import subprocess
 import sys
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Optional
 
-from ghe_common import ghe_init, ghe_gh
+# Add script directory to path for imports
+script_dir = Path(__file__).parent
+sys.path.insert(0, str(script_dir))
 
-
-# Avatar URLs - Agent avatars hosted locally, user avatars fetched from GitHub
-AVATAR_BASE = "https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars"
-
-# Agent avatars (bundled with plugin)
-AVATAR_URLS: Dict[str, str] = {
-    "Claude": f"{AVATAR_BASE}/claude.png",
-    "Hephaestus": f"{AVATAR_BASE}/hephaestus.png",
-    "Artemis": f"{AVATAR_BASE}/artemis.png",
-    "Hera": f"{AVATAR_BASE}/hera.png",
-    "Athena": f"{AVATAR_BASE}/athena.png",
-    "Themis": f"{AVATAR_BASE}/themis.png",
-    "Mnemosyne": f"{AVATAR_BASE}/mnemosyne.png",
-    "Ares": f"{AVATAR_BASE}/ares.png",
-    "Hermes": f"{AVATAR_BASE}/hermes.png",
-    "Chronos": f"{AVATAR_BASE}/chronos.png",
-    "Cerberus": f"{AVATAR_BASE}/cerberus.png",
-    "Argos": f"{AVATAR_BASE}/argos.png",
-    "Argos-Panoptes": f"{AVATAR_BASE}/argos.png",
-}
-
-# Agent name to display name mapping
-AGENT_NAMES: Dict[str, str] = {
-    "ghe:dev-thread-manager": "Hephaestus",
-    "ghe:test-thread-manager": "Artemis",
-    "ghe:review-thread-manager": "Hera",
-    "ghe:github-elements-orchestrator": "Athena",
-    "ghe:phase-gate": "Themis",
-    "ghe:memory-sync": "Mnemosyne",
-    "ghe:enforcement": "Ares",
-    "ghe:reporter": "Hermes",
-    "ghe:ci-issue-opener": "Chronos",
-    "ghe:pr-checker": "Cerberus",
-}
+from ghe_common import (
+    ghe_init,
+    ghe_gh,
+    ghe_get_avatar_url,
+    ghe_get_avatar_base_url,
+    GHE_AGENT_AVATARS,
+    GHE_AGENT_NAMES,
+)
 
 
 def get_github_user_avatar(username: str, size: int = 77) -> str:
@@ -83,13 +59,10 @@ def get_avatar_url(name: str) -> str:
     """
     # If name starts with "ghe:", map to display name
     if name.startswith("ghe:"):
-        name = AGENT_NAMES.get(name, name)
+        name = GHE_AGENT_NAMES.get(name, name)
 
-    # Return avatar URL if found, otherwise construct from lowercased name
-    if name in AVATAR_URLS:
-        return AVATAR_URLS[name]
-    else:
-        return f"{AVATAR_BASE}/{name.lower()}.png"
+    # Use centralized function
+    return ghe_get_avatar_url(name)
 
 
 def get_display_name(agent_id: str) -> str:
@@ -102,7 +75,21 @@ def get_display_name(agent_id: str) -> str:
     Returns:
         Human-readable display name
     """
-    return AGENT_NAMES.get(agent_id, agent_id)
+    return GHE_AGENT_NAMES.get(agent_id, agent_id)
+
+
+def get_avatar_header(name: str) -> str:
+    """
+    Generate the avatar header only (without content).
+    Alias for avatar_header() for API compatibility.
+
+    Args:
+        name: Agent name or agent ID
+
+    Returns:
+        Formatted avatar header markdown
+    """
+    return avatar_header(name)
 
 
 def format_comment(name: str, content: str) -> str:
@@ -118,7 +105,7 @@ def format_comment(name: str, content: str) -> str:
     """
     # If name starts with "ghe:", map to display name
     if name.startswith("ghe:"):
-        name = AGENT_NAMES.get(name, name)
+        name = GHE_AGENT_NAMES.get(name, name)
 
     avatar_url = get_avatar_url(name)
 
@@ -174,7 +161,7 @@ def avatar_header(name: str) -> str:
     """
     # If name starts with "ghe:", map to display name
     if name.startswith("ghe:"):
-        name = AGENT_NAMES.get(name, name)
+        name = GHE_AGENT_NAMES.get(name, name)
 
     avatar_url = get_avatar_url(name)
 
@@ -189,6 +176,8 @@ def avatar_header(name: str) -> str:
 def run_tests() -> None:
     """Run basic tests to verify functionality."""
     print("Running tests...")
+    print(f"\n0. Avatar base URL (dynamic): {ghe_get_avatar_base_url()}")
+
     print("\n1. Testing get_avatar_url():")
     print(f"   Claude: {get_avatar_url('Claude')}")
     print(f"   ghe:dev-thread-manager: {get_avatar_url('ghe:dev-thread-manager')}")
@@ -209,6 +198,10 @@ def run_tests() -> None:
     print("\n5. Testing avatar_header():")
     header = avatar_header("ghe:review-thread-manager")
     print(f"   Result:\n{header}")
+
+    print("\n6. Available agents:")
+    for agent_id, display_name in GHE_AGENT_NAMES.items():
+        print(f"   {agent_id} -> {display_name}")
 
     print("\nAll tests completed successfully!")
 

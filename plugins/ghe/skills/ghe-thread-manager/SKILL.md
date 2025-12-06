@@ -202,7 +202,7 @@ User on #42: "implement dark mode"
 **ALWAYS check state before any operation:**
 
 ```bash
-CURRENT_ISSUE=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-issue)
+CURRENT_ISSUE=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" get-issue)
 ```
 
 - If empty/null: Transcription is OFF
@@ -213,7 +213,7 @@ CURRENT_ISSUE=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-issu
 When user wants to work on a specific issue:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" set-issue <NUMBER>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" set-issue <NUMBER>
 ```
 
 **MANDATORY - Tell the user IMMEDIATELY:**
@@ -233,10 +233,10 @@ When user wants to switch to a different issue:
 
 ```bash
 # Remember current for "go back" functionality
-PREVIOUS=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-issue)
+PREVIOUS=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" get-issue)
 
 # Switch to new issue
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" set-issue <NEW_NUMBER>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" set-issue <NEW_NUMBER>
 ```
 
 **MANDATORY - Tell the user IMMEDIATELY:**
@@ -251,7 +251,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" set-issue <NEW_NUMBER>
 When user wants to stop recording:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" clear-issue
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" clear-issue
 ```
 
 **MANDATORY - Tell the user IMMEDIATELY:**
@@ -265,10 +265,10 @@ When user wants to implement/build/fix something:
 
 ```bash
 # Get current issue (may be null)
-PARENT=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-issue)
+PARENT=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" get-issue)
 
 # Create background thread
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-feature-thread.sh" <feature|bug> "<title>" "<description>" "${PARENT:-}"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/create_feature_thread.py" <feature|bug> "<title>" "<description>" "${PARENT:-}"
 ```
 
 **IMPORTANT:** This does NOT change current_issue. Main conversation continues as before.
@@ -279,7 +279,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-feature-thread.sh" <feature|bug> "<ti
 ### 6. Check Background Thread Status
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-review-ready.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/check_review_ready.py"
 ```
 
 Report status without changing transcription state.
@@ -290,8 +290,8 @@ When user wants to participate in a feature thread:
 
 ```bash
 # This IS a switch - transcription moves to the feature thread
-PREVIOUS=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-issue)
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" set-issue <FEATURE_NUMBER>
+PREVIOUS=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" get-issue)
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" set-issue <FEATURE_NUMBER>
 ```
 
 **MANDATORY - Tell the user IMMEDIATELY:**
@@ -310,7 +310,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" set-issue <FEATURE_NUMBE
 On session start, check if there's a saved current_issue:
 
 ```bash
-CURRENT=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-issue)
+CURRENT=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" get-issue)
 ```
 
 - If set: **IMMEDIATELY** inform user transcription will resume to that issue
@@ -331,10 +331,10 @@ User hasn't selected an issue but asks to implement something:
 
 ```bash
 # PARENT will be empty
-PARENT=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-issue)
+PARENT=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" get-issue)
 
 # Create without parent link
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-feature-thread.sh" feature "Dark mode" "Add dark mode toggle" ""
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/create_feature_thread.py" feature "Dark mode" "Add dark mode toggle" ""
 ```
 
 - Background thread created
@@ -355,14 +355,14 @@ echo "42" > /tmp/ghe_previous_issue
 # Later, when user says "go back"
 PREVIOUS=$(cat /tmp/ghe_previous_issue 2>/dev/null)
 if [[ -n "$PREVIOUS" ]]; then
-    bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" set-issue "$PREVIOUS"
+    bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" set-issue "$PREVIOUS"
 fi
 ```
 
 ### Edge Case 4: User Asks "What Are We Working On?"
 
 ```bash
-CURRENT=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-issue)
+CURRENT=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" get-issue)
 
 if [[ -z "$CURRENT" || "$CURRENT" == "null" ]]; then
     echo "No issue selected. Transcription is OFF. Chat is private."
@@ -380,7 +380,7 @@ Detect intent to disable transcription:
 - "off the record"
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" clear-issue
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" clear-issue
 ```
 
 ### Edge Case 6: User Asks "What Were We Working On Last Time?"
@@ -391,13 +391,13 @@ When user wants to resume a previous session but doesn't remember the issue numb
 - "continue where we left off"
 - "what was that issue we discussed?"
 
-**The `auto-transcribe.sh` script automatically tracks the last active issue.** When you clear or switch issues, it saves the previous one to `.claude/last_active_issue.json`.
+**The `auto_transcribe.py` script automatically tracks the last active issue.** When you clear or switch issues, it saves the previous one to `.claude/last_active_issue.json`.
 
 **Check Last Issue:**
 
 ```bash
 # Show the last active issue details
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-last-issue
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" get-last-issue
 
 # Output:
 # Last Active Issue Found
@@ -410,13 +410,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" get-last-issue
 
 ```bash
 # Automatically resume transcription to the last active issue
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" resume
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" resume
 ```
 
 This is equivalent to:
 ```bash
-LAST=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" last-issue-number)
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto-transcribe.sh" set-issue "$LAST"
+LAST=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" last-issue-number)
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py" set-issue "$LAST"
 ```
 
 **JSON File Structure** (automatically maintained):
@@ -556,14 +556,14 @@ gh issue list --search "login" --json number,title --limit 5
 
 | Script | Purpose | Changes Transcription? |
 |--------|---------|------------------------|
-| `auto-transcribe.sh set-issue N` | Select issue | YES - turns ON to #N |
-| `auto-transcribe.sh get-issue` | Check current | NO |
-| `auto-transcribe.sh clear-issue` | Stop transcription | YES - turns OFF (saves previous to last_active_issue.json) |
-| `auto-transcribe.sh get-last-issue` | Show last active issue | NO |
-| `auto-transcribe.sh last-issue-number` | Get issue number only (for scripting) | NO |
-| `auto-transcribe.sh resume` | Resume last active issue | YES - turns ON to last issue |
-| `create-feature-thread.sh` | Create background thread | NO - main unchanged |
-| `check-review-ready.sh` | Check background status | NO |
+| `auto_transcribe.py set-issue N` | Select issue | YES - turns ON to #N |
+| `auto_transcribe.py get-issue` | Check current | NO |
+| `auto_transcribe.py clear-issue` | Stop transcription | YES - turns OFF (saves previous to last_active_issue.json) |
+| `auto_transcribe.py get-last-issue` | Show last active issue | NO |
+| `auto_transcribe.py last-issue-number` | Get issue number only (for scripting) | NO |
+| `auto_transcribe.py resume` | Resume last active issue | YES - turns ON to last issue |
+| `create_feature_thread.py` | Create background thread | NO - main unchanged |
+| `check_review_ready.py` | Check background status | NO |
 
 ---
 

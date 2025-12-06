@@ -13,7 +13,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 # Import from ghe_common module
 try:
@@ -34,14 +34,16 @@ from ghe_common import (
     GHE_GREEN,
     GHE_YELLOW,
     GHE_NC,
+    GHE_AGENT_AVATARS,
     ghe_get_setting,
+    ghe_get_github_user,
+    ghe_get_avatar_url,
 )
 
 # Legacy aliases for compatibility with existing code
 PLUGIN_ROOT = GHE_PLUGIN_ROOT
 CONFIG_FILE = GHE_CONFIG_FILE
 REPO_ROOT = GHE_REPO_ROOT
-GITHUB_USER = os.environ.get("GITHUB_OWNER", "Emasoft")
 
 # Colors (using library colors)
 RED = GHE_RED
@@ -49,24 +51,8 @@ GREEN = GHE_GREEN
 YELLOW = GHE_YELLOW
 NC = GHE_NC
 
-# Avatar URLs - Agent avatars are hosted locally in plugin assets
-# User avatars are fetched dynamically from GitHub
-AVATAR_BASE = "https://raw.githubusercontent.com/Emasoft/ghe-marketplace/main/plugins/ghe/assets/avatars"
-
-# Agent avatars (bundled with plugin)
-AVATARS: Dict[str, str] = {
-    "Athena": f"{AVATAR_BASE}/athena.png",
-    "Hephaestus": f"{AVATAR_BASE}/hephaestus.png",
-    "Artemis": f"{AVATAR_BASE}/artemis.png",
-    "Hera": f"{AVATAR_BASE}/hera.png",
-    "Themis": f"{AVATAR_BASE}/themis.png",
-    "Hermes": f"{AVATAR_BASE}/hermes.png",
-    "Ares": f"{AVATAR_BASE}/ares.png",
-    "Chronos": f"{AVATAR_BASE}/chronos.png",
-    "Mnemosyne": f"{AVATAR_BASE}/mnemosyne.png",
-    "Cerberus": f"{AVATAR_BASE}/cerberus.png",
-    "Argos": f"{AVATAR_BASE}/argos.png",
-}
+# Use GHE_AGENT_AVATARS from ghe_common as the single source of truth
+AVATARS = GHE_AGENT_AVATARS
 
 # Element type badges (GitHub-friendly markdown) - no alt text, just badges
 BADGE_KNOWLEDGE = "![](https://img.shields.io/badge/element-knowledge-blue)"
@@ -74,23 +60,10 @@ BADGE_ACTION = "![](https://img.shields.io/badge/element-action-green)"
 BADGE_JUDGEMENT = "![](https://img.shields.io/badge/element-judgement-orange)"
 
 
-def get_user_avatar(username: str, size: int = 77) -> str:
-    """
-    Get avatar for a GitHub user (dynamically fetched)
-
-    Args:
-        username: GitHub username
-        size: Avatar size (default: 77)
-
-    Returns:
-        Avatar URL
-    """
-    return f"https://avatars.githubusercontent.com/{username}?s={size}"
-
-
 def get_avatar_url(name: str) -> str:
     """
-    Get avatar URL - checks agents first, then falls back to GitHub user avatar
+    Get avatar URL - checks agents first, then falls back to GitHub user avatar.
+    Uses centralized ghe_get_avatar_url from ghe_common.
 
     Args:
         name: Agent name or GitHub username
@@ -98,12 +71,8 @@ def get_avatar_url(name: str) -> str:
     Returns:
         Avatar URL
     """
-    # Check if it's a known agent
-    if name in AVATARS:
-        return AVATARS[name]
-    else:
-        # Assume it's a GitHub username, fetch their avatar dynamically
-        return get_user_avatar(name, 77)
+    # Use centralized function from ghe_common
+    return ghe_get_avatar_url(name)
 
 
 def check_github_repo() -> bool:
@@ -650,7 +619,7 @@ def post_user_message(message: str) -> bool:
     issue = find_or_create_issue(message)
 
     if issue:
-        post_to_issue(issue, GITHUB_USER, message, True)
+        post_to_issue(issue, ghe_get_github_user(), message, True)
         print(f"Posted to issue #{issue}")
         return True
 

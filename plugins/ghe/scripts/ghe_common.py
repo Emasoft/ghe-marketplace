@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 
 # Determine plugin root if not already set
 # Library is at plugins/ghe/scripts/, so go up 1 level to get to plugins/ghe/
@@ -32,6 +32,170 @@ GHE_ENABLED: str = "false"
 GHE_CURRENT_ISSUE: str = ""
 GHE_CURRENT_PHASE: str = ""
 GHE_AUTO_TRANSCRIBE: str = "false"
+
+# Cached GitHub repo info (populated by ghe_get_github_repo)
+_github_owner: Optional[str] = None
+_github_repo: Optional[str] = None
+
+
+def ghe_get_github_repo() -> tuple[Optional[str], Optional[str]]:
+    """
+    Get GitHub owner and repo name dynamically from git remote.
+    Results are cached after first call.
+
+    Returns:
+        Tuple of (owner, repo) or (None, None) if not a GitHub repo
+    """
+    global _github_owner, _github_repo
+
+    if _github_owner is not None and _github_repo is not None:
+        return _github_owner, _github_repo
+
+    try:
+        # Try gh CLI first (most reliable)
+        result = subprocess.run(
+            ['gh', 'repo', 'view', '--json', 'owner,name'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode == 0:
+            import json
+            data = json.loads(result.stdout)
+            _github_owner = data.get('owner', {}).get('login')
+            _github_repo = data.get('name')
+            if _github_owner and _github_repo:
+                return _github_owner, _github_repo
+    except (subprocess.SubprocessError, json.JSONDecodeError):
+        pass
+
+    try:
+        # Fallback to parsing git remote URL
+        result = subprocess.run(
+            ['git', 'remote', 'get-url', 'origin'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode == 0:
+            url = result.stdout.strip()
+            # Parse github.com/owner/repo from various URL formats
+            match = re.search(r'github\.com[/:]([^/]+)/([^/.]+)', url)
+            if match:
+                _github_owner = match.group(1)
+                _github_repo = match.group(2)
+                return _github_owner, _github_repo
+    except subprocess.SubprocessError:
+        pass
+
+    return None, None
+
+
+def ghe_get_avatar_base_url() -> str:
+    """
+    Get the base URL for agent avatars, dynamically using the repo owner/name.
+
+    Returns:
+        Base URL for avatar images
+    """
+    owner, repo = ghe_get_github_repo()
+    if owner and repo:
+        return f"https://raw.githubusercontent.com/{owner}/{repo}/main/plugins/ghe/assets/avatars"
+    # Fallback to local relative path
+    return f"file://{GHE_PLUGIN_ROOT}/assets/avatars"
+
+
+def ghe_get_github_user() -> str:
+    """
+    Get the current GitHub username dynamically.
+
+    Returns:
+        GitHub username or 'unknown' if not authenticated
+    """
+    # Check environment first
+    env_user = os.environ.get('GITHUB_OWNER') or os.environ.get('GITHUB_USER')
+    if env_user:
+        return env_user
+
+    try:
+        result = subprocess.run(
+            ['gh', 'api', 'user', '--jq', '.login'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except subprocess.SubprocessError:
+        pass
+
+    try:
+        # Fallback to git config
+        result = subprocess.run(
+            ['git', 'config', 'user.name'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except subprocess.SubprocessError:
+        pass
+
+    return 'unknown'
+
+
+# Agent avatar configuration - SINGLE SOURCE OF TRUTH
+# All scripts should import this instead of defining their own
+GHE_AGENT_AVATARS: Dict[str, str] = {
+    "Claude": "claude.png",
+    "Athena": "athena.png",
+    "Hephaestus": "hephaestus.png",
+    "Artemis": "artemis.png",
+    "Hera": "hera.png",
+    "Themis": "themis.png",
+    "Mnemosyne": "mnemosyne.png",
+    "Ares": "ares.png",
+    "Hermes": "hermes.png",
+    "Chronos": "chronos.png",
+    "Cerberus": "cerberus.png",
+    "Argos": "argos.png",
+    "Argos-Panoptes": "argos.png",
+}
+
+# Agent ID to display name mapping
+GHE_AGENT_NAMES: Dict[str, str] = {
+    "ghe:dev-thread-manager": "Hephaestus",
+    "ghe:test-thread-manager": "Artemis",
+    "ghe:review-thread-manager": "Hera",
+    "ghe:github-elements-orchestrator": "Athena",
+    "ghe:phase-gate": "Themis",
+    "ghe:memory-sync": "Mnemosyne",
+    "ghe:enforcement": "Ares",
+    "ghe:reporter": "Hermes",
+    "ghe:ci-issue-opener": "Chronos",
+    "ghe:pr-checker": "Cerberus",
+}
+
+
+def ghe_get_avatar_url(agent_name: str, size: int = 77) -> str:
+    """
+    Get the full avatar URL for an agent or GitHub user.
+
+    Args:
+        agent_name: Agent display name or GitHub username
+        size: Avatar size (default 77)
+
+    Returns:
+        Full URL to avatar image
+    """
+    # Check if it's a known agent
+    if agent_name in GHE_AGENT_AVATARS:
+        base = ghe_get_avatar_base_url()
+        return f"{base}/{GHE_AGENT_AVATARS[agent_name]}"
+    else:
+        # Assume it's a GitHub username
+        return f"https://avatars.githubusercontent.com/{agent_name}?s={size}"
 
 
 def ghe_find_config_file() -> Optional[str]:
@@ -308,12 +472,17 @@ __all__ = [
     # Constants
     'GHE_PLUGIN_ROOT',
     'GHE_RED', 'GHE_GREEN', 'GHE_YELLOW', 'GHE_BLUE', 'GHE_CYAN', 'GHE_NC',
+    # Agent configuration
+    'GHE_AGENT_AVATARS', 'GHE_AGENT_NAMES',
     # State variables
     'GHE_CONFIG_FILE', 'GHE_REPO_ROOT', 'GHE_ENABLED',
     'GHE_CURRENT_ISSUE', 'GHE_CURRENT_PHASE', 'GHE_AUTO_TRANSCRIBE',
     # Core functions
     'ghe_find_config_file', 'ghe_get_repo_path', 'ghe_get_setting',
     'ghe_gh', 'ghe_git', 'ghe_init',
+    # GitHub functions
+    'ghe_get_github_repo', 'ghe_get_github_user',
+    'ghe_get_avatar_base_url', 'ghe_get_avatar_url',
     # Logging functions
     'ghe_info', 'ghe_warn', 'ghe_error',
     # Utility functions

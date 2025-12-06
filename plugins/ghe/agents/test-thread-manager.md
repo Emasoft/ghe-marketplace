@@ -5,6 +5,13 @@ model: sonnet
 color: yellow
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -67,21 +74,26 @@ Check `.claude/ghe.local.md` for test settings:
 
 ### Loading Avatar Helper
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+```python
+# In Python scripts
+from post_with_avatar import post_issue_comment, format_comment, get_avatar_header
+
+# Post a comment
+post_issue_comment(ISSUE_NUM, "Artemis", "Your message here")
+
+# Get header only for manual formatting
+header = get_avatar_header("Artemis")
 ```
 
 ### Posting with Avatar
 
 ```bash
-# Simple post
-post_issue_comment $ISSUE_NUM "Artemis" "Your message content here"
+# Use Python3 to post with avatar
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" "$ISSUE_NUM" "Artemis" "Your message content here"
 
-# Complex post with heredoc
-HEADER=$(avatar_header "Artemis")
-gh issue comment $ISSUE_NUM --body "${HEADER}
-## Test Results
-Content goes here..."
+# Or from Python code
+from post_with_avatar import post_issue_comment
+post_issue_comment(issue_num, "Artemis", "## Test Results\nContent goes here...")
 ```
 
 ### Agent Identity
@@ -134,9 +146,6 @@ When TEST is complete:
 ```bash
 TEST_ISSUE=<issue number>
 
-# Source avatar helper
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
-
 # Step 1: Verify DEV is closed (phase order)
 EPIC_ISSUE=$(gh issue view $TEST_ISSUE --json labels --jq '.labels[] | select(.name | startswith("parent-epic:")) | .name | split(":")[1]')
 DEV_OPEN=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "phase:dev" --state open --json number --jq 'length')
@@ -162,9 +171,7 @@ gh issue edit $TEST_ISSUE \
   --remove-label "ready"
 
 # Step 4: Post claim comment WITH AVATAR BANNER
-HEADER=$(avatar_header "Artemis")
-gh issue comment $TEST_ISSUE --body "${HEADER}
-## [TEST Session 1] $(date -u +%Y-%m-%d) $(date -u +%H:%M) UTC
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" "$TEST_ISSUE" "Artemis" "## [TEST Session 1] $(date -u +%Y-%m-%d) $(date -u +%H:%M) UTC
 
 ### Claimed
 Starting TEST work on this thread.

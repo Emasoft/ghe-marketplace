@@ -69,7 +69,7 @@ USER MESSAGE: "What were we working on?" or "continue where we left off"
 │                                                                         │
 │ SessionStart Hook (if enabled)                                          │
 │     │                                                                   │
-│     ├── check-issue-set.sh executes                                     │
+│     ├── check_issue_set.py executes                                     │
 │     │        │                                                          │
 │     │        ├── Reads .claude/ghe.local.md                             │
 │     │        │        │                                                 │
@@ -193,11 +193,11 @@ USER MESSAGE: "What were we working on?" or "continue where we left off"
 
 | Hook Event | Script | What It Does | Gap |
 |------------|--------|--------------|-----|
-| SessionStart | check-issue-set.sh | Checks if issue is set | Does NOT fetch/display issue content |
+| SessionStart | check_issue_set.py | Checks if issue is set | Does NOT fetch/display issue content |
 | (missing) | - | Auto-fetch last checkpoint | **CRITICAL GAP** |
 | (missing) | - | Validate local git state | **CRITICAL GAP** |
 
-**check-issue-set.sh Analysis**:
+**check_issue_set.py Analysis**:
 ```bash
 # Lines 7-16 - What it does:
 if [[ -f "$CONFIG_FILE" ]]; then
@@ -220,13 +220,13 @@ exit 0  # <-- Always exits 0, never blocks
 
 | Script | Purpose | Called By | Issues |
 |--------|---------|-----------|--------|
-| auto-transcribe.sh | Post messages to GitHub | Hooks (if enabled) | Gate-based, not automatic |
-| post-with-avatar.sh | Format comments with avatars | Agents, scripts | Working correctly |
-| check-issue-set.sh | Check if issue is set | SessionStart hook | Output only, no action |
-| safeguards.sh | Safety checks, recovery | Manual invocation | **Never auto-invoked** |
-| parse-settings.sh | Parse .local.md settings | Scripts | Working correctly |
+| auto_transcribe.py | Post messages to GitHub | Hooks (if enabled) | Gate-based, not automatic |
+| post_with_avatar.py | Format comments with avatars | Agents, scripts | Working correctly |
+| check_issue_set.py | Check if issue is set | SessionStart hook | Output only, no action |
+| safeguards.py | Safety checks, recovery | Manual invocation | **Never auto-invoked** |
+| parse_settings.py | Parse .local.md settings | Scripts | Working correctly |
 
-**auto-transcribe.sh Critical Paths**:
+**auto_transcribe.py Critical Paths**:
 
 ```bash
 # Line 372-388 - post_user_message():
@@ -245,7 +245,7 @@ exit 0  # <-- Always exits 0, never blocks
 # Falls back to creating new session issue if none found
 ```
 
-**safeguards.sh Critical Functions**:
+**safeguards.py Critical Functions**:
 ```bash
 reconcile_ghe_state()     # Fixes state desync - NEVER AUTO-CALLED
 pre_flight_check()        # Validates before work - NEVER AUTO-CALLED
@@ -290,7 +290,7 @@ recover_from_merge_crash() # Crash recovery - NEVER AUTO-CALLED
 New Session Starts
      │
      ▼
-check-issue-set.sh runs (if hook enabled)
+check_issue_set.py runs (if hook enabled)
      │
      ▼
 Outputs "TRANSCRIPTION ACTIVE: Issue #N" (text only)
@@ -365,11 +365,11 @@ Claude has FULL context immediately
 - Both may post conflicting checkpoints
 - merge:active lock only protects merges, not claims
 
-**safeguards.sh has protections**, but they're never auto-invoked.
+**safeguards.py has protections**, but they're never auto-invoked.
 
 ### GAP 6: No CLAUDE.md Auto-Injection on SessionStart (SEVERITY: MEDIUM)
 
-**Problem**: The `inject_claude_md_reminder()` function in auto-transcribe.sh adds:
+**Problem**: The `inject_claude_md_reminder()` function in auto_transcribe.py adds:
 ```markdown
 ## GHE Active Transcription
 **CRITICAL**: All conversation is being transcribed to GitHub.
@@ -401,9 +401,9 @@ The reminder exists but may not be seen.
 5. #201 is CLOSED - what happens?
 
 **Current Behavior**:
-- check-issue-set.sh still shows "Issue #201" (doesn't verify state)
+- check_issue_set.py still shows "Issue #201" (doesn't verify state)
 - Recovery may fail with confusing error
-- safeguards.sh has `reconcile_ghe_state()` but it's never called
+- safeguards.py has `reconcile_ghe_state()` but it's never called
 
 ### Edge Case 2: Branch Deleted or Moved
 
@@ -436,7 +436,7 @@ The reminder exists but may not be seen.
 ### Edge Case 4: Network Failure During Recovery
 
 **Scenario**:
-1. Session starts, runs check-issue-set.sh
+1. Session starts, runs check_issue_set.py
 2. User asks "what were we working on?"
 3. Claude runs `gh issue view 201 --comments`
 4. Network fails mid-fetch
@@ -492,11 +492,11 @@ The reminder exists but may not be seen.
 
 ### Recommendation 1: Auto-Recovery SessionStart Hook (HIGH PRIORITY)
 
-Create a new hook script: `session-recovery.sh`
+Create a new hook script: `session_recover.py`
 
 ```bash
 #!/bin/bash
-# session-recovery.sh - Auto-recover on session start
+# session_recover.py - Auto-recover on session start
 
 CONFIG_FILE=".claude/ghe.local.md"
 RECOVERY_OUTPUT=""
@@ -510,7 +510,7 @@ if [[ -n "$ISSUE" && "$ISSUE" != "null" ]]; then
 
     if [[ "$STATE" != "OPEN" ]]; then
         echo "WARNING: Issue #$ISSUE is $STATE (not OPEN)"
-        echo "Run: auto-transcribe.sh clear-issue to reset"
+        echo "Run: auto_transcribe.py clear-issue to reset"
     else
         # Fetch last checkpoint
         echo "## GHE Session Recovery"
@@ -553,7 +553,7 @@ Update hooks.json:
 {
   "SessionStart": [
     {
-      "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/session-recovery.sh"
+      "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/session_recover.py"
     }
   ]
 }
@@ -561,7 +561,7 @@ Update hooks.json:
 
 ### Recommendation 2: Checkpoint Validation Schema (HIGH PRIORITY)
 
-Add validation script: `validate-checkpoint.sh`
+Add validation script (validation_scripts contain schema definitions)
 
 Required fields:
 - `#### Completed` - list of done items
@@ -595,7 +595,7 @@ When SERENA and GitHub conflict:
 Before any agent claims a thread:
 ```bash
 # Auto-run pre_flight_check()
-source safeguards.sh
+source safeguards.py
 pre_flight_check $ISSUE_NUM || exit 1
 ```
 

@@ -5,6 +5,13 @@ model: sonnet
 color: magenta
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -39,11 +46,8 @@ Do NOT write outside these locations.
 ### Loading Safeguards
 
 ```bash
-# Source safeguards at the beginning of any operation
-source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
-
-# Or with full path (CLAUDE_PLUGIN_ROOT = plugin directory)
-source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
+# Run pre-flight check before any operation
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" preflight --issue <issue_number>
 ```
 
 ### Pre-Flight Check (Required Before Any Work)
@@ -52,7 +56,8 @@ source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 ISSUE_NUM=<issue number>
 
 # Run comprehensive pre-flight check
-if ! pre_flight_check "$ISSUE_NUM"; then
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" preflight --issue $ISSUE_NUM
+if [ $? -ne 0 ]; then
     echo "Pre-flight check failed. Resolve issues before proceeding."
     exit 1
 fi
@@ -63,8 +68,7 @@ fi
 If a previous operation crashed or was interrupted:
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
-recover_from_merge_crash "$ISSUE_NUM"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" recover --issue $ISSUE_NUM
 ```
 
 ### Available Safeguards
@@ -86,24 +90,36 @@ recover_from_merge_crash "$ISSUE_NUM"
 
 **MANDATORY**: All GitHub issue/PR comments MUST include the avatar banner for visual identity.
 
-### Loading Avatar Helper
+### Using Avatar Helper (Python Module)
 
-```bash
-# Source avatar helper (ALWAYS at the beginning of operations)
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+```python
+# Import the avatar helper module
+from post_with_avatar import post_issue_comment, format_comment, get_avatar_header
 
-# Or with full path (CLAUDE_PLUGIN_ROOT = plugin directory)
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+# Method 1: Simple post using the helper function
+post_issue_comment(ISSUE_NUM, "Hera", "Your message content here")
+
+# Method 2: Get avatar header for manual formatting
+header = get_avatar_header("Hera")
+message = f"""{header}
+## Your Section Title
+Content goes here...
+
+### More content
+- Item 1
+- Item 2"""
+
+# Then post via gh CLI
+# gh issue comment ISSUE_NUM --body "message"
 ```
 
-### Posting with Avatar
+### Posting with Avatar (Bash Alternative)
 
 ```bash
-# Method 1: Simple post
-post_issue_comment $ISSUE_NUM "Hera" "Your message content here"
+# Get avatar header using Python module
+HEADER=$(python3 -c "from post_with_avatar import get_avatar_header; print(get_avatar_header('Hera'))")
 
-# Method 2: Complex post with heredoc
-HEADER=$(avatar_header "Hera")
+# Post with gh CLI
 gh issue comment $ISSUE_NUM --body "${HEADER}
 ## Your Section Title
 Content goes here...
@@ -137,13 +153,12 @@ This agent posts as **Hera** - the REVIEW phase evaluator who renders verdicts.
 **CRITICAL**: Before any REVIEW work, verify you are in the correct worktree/branch.
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
-
 REVIEW_ISSUE=<issue number>
 WORKTREE_PATH="../ghe-worktrees/issue-$REVIEW_ISSUE"
 
 # Use safeguard function for comprehensive check
-if ! verify_worktree_health "$WORKTREE_PATH"; then
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" verify-worktree --path "$WORKTREE_PATH"
+if [ $? -ne 0 ]; then
     echo "Worktree health check failed. Cannot proceed."
     exit 1
 fi
@@ -412,9 +427,6 @@ echo "SPAWN memory-sync: PR merged to main"
 ```bash
 REVIEW_ISSUE=<issue number>
 
-# Source avatar helper
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
-
 # Verify phase order first (see above)
 
 # Verify not already claimed
@@ -428,7 +440,7 @@ if [ "$CURRENT" -eq 0 ]; then
     --remove-label "ready"
 
   # Post claim comment WITH AVATAR BANNER
-  HEADER=$(avatar_header "Hera")
+  HEADER=$(python3 -c "from post_with_avatar import get_avatar_header; print(get_avatar_header('Hera'))")
   gh issue comment $REVIEW_ISSUE --body "${HEADER}
 ## [REVIEW Session 1] $(date -u +%Y-%m-%d) $(date -u +%H:%M) UTC
 
@@ -1541,34 +1553,35 @@ echo "Pre-merge checks complete. Proceeding with merge."
 
 ### Merge Lock (High Contention Scenarios)
 
-**Use safeguards.sh for robust lock management with TTL and race condition detection.**
+**Use safeguards.py for robust lock management with TTL and race condition detection.**
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 ISSUE_NUM=<issue number>
 
 # Option 1: Try to acquire lock immediately
-if acquire_merge_lock_safe "$ISSUE_NUM"; then
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" acquire-lock --issue "$ISSUE_NUM"
+if [ $? -eq 0 ]; then
     # Got the lock - proceed with merge
 
     # ... merge steps ...
 
     # Always release lock (even on failure)
-    release_merge_lock_safe "$ISSUE_NUM"
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" release-lock --issue "$ISSUE_NUM"
 else
     echo "Lock held by another agent"
 fi
 
 # Option 2: Wait for lock with timeout
-if wait_for_merge_lock "$ISSUE_NUM" 900; then  # 15 min timeout
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" wait-lock --issue "$ISSUE_NUM" --timeout 900  # 15 min timeout
+if [ $? -eq 0 ]; then
     # Got the lock - proceed with merge
 
     # For long operations, send heartbeat to keep lock alive
-    heartbeat_merge_lock "$ISSUE_NUM"
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" heartbeat-lock --issue "$ISSUE_NUM"
 
     # ... merge steps ...
 
-    release_merge_lock_safe "$ISSUE_NUM"
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" release-lock --issue "$ISSUE_NUM"
 else
     echo "Lock timeout - retry later"
     exit 1
@@ -1587,11 +1600,11 @@ fi
 ### Complete Merge Workflow with Safeguards
 
 ```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.sh"
 ISSUE_NUM=<issue number>
 
 # Step 1: Pre-flight check
-if ! pre_flight_check "$ISSUE_NUM"; then
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" preflight --issue "$ISSUE_NUM"
+if [ $? -ne 0 ]; then
     echo "Pre-flight failed"
     exit 1
 fi
@@ -1600,15 +1613,17 @@ fi
 # ... (see Pre-Merge Protocol section above) ...
 
 # Step 3: Acquire merge lock
-if ! wait_for_merge_lock "$ISSUE_NUM"; then
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" wait-lock --issue "$ISSUE_NUM" --timeout 900
+if [ $? -ne 0 ]; then
     echo "Could not acquire merge lock"
     exit 1
 fi
 
 # Step 4: Final commit with rollback protection
-if ! atomic_commit_push "issue-$ISSUE_NUM" "Final commit" GHE_REPORTS/*; then
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" atomic-commit --branch "issue-$ISSUE_NUM" --message "Final commit" --files "GHE_REPORTS/*"
+if [ $? -ne 0 ]; then
     echo "Commit failed"
-    release_merge_lock_safe "$ISSUE_NUM"
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" release-lock --issue "$ISSUE_NUM"
     exit 1
 fi
 
@@ -1617,13 +1632,13 @@ gh pr create --title "Issue #$ISSUE_NUM" --body "..."
 gh pr merge --squash
 
 # Step 6: Release lock
-release_merge_lock_safe "$ISSUE_NUM"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" release-lock --issue "$ISSUE_NUM"
 
 # Step 7: Cleanup worktree
-safe_worktree_cleanup "../ghe-worktrees/issue-$ISSUE_NUM" true
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" cleanup-worktree --path "../ghe-worktrees/issue-$ISSUE_NUM" --force
 
 # Step 8: Reconcile state
-reconcile_ghe_state
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/safeguards.py" reconcile-state
 ```
 
 ### Priority: First-Come-First-Served (FCFS)

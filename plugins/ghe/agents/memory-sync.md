@@ -5,6 +5,13 @@ model: haiku
 color: cyan
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -69,23 +76,29 @@ Check `.claude/ghe.local.md` for sync configuration:
 
 **MANDATORY**: All GitHub issue comments MUST include the avatar banner for visual identity.
 
-### Loading Avatar Helper
+### Using Avatar Helper (Python)
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+```python
+# Import the helper module
+from post_with_avatar import post_issue_comment, format_comment, get_avatar_header
+
+# Simple post (recommended)
+post_issue_comment(ISSUE_NUM, "Mnemosyne", "Your message content here")
+
+# Manual formatting
+header = get_avatar_header("Mnemosyne")
+message = f"{header}\n## Memory Sync Update\nContent goes here..."
+# Then post with gh CLI via subprocess or bash
 ```
 
-### Posting with Avatar
+### Using in Bash Scripts
 
 ```bash
-# Simple post
-post_issue_comment $ISSUE_NUM "Mnemosyne" "Your message content here"
-
-# Complex post
-HEADER=$(avatar_header "Mnemosyne")
-gh issue comment $ISSUE_NUM --body "${HEADER}
-## Memory Sync Update
-Content goes here..."
+# Post via Python helper
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" \
+  --issue $ISSUE_NUM \
+  --agent "Mnemosyne" \
+  --message "Your message content here"
 ```
 
 ### Agent Identity

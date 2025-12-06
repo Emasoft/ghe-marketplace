@@ -5,6 +5,13 @@ model: sonnet
 color: yellow
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -69,20 +76,32 @@ Check `.claude/ghe.local.md` for transition policies:
 
 **MANDATORY**: All GitHub issue comments MUST include the avatar banner for visual identity.
 
-### Loading Avatar Helper
+### Using Avatar Helper (Python)
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+```python
+# Import the avatar posting functions
+from post_with_avatar import post_issue_comment, format_comment, get_avatar_header
+
+# Simple post - all-in-one function
+post_issue_comment(ISSUE_NUM, "Themis", "Your message content here")
+
+# Complex post - manual formatting
+header = get_avatar_header("Themis")
+message = f"""{header}
+## Phase Transition
+Content goes here...
+"""
+# Then post with gh CLI
 ```
 
-### Posting with Avatar
+### Using Avatar Helper from Bash
 
 ```bash
-# Simple post
-post_issue_comment $ISSUE_NUM "Themis" "Your message content here"
+# Call Python script directly
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" $ISSUE_NUM "Themis" "Your message content here"
 
-# Complex post
-HEADER=$(avatar_header "Themis")
+# Or get header only for manual formatting
+HEADER=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" --header-only "Themis")
 gh issue comment $ISSUE_NUM --body "${HEADER}
 ## Phase Transition
 Content goes here..."
@@ -239,9 +258,6 @@ Multiple epics OK       ONE EPIC ONLY              ONE EPIC ONLY
 EPIC_ISSUE=$1
 REQUESTED_PHASE=$2  # "test" or "review"
 
-# Source avatar helper
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
-
 # Step 1: Check for existing epic in target phase
 EXISTING=$(gh issue list --label "epic" --label "$REQUESTED_PHASE" --state open --json number,title --jq '.[0]')
 
@@ -249,9 +265,8 @@ if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
   EXISTING_NUM=$(echo "$EXISTING" | jq -r '.number')
   EXISTING_TITLE=$(echo "$EXISTING" | jq -r '.title')
 
-  HEADER=$(avatar_header "Themis")
-  gh issue comment $EPIC_ISSUE --body "${HEADER}
-## BLOCKED: One-Epic-At-A-Time Violation
+  # Post with avatar using Python helper
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" $EPIC_ISSUE "Themis" "## BLOCKED: One-Epic-At-A-Time Violation
 
 Cannot transition to \`epic + ${REQUESTED_PHASE}\` - another epic is already in this phase.
 
@@ -620,10 +635,8 @@ Themis MUST verify Hera's report includes ALL of:
 ### If Report is Incomplete
 
 ```bash
-# Post to REVIEW thread
-HEADER=$(avatar_header "Themis")
-gh issue comment $REVIEW_ISSUE --body "${HEADER}
-## DEMOTION BLOCKED: Incomplete Verdict Report
+# Post to REVIEW thread using Python helper
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" $REVIEW_ISSUE "Themis" "## DEMOTION BLOCKED: Incomplete Verdict Report
 
 The FAIL verdict report is missing required information.
 
@@ -766,15 +779,11 @@ notify_wave_complete() {
   EPIC_ISSUE=$1
   WAVE_NUM=$2
 
-  # Source avatar helper
-  source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
-  HEADER=$(avatar_header "Themis")
-
   # Get all released issues in this wave
   RELEASED_ISSUES=$(gh issue list --label "parent-epic:${EPIC_ISSUE}" --label "wave:${WAVE_NUM}" --json number,title,closedAt --jq '.[] | "| #\(.number) | \(.title) | \(.closedAt) |"')
 
-  gh issue comment $EPIC_ISSUE --body "${HEADER}
-## WAVE COMPLETION NOTIFICATION
+  # Post with avatar using Python helper
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" $EPIC_ISSUE "Themis" "## WAVE COMPLETION NOTIFICATION
 
 ### Wave
 Wave ${WAVE_NUM} of Epic #${EPIC_ISSUE}

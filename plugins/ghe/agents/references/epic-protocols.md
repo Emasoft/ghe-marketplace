@@ -25,7 +25,7 @@ EPIC_TYPE="epic-feature"
 EPIC_TITLE="User Authentication System"
 
 # Source avatar helper
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py"
 HEADER=$(avatar_header "Athena")
 
 gh issue create \
@@ -149,7 +149,7 @@ EPIC_ISSUE=<epic issue number>
 # Athena has defined WHAT to develop in each wave
 
 # Source avatar helper
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py"
 HEADER=$(avatar_header "Athena")
 
 # Step 1: Athena requests transition

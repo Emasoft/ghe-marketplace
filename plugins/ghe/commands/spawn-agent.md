@@ -23,7 +23,7 @@ Spawn a Claude agent in a background Terminal window. The agent works autonomous
 Run the spawn script:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/spawn_background.sh" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/spawn_background.py" \
   "Please complete this task and save the result to ${ARGUMENTS.output_file:-GHE_REPORTS/\$(TZ='Australia/Brisbane' date +%Y%m%d%H%M%S%Z)_task_result_(Agent).md}: $ARGUMENTS.task" \
   "$(pwd)"
 ```

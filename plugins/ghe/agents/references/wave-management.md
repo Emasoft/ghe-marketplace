@@ -116,7 +116,7 @@ WAVE_NUM=1
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
 
 # Source avatar helper
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+source "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py"
 
 # Step 1: Verify requirements folder exists
 REQUIREMENTS_DIR="${PROJECT_ROOT}/REQUIREMENTS/epic-${EPIC_ISSUE}/wave-${WAVE_NUM}"

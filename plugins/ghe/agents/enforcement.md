@@ -5,6 +5,13 @@ model: haiku
 color: red
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -69,23 +76,31 @@ Check `.claude/ghe.local.md` for enforcement policy:
 
 **MANDATORY**: All GitHub issue comments MUST include the avatar banner for visual identity.
 
-### Loading Avatar Helper
+### Using Avatar Helper
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
-```
-
-### Posting with Avatar
+In bash scripts, invoke the Python helper directly:
 
 ```bash
 # Simple post
-post_issue_comment $ISSUE_NUM "Ares" "Your message content here"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" post "$ISSUE_NUM" "Ares" "Your message content here"
 
-# Complex post
-HEADER=$(avatar_header "Ares")
+# Get header only for manual formatting
+HEADER=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" header "Ares")
 gh issue comment $ISSUE_NUM --body "${HEADER}
 ## Workflow Warning
 Content goes here..."
+```
+
+In Python scripts, import the module:
+
+```python
+from post_with_avatar import post_issue_comment, format_comment, get_avatar_header
+
+# Post a comment
+post_issue_comment(ISSUE_NUM, "Ares", "Your message here")
+
+# Get header only for manual formatting
+header = get_avatar_header("Ares")
 ```
 
 ### Agent Identity

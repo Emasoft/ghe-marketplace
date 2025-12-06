@@ -5,6 +5,13 @@ model: haiku
 color: blue
 ---
 
+## Quick References
+
+> **Shared Documentation** (see [agents/references/](references/)):
+> - [Safeguards Integration](references/shared-safeguards.md) - Error prevention and recovery functions
+> - [Avatar Integration](references/shared-avatar.md) - GitHub comment formatting with avatars
+> - [GHE Reports Rule](references/shared-ghe-reports.md) - Dual-location report posting
+
 ## IRON LAW: User Specifications Are Sacred
 
 **THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
@@ -67,23 +74,29 @@ Check `.claude/ghe.local.md` for PR requirements:
 
 **MANDATORY**: All GitHub PR comments MUST include the avatar banner for visual identity.
 
-### Loading Avatar Helper
+### Using Avatar Helper (Python)
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/scripts/post-with-avatar.sh"
+```python
+# Import the helper module
+from post_with_avatar import post_pr_comment, format_comment, get_avatar_header
+
+# Simple post (recommended)
+post_pr_comment(PR_NUM, "Cerberus", "Your message content here")
+
+# Manual formatting
+header = get_avatar_header("Cerberus")
+message = f"{header}\n## PR Validation\nContent goes here..."
+# Then post with gh CLI via subprocess or bash
 ```
 
-### Posting with Avatar
+### Using in Bash Scripts
 
 ```bash
-# Simple post
-post_pr_comment $PR_NUM "Cerberus" "Your message content here"
-
-# Complex post
-HEADER=$(avatar_header "Cerberus")
-gh pr comment $PR_NUM --body "${HEADER}
-## PR Validation
-Content goes here..."
+# Post via Python helper
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/post_with_avatar.py" \
+  --pr $PR_NUM \
+  --agent "Cerberus" \
+  --message "Your message content here"
 ```
 
 ### Agent Identity
