@@ -5,9 +5,21 @@
 set -e
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$0")")}"
-# Find git repo root to locate config file (handles running from any directory)
-GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-CONFIG_FILE="${GIT_ROOT}/.claude/ghe.local.md"
+
+# Find the correct repo root for config file
+# Strategy: The plugin is at REPO/plugins/ghe/, so go up 2 levels from plugin root
+# This handles the case where we're running from a parent repo (like SKILL_FACTORY)
+# that contains this repo as a subdirectory
+REPO_ROOT="$(cd "$PLUGIN_ROOT/../.." 2>/dev/null && pwd)"
+
+# Verify this is the correct repo by checking for .claude/ghe.local.md
+if [[ -f "${REPO_ROOT}/.claude/ghe.local.md" ]]; then
+    CONFIG_FILE="${REPO_ROOT}/.claude/ghe.local.md"
+else
+    # Fallback to git rev-parse for repos where plugin is at a different depth
+    GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    CONFIG_FILE="${GIT_ROOT}/.claude/ghe.local.md"
+fi
 GITHUB_USER="${GITHUB_OWNER:-Emasoft}"
 
 # Colors for terminal output
