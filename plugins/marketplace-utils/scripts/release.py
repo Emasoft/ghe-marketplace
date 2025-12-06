@@ -3,13 +3,18 @@
 release.py - Generic marketplace release automation tool.
 
 A fully portable release script for Claude Code plugin marketplaces.
-Reads all configuration from marketplace.json and plugin.json files.
-No hardcoded values - can be used on any marketplace project.
+Supports independent versioning of each plugin within the marketplace.
 
 Usage:
-    python scripts/release.py patch "Fix bug description"
-    python scripts/release.py minor "Add new feature"
-    python scripts/release.py major "Breaking changes"
+    python release.py patch <plugin-name> "Fix bug description"
+    python release.py minor <plugin-name> "Add new feature"
+    python release.py major <plugin-name> "Breaking changes"
+    python release.py --list                    # List all plugins and versions
+
+Examples:
+    python release.py patch ghe "Fix avatar loading"
+    python release.py minor marketplace-utils "Add TOC generator"
+    python release.py major ghe "Breaking: New API"
 
 Requirements:
     - GitHub CLI (gh) installed and authenticated
@@ -23,7 +28,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional
 
 
 class Colors:
@@ -32,6 +37,7 @@ class Colors:
     GREEN = '\033[0;32m'
     YELLOW = '\033[1;33m'
     BLUE = '\033[0;34m'
+    CYAN = '\033[0;36m'
     NC = '\033[0m'
 
 
@@ -71,7 +77,7 @@ class MarketplaceConfig:
         self.repo_root = repo_root
         self.marketplace_json_path = repo_root / '.claude-plugin' / 'marketplace.json'
         self.marketplace_data: Dict = {}
-        self.plugins: list = []
+        self.plugins: List[Dict] = []
 
         self._load_config()
 
@@ -92,70 +98,58 @@ class MarketplaceConfig:
         """Get marketplace name."""
         return self.marketplace_data.get('name', 'unknown-marketplace')
 
-    @property
-    def current_version(self) -> str:
-        """Get current version from marketplace metadata."""
-        version = self.marketplace_data.get('metadata', {}).get('version', '0.0.0')
-        # Extract base version without suffix
-        return re.sub(r'-.*$', '', version)
+    def get_plugin_names(self) -> List[str]:
+        """Get list of all plugin names."""
+        return [p.get('name', 'unknown') for p in self.plugins]
 
-    @property
-    def version_suffix(self) -> str:
-        """Get version suffix (e.g., '-alpha', '-beta', or empty)."""
-        version = self.marketplace_data.get('metadata', {}).get('version', '')
-        match = re.search(r'(-[a-zA-Z]+)$', version)
-        return match.group(1) if match else ''
-
-    @property
-    def primary_plugin(self) -> Dict:
-        """Get primary plugin (first one)."""
-        return self.plugins[0] if self.plugins else {}
-
-    @property
-    def primary_plugin_name(self) -> str:
-        """Get primary plugin name."""
-        return self.primary_plugin.get('name', 'unknown')
-
-    @property
-    def primary_plugin_path(self) -> Path:
-        """Get primary plugin source path."""
-        source = self.primary_plugin.get('source', './plugins/unknown')
-        return self.repo_root / source.lstrip('./')
-
-    @property
-    def primary_plugin_json_path(self) -> Path:
-        """Get primary plugin's plugin.json path."""
-        return self.primary_plugin_path / '.claude-plugin' / 'plugin.json'
-
-    def get_all_plugin_paths(self) -> list:
-        """Get paths to all plugins in the marketplace."""
-        paths = []
+    def get_plugin_by_name(self, name: str) -> Optional[Dict]:
+        """Get plugin entry by name."""
         for plugin in self.plugins:
-            source = plugin.get('source', '')
-            if source:
-                plugin_path = self.repo_root / source.lstrip('./')
-                if plugin_path.exists():
-                    paths.append(plugin_path)
-        return paths
+            if plugin.get('name') == name:
+                return plugin
+        return None
 
-    def get_all_plugin_json_paths(self) -> list:
-        """Get paths to all plugin.json files."""
-        paths = []
-        for plugin_path in self.get_all_plugin_paths():
+    def get_plugin_index(self, name: str) -> int:
+        """Get plugin index in the plugins array."""
+        for i, plugin in enumerate(self.plugins):
+            if plugin.get('name') == name:
+                return i
+        return -1
+
+    def get_plugin_path(self, name: str) -> Optional[Path]:
+        """Get plugin directory path."""
+        plugin = self.get_plugin_by_name(name)
+        if not plugin:
+            return None
+        source = plugin.get('source', '')
+        if source:
+            return self.repo_root / source.lstrip('./')
+        return None
+
+    def get_plugin_json_path(self, name: str) -> Optional[Path]:
+        """Get plugin.json path for a specific plugin."""
+        plugin_path = self.get_plugin_path(name)
+        if plugin_path:
             json_path = plugin_path / '.claude-plugin' / 'plugin.json'
             if json_path.exists():
-                paths.append(json_path)
-        return paths
+                return json_path
+        return None
 
-    def get_readme_paths(self) -> list:
-        """Get all README paths that need version updates."""
-        paths = [self.repo_root / 'README.md']
-        # Include READMEs from ALL plugins
-        for plugin_path in self.get_all_plugin_paths():
-            plugin_readme = plugin_path / 'README.md'
-            if plugin_readme.exists():
-                paths.append(plugin_readme)
-        return paths
+    def get_plugin_version(self, name: str) -> str:
+        """Get current version of a specific plugin."""
+        plugin = self.get_plugin_by_name(name)
+        if plugin:
+            return plugin.get('version', '0.0.0')
+        return '0.0.0'
+
+    def get_plugin_readme_path(self, name: str) -> Optional[Path]:
+        """Get README path for a specific plugin."""
+        plugin_path = self.get_plugin_path(name)
+        if plugin_path:
+            readme = plugin_path / 'README.md'
+            if readme.exists():
+                return readme
+        return None
 
 
 def get_repo_url() -> str:
@@ -165,8 +159,13 @@ def get_repo_url() -> str:
     return f"https://github.com/{repo_name}"
 
 
-def get_previous_tag() -> str:
-    """Get the previous git tag for changelog link."""
+def get_previous_tag(plugin_name: str) -> str:
+    """Get the previous git tag for this plugin."""
+    # Look for tags matching this plugin pattern
+    result = run_cmd(f"git tag -l '{plugin_name}-v*' --sort=-v:refname | head -1", capture=True, check=False)
+    if result.stdout.strip():
+        return result.stdout.strip()
+    # Fall back to any previous tag
     result = run_cmd("git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo 'v0.0.0'", capture=True)
     return result.stdout.strip()
 
@@ -198,10 +197,18 @@ def check_prerequisites() -> None:
     success("Prerequisites check passed")
 
 
+def parse_version(version: str) -> tuple:
+    """Parse version string into (base_version, suffix)."""
+    match = re.match(r'^(\d+\.\d+\.\d+)(-.*)?$', version)
+    if match:
+        return match.group(1), match.group(2) or ''
+    return '0.0.0', ''
+
+
 def bump_version(current: str, bump_type: str) -> str:
     """Bump version based on type (patch/minor/major)."""
-    current = re.sub(r'-.*$', '', current)
-    parts = current.split('.')
+    base, _ = parse_version(current)
+    parts = base.split('.')
 
     if len(parts) != 3:
         error(f"Invalid version format: {current}")
@@ -223,108 +230,103 @@ def bump_version(current: str, bump_type: str) -> str:
     return f"{major}.{minor}.{patch}"
 
 
-def update_marketplace_json(config: MarketplaceConfig, new_version: str) -> None:
-    """Update version in marketplace.json."""
-    version_with_suffix = f"{new_version}{config.version_suffix}"
-
+def update_marketplace_json_for_plugin(config: MarketplaceConfig, plugin_name: str, new_version: str) -> None:
+    """Update version for a specific plugin in marketplace.json."""
     data = config.marketplace_data.copy()
-    data['metadata']['version'] = version_with_suffix
 
-    for plugin in data.get('plugins', []):
-        plugin['version'] = version_with_suffix
+    # Find and update the specific plugin
+    plugin_index = config.get_plugin_index(plugin_name)
+    if plugin_index < 0:
+        error(f"Plugin '{plugin_name}' not found in marketplace.json")
+
+    data['plugins'][plugin_index]['version'] = new_version
 
     with open(config.marketplace_json_path, 'w') as f:
         json.dump(data, f, indent=2)
         f.write('\n')
 
-    success(f"Updated {config.marketplace_json_path.name}")
+    success(f"Updated marketplace.json ({plugin_name} -> {new_version})")
 
 
-def update_all_plugin_jsons(config: MarketplaceConfig, new_version: str) -> None:
-    """Update version in ALL plugin.json files to match marketplace.json."""
-    version_with_suffix = f"{new_version}{config.version_suffix}"
-    plugin_json_paths = config.get_all_plugin_json_paths()
+def update_plugin_json(config: MarketplaceConfig, plugin_name: str, new_version: str) -> None:
+    """Update version in the specific plugin's plugin.json."""
+    plugin_json_path = config.get_plugin_json_path(plugin_name)
 
-    if not plugin_json_paths:
-        warn("No plugin.json files found")
+    if not plugin_json_path:
+        warn(f"plugin.json not found for {plugin_name}")
         return
 
-    for plugin_json_path in plugin_json_paths:
-        try:
-            with open(plugin_json_path) as f:
-                data = json.load(f)
+    with open(plugin_json_path) as f:
+        data = json.load(f)
 
-            # Use version WITH suffix to match marketplace.json entries
-            data['version'] = version_with_suffix
+    data['version'] = new_version
 
-            with open(plugin_json_path, 'w') as f:
-                json.dump(data, f, indent=2)
-                f.write('\n')
+    with open(plugin_json_path, 'w') as f:
+        json.dump(data, f, indent=2)
+        f.write('\n')
 
-            # Show relative path for cleaner output
-            rel_path = plugin_json_path.relative_to(config.repo_root)
-            success(f"Updated {rel_path}")
-        except Exception as e:
-            warn(f"Failed to update {plugin_json_path}: {e}")
+    rel_path = plugin_json_path.relative_to(config.repo_root)
+    success(f"Updated {rel_path}")
 
 
-def update_readme_files(config: MarketplaceConfig, old_version: str, new_version: str) -> None:
-    """Update version references in README files."""
-    suffix = config.version_suffix
-    suffix_escaped = suffix.replace('-', '--')  # Shield.io escaping
+def update_readme_for_plugin(config: MarketplaceConfig, plugin_name: str, old_version: str, new_version: str) -> None:
+    """Update version references in the plugin's README."""
+    readme_path = config.get_plugin_readme_path(plugin_name)
+    if not readme_path:
+        return
 
-    for readme_path in config.get_readme_paths():
-        if not readme_path.exists():
-            continue
+    with open(readme_path) as f:
+        content = f.read()
 
-        with open(readme_path) as f:
-            content = f.read()
+    # Parse old and new versions
+    old_base, old_suffix = parse_version(old_version)
+    new_base, new_suffix = parse_version(new_version)
+    old_suffix_escaped = old_suffix.replace('-', '--')
+    new_suffix_escaped = new_suffix.replace('-', '--')
 
-        replacements = [
-            # Shields.io badges with suffix (escaped)
-            (f'version-{old_version}{suffix_escaped}-blue', f'version-{new_version}{suffix_escaped}-blue'),
-            # Shields.io badges without suffix
-            (f'version-{old_version}-blue', f'version-{new_version}-blue'),
-            # Release tag links with suffix
-            (f'v{old_version}{suffix}', f'v{new_version}{suffix}'),
-            # Release tag links without suffix
-            (f'v{old_version}', f'v{new_version}'),
-        ]
+    replacements = [
+        # Shields.io badges with suffix
+        (f'version-{old_base}{old_suffix_escaped}-blue', f'version-{new_base}{new_suffix_escaped}-blue'),
+        # Shields.io badges without suffix
+        (f'version-{old_base}-blue', f'version-{new_base}-blue'),
+        # Version strings
+        (f'v{old_version}', f'v{new_version}'),
+        (old_version, new_version),
+    ]
 
-        for old, new in replacements:
-            content = content.replace(old, new)
+    for old, new in replacements:
+        content = content.replace(old, new)
 
-        with open(readme_path, 'w') as f:
-            f.write(content)
+    with open(readme_path, 'w') as f:
+        f.write(content)
 
-        success(f"Updated {readme_path.name}")
+    success(f"Updated {readme_path.name}")
 
 
-def create_commit(new_version: str, suffix: str, notes: str) -> None:
+def create_commit(plugin_name: str, new_version: str, notes: str) -> None:
     """Create git commit with all changes."""
     run_cmd("git add -A")
-    tag = f"v{new_version}{suffix}"
+    tag = f"{plugin_name}-v{new_version}"
     commit_msg = f"Release {tag}: {notes}"
     run_cmd(f'git commit -m "{commit_msg}"')
     success("Created commit")
 
 
-def create_tag(new_version: str, suffix: str, notes: str) -> None:
+def create_tag(plugin_name: str, new_version: str, notes: str) -> None:
     """Create and push git tag."""
-    tag = f"v{new_version}{suffix}"
+    tag = f"{plugin_name}-v{new_version}"
     run_cmd(f'git tag -a "{tag}" -m "{tag}: {notes}"')
     run_cmd("git push origin main")
     run_cmd(f'git push origin "{tag}"')
     success(f"Created and pushed tag {tag}")
 
 
-def create_release(config: MarketplaceConfig, new_version: str, notes: str) -> None:
-    """Create GitHub release."""
-    prev_tag = get_previous_tag()
-    tag = f"v{new_version}{config.version_suffix}"
+def create_release(config: MarketplaceConfig, plugin_name: str, new_version: str, notes: str) -> None:
+    """Create GitHub release for the plugin."""
+    prev_tag = get_previous_tag(plugin_name)
+    tag = f"{plugin_name}-v{new_version}"
     repo_url = get_repo_url()
     marketplace_name = config.marketplace_name
-    plugin_name = config.primary_plugin_name
 
     release_body = f"""## What's Changed
 
@@ -346,95 +348,142 @@ def create_release(config: MarketplaceConfig, new_version: str, notes: str) -> N
         temp_file = f.name
 
     try:
-        plugin_name_upper = plugin_name.upper()
-        run_cmd(f'gh release create "{tag}" --title "{plugin_name_upper} {tag}" --notes-file "{temp_file}"')
+        plugin_upper = plugin_name.upper()
+        run_cmd(f'gh release create "{tag}" --title "{plugin_upper} v{new_version}" --notes-file "{temp_file}"')
         success("Created GitHub release")
     finally:
         Path(temp_file).unlink(missing_ok=True)
 
 
+def list_plugins(config: MarketplaceConfig) -> None:
+    """List all plugins and their current versions."""
+    print()
+    print(f"{Colors.CYAN}Marketplace: {config.marketplace_name}{Colors.NC}")
+    print()
+    print(f"{'Plugin':<25} {'Version':<15} {'Source'}")
+    print("-" * 70)
+    for plugin in config.plugins:
+        name = plugin.get('name', 'unknown')
+        version = plugin.get('version', '0.0.0')
+        source = plugin.get('source', 'N/A')
+        print(f"{name:<25} {version:<15} {source}")
+    print()
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Generic marketplace release automation tool.',
+        description='Generic marketplace release automation tool with independent plugin versioning.',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python scripts/release.py patch "Fix avatar loading issue"
-  python scripts/release.py minor "Add new feature"
-  python scripts/release.py major "Breaking API changes"
+  python release.py patch ghe "Fix avatar loading issue"
+  python release.py minor marketplace-utils "Add TOC generator"
+  python release.py major ghe "Breaking API changes"
+  python release.py --list
 
-Configuration is read from:
-  - .claude-plugin/marketplace.json (marketplace config)
-  - plugins/<name>/.claude-plugin/plugin.json (plugin config)
+Each plugin maintains its own version independently.
         """
     )
-    parser.add_argument('bump_type', choices=['patch', 'minor', 'major'],
+    parser.add_argument('--list', '-l', action='store_true',
+                        help='List all plugins and their versions')
+    parser.add_argument('bump_type', nargs='?', choices=['patch', 'minor', 'major'],
                         help='Version bump type')
-    parser.add_argument('notes', help='Release notes (brief description)')
+    parser.add_argument('plugin_name', nargs='?',
+                        help='Name of the plugin to release')
+    parser.add_argument('notes', nargs='?',
+                        help='Release notes (brief description)')
 
     args = parser.parse_args()
 
-    print()
-    info("Starting release process...")
-    print()
-
-    # Use current working directory as repo root (where user runs the script from)
-    # This makes the script portable - works whether run from marketplace/scripts/
-    # or installed as a plugin at ~/.claude/plugins/cache/
+    # Use current working directory as repo root
     repo_root = Path.cwd()
 
     # Load configuration
     config = MarketplaceConfig(repo_root)
 
+    # Handle --list
+    if args.list:
+        list_plugins(config)
+        return
+
+    # Validate required arguments
+    if not args.bump_type:
+        parser.print_help()
+        print()
+        error("Missing required argument: bump_type")
+    if not args.plugin_name:
+        print()
+        info("Available plugins:")
+        for name in config.get_plugin_names():
+            print(f"  - {name}")
+        print()
+        error("Missing required argument: plugin_name")
+    if not args.notes:
+        error("Missing required argument: notes")
+
+    # Validate plugin name
+    if args.plugin_name not in config.get_plugin_names():
+        print()
+        info("Available plugins:")
+        for name in config.get_plugin_names():
+            print(f"  - {name}")
+        print()
+        error(f"Unknown plugin: {args.plugin_name}")
+
+    print()
+    info("Starting release process...")
+    print()
+
     # Check prerequisites
     check_prerequisites()
 
-    # Calculate versions
-    current_version = config.current_version
-    new_version = bump_version(current_version, args.bump_type)
-    suffix = config.version_suffix
+    # Get current and new versions for this plugin
+    current_version = config.get_plugin_version(args.plugin_name)
+    current_base, current_suffix = parse_version(current_version)
+    new_base = bump_version(current_version, args.bump_type)
+    new_version = f"{new_base}{current_suffix}"
 
     print()
     info(f"Marketplace: {config.marketplace_name}")
-    info(f"Plugin: {config.primary_plugin_name}")
-    info(f"Current version: {current_version}{suffix}")
-    info(f"New version: {new_version}{suffix}")
+    info(f"Plugin: {args.plugin_name}")
+    info(f"Current version: {current_version}")
+    info(f"New version: {new_version}")
     print()
 
     # Confirm
-    response = input(f"Proceed with release v{new_version}{suffix}? [y/N] ").strip().lower()
+    response = input(f"Proceed with release {args.plugin_name}-v{new_version}? [y/N] ").strip().lower()
     if response != 'y':
         print("Aborted.")
         sys.exit(0)
 
     print()
 
-    # Step 1: Update JSON files (marketplace.json + all plugin.json files)
+    # Step 1: Update JSON files
     info("Step 1/5: Updating JSON files...")
-    update_marketplace_json(config, new_version)
-    update_all_plugin_jsons(config, new_version)
+    update_marketplace_json_for_plugin(config, args.plugin_name, new_version)
+    update_plugin_json(config, args.plugin_name, new_version)
 
-    # Step 2: Update README files
-    info("Step 2/5: Updating README files...")
-    update_readme_files(config, current_version, new_version)
+    # Step 2: Update README
+    info("Step 2/5: Updating README...")
+    update_readme_for_plugin(config, args.plugin_name, current_version, new_version)
 
     # Step 3: Create commit
     info("Step 3/5: Creating commit...")
-    create_commit(new_version, suffix, args.notes)
+    create_commit(args.plugin_name, new_version, args.notes)
 
     # Step 4: Create and push tag
     info("Step 4/5: Creating and pushing tag...")
-    create_tag(new_version, suffix, args.notes)
+    create_tag(args.plugin_name, new_version, args.notes)
 
     # Step 5: Create GitHub release
     info("Step 5/5: Creating GitHub release...")
-    create_release(config, new_version, args.notes)
+    create_release(config, args.plugin_name, new_version, args.notes)
 
     print()
-    success(f"Release v{new_version}{suffix} complete!")
+    success(f"Release {args.plugin_name}-v{new_version} complete!")
     print()
     repo_url = get_repo_url()
-    info(f"URL: {repo_url}/releases/tag/v{new_version}{suffix}")
+    info(f"URL: {repo_url}/releases/tag/{args.plugin_name}-v{new_version}")
     print()
 
 
