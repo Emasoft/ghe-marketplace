@@ -19,6 +19,14 @@
 # Optional logging (comment out in production)
 LOG_FILE="${BACKGROUND_AGENT_LOG:-/tmp/background_agent_hook.log}"
 
+# Source shared library to get registered repo path
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/lib/ghe-common.sh" ]]; then
+    source "${SCRIPT_DIR}/lib/ghe-common.sh"
+    # Get the registered repo_path from config (SOURCE OF TRUTH from /ghe:setup)
+    REGISTERED_REPO=$(ghe_get_repo_path 2>/dev/null || echo "")
+fi
+
 # Read JSON input from Claude
 INPUT=$(cat)
 
@@ -35,7 +43,18 @@ PROJECT_ROOT="${PROJECT_ROOT%/}"
 
 # Also track additional allowed directories from CLAUDE_PROJECT_DIRS env var
 # Format: colon-separated paths like /path/one:/path/two
+# IMPORTANT: Also include the registered repo from GHE config if different from CWD
 EXTRA_PROJECT_DIRS="${CLAUDE_PROJECT_DIRS:-}"
+
+# Add registered repo as allowed directory if it exists and differs from PROJECT_ROOT
+if [[ -n "$REGISTERED_REPO" && "$REGISTERED_REPO" != "$PROJECT_ROOT" ]]; then
+    if [[ -n "$EXTRA_PROJECT_DIRS" ]]; then
+        EXTRA_PROJECT_DIRS="${EXTRA_PROJECT_DIRS}:${REGISTERED_REPO}"
+    else
+        EXTRA_PROJECT_DIRS="${REGISTERED_REPO}"
+    fi
+    [[ -n "$LOG_FILE" ]] && echo "[$(date)] Added registered repo to allowed dirs: $REGISTERED_REPO" >> "$LOG_FILE"
+fi
 
 # === PLATFORM DETECTION ===
 # Detect OS and set platform-specific paths
