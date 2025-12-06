@@ -222,7 +222,7 @@ Modify Terminal preferences:
 # In spawn script, after sending prompt:
 (
     # Wait for agent to complete (check for output file)
-    while [ ! -f "agents_reports/result.md" ]; do
+    while [ ! -f "GHE_REPORTS/result.md" ]; do
         sleep 10
     done
     sleep 5  # Grace period

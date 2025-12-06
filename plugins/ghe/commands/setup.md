@@ -7,6 +7,17 @@ allowed-tools: ["Write", "Read", "AskUserQuestion", "Bash", "Glob"]
 
 This command creates `.claude/ghe.local.md` with project configuration.
 
+## CRITICAL: repo_path Is Sacred
+
+**The `repo_path` field is the MOST IMPORTANT setting.** All agents, hooks, and scripts use this path to find:
+- `REQUIREMENTS/` - Feature specifications
+- `GHE_REPORTS/` - Agent reports (FLAT, no subfolders)
+- GitHub labels, issues, branches
+
+**If repo_path is wrong, folders get created in the WRONG location.**
+
+The setup flow ensures repo_path is saved FIRST before any folder creation.
+
 ## Core Principles
 
 GHE follows these non-negotiable principles:
@@ -248,16 +259,22 @@ gh label create "epic" --color "5319E7" --description "Epic thread - orchestrate
 echo "GitHub Elements labels created."
 ```
 
-## Step 7.5: Create REQUIREMENTS Folder Structure
+## Step 7.5: Create Required Folder Structure
 
-Create the requirements management structure:
+Create the REQUIREMENTS and GHE_REPORTS folders in the target repository:
 
 ```bash
+# CRITICAL: Change to the selected repository first!
+cd <repo-path>
+
 # Create REQUIREMENTS folder structure
-echo "Creating REQUIREMENTS folder structure..."
+echo "Creating REQUIREMENTS folder structure in <repo-path>..."
 mkdir -p REQUIREMENTS/_templates
 mkdir -p REQUIREMENTS/standalone
-mkdir -p GHE-REVIEWS
+
+# Create GHE_REPORTS folder (FLAT structure, no subfolders!)
+echo "Creating GHE_REPORTS folder in <repo-path>..."
+mkdir -p GHE_REPORTS
 
 # Copy template if not exists
 if [ ! -f "REQUIREMENTS/_templates/REQ-TEMPLATE.md" ]; then
@@ -343,12 +360,16 @@ CHANGELOG_EOF
   echo "Created CHANGELOG.md"
 fi
 
-# Create .gitkeep files
+# Create .gitkeep files to ensure folders are tracked in git
 touch REQUIREMENTS/_templates/.gitkeep
 touch REQUIREMENTS/standalone/.gitkeep
-touch GHE-REVIEWS/.gitkeep
+touch GHE_REPORTS/.gitkeep
 
-echo "REQUIREMENTS structure created"
+echo "Folder structure created in <repo-path>:"
+echo "  - REQUIREMENTS/"
+echo "  - REQUIREMENTS/_templates/"
+echo "  - REQUIREMENTS/standalone/"
+echo "  - GHE_REPORTS/"
 ```
 
 ## Step 8: Copy GHE Automation Workflows
@@ -440,12 +461,15 @@ Configuration:
 - Auto worktree: Always on
 - Review agent: Hera (ghe:review-thread-manager)
 
+Folder Structure (in <repo-path>):
+- REQUIREMENTS/: Feature specifications and design docs
+- REQUIREMENTS/_templates/: REQ-TEMPLATE.md created
+- GHE_REPORTS/: Agent reports (FLAT, no subfolders)
+- CHANGELOG.md created
+
 Requirements Management:
 - Requirements required: Yes
-- Requirements folder: REQUIREMENTS/
 - Auto SERENA backup: Yes
-- Template created: REQUIREMENTS/_templates/REQ-TEMPLATE.md
-- CHANGELOG.md created
 
 TDD Enforcement:
 - Tests required before code: Yes
@@ -465,8 +489,12 @@ Settings saved to: <repo-path>/.claude/ghe.local.md
 
 Next steps:
 1. Create requirements: Use REQUIREMENTS/_templates/REQ-TEMPLATE.md
-2. Say "lets work on issue #123" to start tracking an issue
-3. Or "lets work on this new issue" to create and track a new one
+2. Agent reports will be saved to: GHE_REPORTS/
+3. Say "lets work on issue #123" to start tracking an issue
+4. Or "lets work on this new issue" to create and track a new one
+
+IMPORTANT: All paths are relative to <repo-path>
+The plugin stores this path in .claude/ghe.local.md
 ```
 
 ## Step 10: Claude GitHub Action Setup

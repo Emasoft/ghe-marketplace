@@ -3,6 +3,60 @@ name: github-elements-tracking
 description: This skill should be used when the user asks to "track work across sessions", "create an epic", "manage issue waves", "post a checkpoint", "claim an issue", "recover from compaction", "coordinate multiple agents", "update memory bank", "store large documents", or mentions GitHub Issues as persistent memory, multi-session work, context survival, agent collaboration, SERENA MCP memory, or project-level context. Provides complete protocols for using GitHub Issues as permanent memory that survives context exhaustion, with integrated SERENA MCP memory bank for project-level context and large document storage.
 ---
 
+## IRON LAW: User Specifications Are Sacred
+
+**THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
+
+1. **Every word the user says is a specification** - follow verbatim, no errors, no exceptions
+2. **Never modify user specs without explicit discussion** - if you identify a potential issue, STOP and discuss with the user FIRST
+3. **Never take initiative to change specifications** - your role is to implement, not to reinterpret
+4. **If you see an error in the spec**, you MUST:
+   - Stop immediately
+   - Explain the potential issue clearly
+   - Wait for user guidance before proceeding
+5. **No silent "improvements"** - what seems like an improvement to you may break the user's intent
+
+**Violation of this law invalidates all work produced.**
+
+## Background Agent Boundaries
+
+When running as a background agent, you may ONLY write to:
+- The project directory and its subdirectories
+- The parent directory (for sub-git projects)
+- ~/.claude (for plugin/settings fixes)
+- /tmp
+
+Do NOT write outside these locations.
+
+---
+
+## GHE_REPORTS Rule (MANDATORY)
+
+**ALL agent reports MUST be posted to BOTH locations:**
+
+1. **GitHub Issue Thread** - Full report text (NOT just a link!)
+2. **GHE_REPORTS/** - Same full report text (FLAT structure, no subfolders!)
+
+**Report naming:** `<TIMESTAMP>_<title or description>_(<AGENT>).md`
+**Timestamp format:** `YYYYMMDDHHMMSSTimezone`
+
+**Examples:**
+- `20251206143000GMT+01_epic_15_wave_launched_(Athena).md`
+- `20251206143022GMT+01_issue_42_dev_complete_(Hephaestus).md`
+- `20251206150000GMT+01_issue_42_tests_passed_(Artemis).md`
+- `20251206160000GMT+01_issue_42_review_complete_(Hera).md`
+
+**ALL 11 agents write here:** Athena, Hephaestus, Artemis, Hera, Themis, Mnemosyne, Hermes, Ares, Chronos, Argos Panoptes, Cerberus
+
+**REQUIREMENTS/** is SEPARATE - permanent design documents with legal validity, NEVER deleted.
+
+**Deletion Policy:**
+- GHE_REPORTS should be git-tracked - it constitutes the pulse of the GHE plugin
+- DELETE ONLY when user EXPLICITLY orders deletion due to space constraints
+- DO NOT delete during normal project cleanup or just because reports were archived to GitHub
+
+---
+
 ## Project Settings
 
 This skill respects settings in `.claude/ghe.local.md`. Run `/ghe:setup` to configure.
@@ -514,8 +568,8 @@ cd worktrees/review-$FEATURE
 | Claim DEV | `git worktree add ../ghe-worktrees/issue-N -b issue-N main` |
 | DEV → TEST | Stay in same worktree (same branch) |
 | TEST → REVIEW | Stay in same worktree (same branch) |
-| REVIEW PASS | 1. Save review to `GHE-REVIEWS/` 2. Commit 3. Create PR 4. Merge 5. Remove worktree |
-| REVIEW FAIL | 1. Save review to `GHE-REVIEWS/` 2. Commit 3. Stay in worktree 4. Back to DEV |
+| REVIEW PASS | 1. Save review to `GHE_REPORTS/` 2. Commit 3. Create PR 4. Merge 5. Remove worktree |
+| REVIEW FAIL | 1. Save review to `GHE_REPORTS/` 2. Commit 3. Stay in worktree 4. Back to DEV |
 
 **Key insight**: All phases (DEV, TEST, REVIEW) work in the SAME worktree/branch. The worktree is only removed after REVIEW PASS and successful merge to main.
 
@@ -536,11 +590,11 @@ done
 
 ---
 
-## GHE-REVIEWS Directory
+## GHE_REPORTS Directory
 
 ### Purpose
 
-The `GHE-REVIEWS/` directory stores all REVIEW phase verdict reports. These reports:
+The `GHE_REPORTS/` directory stores all REVIEW phase verdict reports. These reports:
 - Document the quality evaluation process
 - Travel with the code (committed to feature branch)
 - Provide audit trail for approvals/rejections
@@ -550,7 +604,7 @@ The `GHE-REVIEWS/` directory stores all REVIEW phase verdict reports. These repo
 
 ```
 project-root/
-├── GHE-REVIEWS/
+├── GHE_REPORTS/
 │   ├── README.md
 │   ├── issue-1-review.md
 │   ├── issue-2-review.md
@@ -645,11 +699,11 @@ REVIEW_DATE=$(date +%Y-%m-%d)
 # 1. Verify in correct worktree
 cd ../ghe-worktrees/issue-${ISSUE_NUM}
 
-# 2. Create GHE-REVIEWS directory if needed
-mkdir -p GHE-REVIEWS
+# 2. Create GHE_REPORTS directory if needed
+mkdir -p GHE_REPORTS
 
 # 3. Write review report
-cat > GHE-REVIEWS/issue-${ISSUE_NUM}-review.md << 'EOF'
+cat > GHE_REPORTS/issue-${ISSUE_NUM}-review.md << 'EOF'
 # REVIEW Report: Issue #${ISSUE_NUM}
 ...
 ## Verdict: PASS
@@ -657,7 +711,7 @@ cat > GHE-REVIEWS/issue-${ISSUE_NUM}-review.md << 'EOF'
 EOF
 
 # 4. Commit the review
-git add GHE-REVIEWS/issue-${ISSUE_NUM}-review.md
+git add GHE_REPORTS/issue-${ISSUE_NUM}-review.md
 git commit -m "Add REVIEW report for issue #${ISSUE_NUM} - PASS"
 
 # 5. Push feature branch
@@ -668,7 +722,7 @@ gh pr create --title "Issue #${ISSUE_NUM} - Feature Implementation" \
   --body "Closes #${ISSUE_NUM}
 
 ## Review Report
-See: GHE-REVIEWS/issue-${ISSUE_NUM}-review.md
+See: GHE_REPORTS/issue-${ISSUE_NUM}-review.md
 
 ## Verdict: PASS"
 
@@ -2206,7 +2260,7 @@ git worktree prune
 | **Work on main branch** | Breaks isolation, pollutes main | ALL work in worktrees: `../ghe-worktrees/issue-N/` |
 | **Skip worktree verification** | Risk of main pollution | Always verify branch before any work |
 | **Merge before REVIEW PASS** | Unreviewed code in main | Only merge after REVIEW verdict = PASS |
-| **Skip review report creation** | No audit trail | Save review to `GHE-REVIEWS/` BEFORE merge |
+| **Skip review report creation** | No audit trail | Save review to `GHE_REPORTS/` BEFORE merge |
 | **Save review after merge** | Rejected reviews pollute main | Commit review to feature branch first |
 | **Merge without checking main** | Merge conflicts, race conditions | Always `git fetch origin main` first |
 | **Skip TEST after rebase** | Reviewed code ≠ merged code | RE-RUN TEST after ANY rebase |

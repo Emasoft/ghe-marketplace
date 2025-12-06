@@ -1,0 +1,17 @@
+{
+  "name": "marketplace-utils",
+  "version": "1.0.0",
+  "description": "Portable utility tools for Claude Code plugin marketplaces. Includes release automation and markdown TOC generation.",
+  "author": {
+    "name": "Emasoft",
+    "email": "713559+Emasoft@users.noreply.github.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "marketplace",
+    "release",
+    "toc",
+    "markdown",
+    "utility"
+  ]
+}

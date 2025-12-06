@@ -3,11 +3,87 @@ name: background-agents
 description: This skill should be used when spawning Claude agents in background Terminal windows, running agents autonomously without blocking the conversation, delegating tasks to external Claude instances, or understanding how the auto-approval PreToolUse hook works. Triggers include "background agent", "spawn agent", "external claude", "autonomous agent", "parallel agent", "delegate to agent", or "run agent in background".
 ---
 
+## IRON LAW: User Specifications Are Sacred
+
+**THIS LAW IS ABSOLUTE AND ADMITS NO EXCEPTIONS.**
+
+1. **Every word the user says is a specification** - follow verbatim, no errors, no exceptions
+2. **Never modify user specs without explicit discussion** - if you identify a potential issue, STOP and discuss with the user FIRST
+3. **Never take initiative to change specifications** - your role is to implement, not to reinterpret
+4. **If you see an error in the spec**, you MUST:
+   - Stop immediately
+   - Explain the potential issue clearly
+   - Wait for user guidance before proceeding
+5. **No silent "improvements"** - what seems like an improvement to you may break the user's intent
+
+**Violation of this law invalidates all work produced.**
+
+## Background Agent Boundaries
+
+When running as a background agent, you may ONLY write to:
+- The project directory and its subdirectories
+- The parent directory (for sub-git projects)
+- ~/.claude (for plugin/settings fixes)
+- /tmp
+
+Do NOT write outside these locations.
+
+---
+
+## GHE_REPORTS Folder Structure (CRITICAL!)
+
+**GHE_REPORTS is a FLAT folder - NO SUBFOLDERS!**
+
+```
+project/
+├── GHE_REPORTS/                    # FLAT structure, git-tracked
+│   ├── 20251206143000GMT+01_epic_15_wave_launched_(Athena).md
+│   ├── 20251206143022GMT+01_issue_42_dev_complete_(Hephaestus).md
+│   ├── 20251206150000GMT+01_issue_42_tests_passed_(Artemis).md
+│   ├── 20251206160000GMT+01_issue_42_review_complete_(Hera).md
+│   └── ...
+├── REQUIREMENTS/                   # SEPARATE folder - permanent design docs
+│   └── issue-N-requirements.md     # NEVER deleted
+└── ...
+```
+
+**Report Naming Convention:** `<TIMESTAMP>_<title or description>_(<AGENT>).md`
+**Timestamp Format:** `YYYYMMDDHHMMSSTimezone`
+
+**ALL 11 agents write here:** Athena, Hephaestus, Artemis, Hera, Themis, Mnemosyne, Hermes, Ares, Chronos, Argos Panoptes, Cerberus
+
+**CRITICAL**: Reports must be posted to BOTH:
+1. **GitHub Issue Thread** - Full report text (NOT just a link!)
+2. **GHE_REPORTS/ folder** - Same full report text (FLAT, no subfolders!)
+
+**REQUIREMENTS/ is SEPARATE** - permanent design documents with legal validity, NEVER deleted.
+
+**Deletion Policy:**
+- GHE_REPORTS should be git-tracked - it constitutes the pulse of the GHE plugin
+- DELETE ONLY when user EXPLICITLY orders deletion due to space constraints
+- DO NOT delete during normal project cleanup or just because reports were archived to GitHub
+
+---
+
 # Background Agents
 
 ## Overview
 
-This skill enables spawning Claude Code agents in background Terminal windows that work autonomously while the main conversation continues. Background agents use a PreToolUse hook to auto-approve safe operations, eliminating the need for `--dangerously-skip-permissions`.
+This skill enables spawning Claude Code agents in background Terminal windows that work autonomously while the main conversation continues.
+
+**Key Features:**
+- **TRUE background execution** - Terminal windows NEVER steal focus
+- **No keystrokes** - Prompt piped directly to Claude via command line
+- **Unique window tracking** - Each agent has unique ID (title) and TTY path
+- **Autonomous operation** - Uses `--dangerously-skip-permissions` for unattended execution
+- **Clean separation** - Each agent runs in isolated Terminal window
+
+**How It Works:**
+1. Prompt is written to temp file
+2. Terminal window created in background (never activated)
+3. Claude runs with prompt piped: `cat prompt.txt | claude --dangerously-skip-permissions`
+4. Window gets unique title like `GHE-AGENT-20251206_143502-96268`
+5. Output saved to `GHE_REPORTS/` directory (FLAT, no subfolders)
 
 ## Requirements
 
@@ -109,7 +185,7 @@ To verify everything works end-to-end:
 ### 1. Create Test Directory
 
 ```bash
-mkdir -p ~/test-background-agents/agents_reports
+mkdir -p ~/test-background-agents/GHE_REPORTS
 cd ~/test-background-agents
 ```
 
@@ -124,7 +200,7 @@ claude
 Type this in the Claude session:
 
 ```
-Please spawn a background agent to write "SUCCESS" to agents_reports/test.md
+Please spawn a background agent to write "SUCCESS" to GHE_REPORTS/test_result.md
 ```
 
 ### 4. Wait and Check
@@ -132,7 +208,7 @@ Please spawn a background agent to write "SUCCESS" to agents_reports/test.md
 Wait ~15 seconds, then check:
 
 ```bash
-cat ~/test-background-agents/agents_reports/test.md
+cat ~/test-background-agents/GHE_REPORTS/test_result.md
 ```
 
 Expected: File contains "SUCCESS" or similar confirmation.
@@ -173,7 +249,7 @@ Request Claude to spawn an agent:
 
 ```
 Spawn a background agent to refactor the database module
-and save a report to agents_reports/refactor_report.md
+and save a report to GHE_REPORTS/<TIMESTAMP>_refactor_report_(Agent).md
 ```
 
 ## How It Works
@@ -471,15 +547,15 @@ To run agents in parallel:
 ```bash
 # Agent 1: Tests
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/spawn_background.sh" \
-  "Run pytest, report to agents_reports/tests.md" "$(pwd)" &
+  "Run pytest, report to GHE_REPORTS/\$(date +%Y%m%d%H%M%S%Z)_pytest_results_(Artemis).md" "$(pwd)" &
 
 # Agent 2: Linting
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/spawn_background.sh" \
-  "Run linters, report to agents_reports/lint.md" "$(pwd)" &
+  "Run linters, report to GHE_REPORTS/\$(date +%Y%m%d%H%M%S%Z)_lint_results_(Ares).md" "$(pwd)" &
 
 # Agent 3: Documentation
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/spawn_background.sh" \
-  "Update docs, save to agents_reports/docs.md" "$(pwd)" &
+  "Update docs, save to GHE_REPORTS/\$(date +%Y%m%d%H%M%S%Z)_docs_update_(Hermes).md" "$(pwd)" &
 
 wait
 ```
@@ -490,7 +566,7 @@ wait
 
 ```bash
 # Good - specific and actionable
-"Run pytest on tests/unit/, fix failures, report to agents_reports/test_fix.md"
+"Run pytest on tests/unit/, fix failures, report to GHE_REPORTS/<TIMESTAMP>_test_fix_(Artemis).md"
 
 # Bad - vague
 "Fix tests"
@@ -501,17 +577,17 @@ wait
 Tell agents where to save results:
 
 ```bash
-"Analyze src/api.py and save analysis to agents_reports/api_analysis.md"
+"Analyze src/api.py and save analysis to GHE_REPORTS/<TIMESTAMP>_api_analysis_(Athena).md"
 ```
 
-### Use agents_reports/ Directory
+### Use GHE_REPORTS/ Directory (FLAT - No Subfolders!)
 
 ```
 project/
-├── agents_reports/
-│   ├── test_results_20241205.md
-│   ├── code_review_20241205.md
-│   └── refactor_plan_20241205.md
+├── GHE_REPORTS/                                          # FLAT structure
+│   ├── 20251205150000AEST_test_results_(Artemis).md
+│   ├── 20251205160000AEST_code_review_(Hera).md
+│   └── 20251205170000AEST_refactor_plan_(Athena).md
 └── src/
 ```
 
@@ -520,7 +596,7 @@ project/
 ```bash
 "Working on a Python FastAPI project. Main app is src/main.py.
 Add input validation to all endpoints.
-Report to agents_reports/validation.md"
+Report to GHE_REPORTS/<TIMESTAMP>_validation_(Themis).md"
 ```
 
 ## Troubleshooting

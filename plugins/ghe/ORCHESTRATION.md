@@ -314,20 +314,31 @@ Feature/bug threads are tracked in `.claude/ghe-background-threads.json`:
 }
 ```
 
-## Reports
+## GHE_REPORTS (MANDATORY)
 
-Agent outputs are saved to `agents_reports/`:
+**ALL agent reports MUST be posted to BOTH locations:**
+1. **GitHub Issue Thread** - Full report text (NOT just a link!)
+2. **GHE_REPORTS/** - Same full report text (FLAT structure, no subfolders!)
+
+**Report naming:** `<TIMESTAMP>_<title or description>_(<AGENT>).md`
+**Timestamp format:** `YYYYMMDDHHMMSSTimezone`
+
+**ALL 11 agents write here:** Athena, Hephaestus, Artemis, Hera, Themis, Mnemosyne, Hermes, Ares, Chronos, Argos Panoptes, Cerberus
 
 ```
-agents_reports/
-├── spawn_log.txt                 # All spawn events
-├── spawn_requests.log            # Inter-agent spawn requests
-├── transitions.log               # Phase transition history
-├── requirements_99_20241205.md   # Athena's requirements for #99
-├── dev_99_20241205_150000.md     # Hephaestus report for #99
-├── test_99_20241205_160000.md    # Artemis report for #99
-└── review_99_20241205_170000.md  # Hera report for #99
+GHE_REPORTS/                                              # FLAT structure - NO subfolders!
+├── .spawn_log.txt                                        # Internal: spawn events (hidden)
+├── .spawn_requests.log                                   # Internal: inter-agent requests (hidden)
+├── .transitions.log                                      # Internal: phase transitions (hidden)
+├── 20251205150000AEST_issue_99_requirements_(Athena).md  # Athena's requirements for #99
+├── 20251205160000AEST_issue_99_dev_complete_(Hephaestus).md  # Hephaestus report for #99
+├── 20251205170000AEST_issue_99_tests_complete_(Artemis).md   # Artemis report for #99
+└── 20251205180000AEST_issue_99_review_complete_(Hera).md     # Hera report for #99
 ```
+
+**REQUIREMENTS/** is SEPARATE - permanent design documents, never deleted.
+
+**Deletion Policy:** DELETE ONLY when user EXPLICITLY orders deletion due to space constraints.
 
 ## Auto-Approval Security
 

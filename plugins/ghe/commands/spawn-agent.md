@@ -5,7 +5,7 @@ arguments:
     description: "The task for the background agent to perform"
     required: true
   - name: output_file
-    description: "Where to save the result (default: agents_reports/result.md)"
+    description: "Where to save the result (default: GHE_REPORTS/<TIMESTAMP>_task_result_(Agent).md)"
     required: false
 ---
 
@@ -16,7 +16,7 @@ Spawn a Claude agent in a background Terminal window. The agent works autonomous
 ## Task
 
 **Task:** $ARGUMENTS.task
-**Output:** ${ARGUMENTS.output_file:-agents_reports/result.md}
+**Output:** ${ARGUMENTS.output_file:-GHE_REPORTS/$(TZ='Australia/Brisbane' date +%Y%m%d%H%M%S%Z)_task_result_(Agent).md}
 
 ## Instructions
 
@@ -24,7 +24,7 @@ Run the spawn script:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/spawn_background.sh" \
-  "Please complete this task and save the result to ${ARGUMENTS.output_file:-agents_reports/result.md}: $ARGUMENTS.task" \
+  "Please complete this task and save the result to ${ARGUMENTS.output_file:-GHE_REPORTS/\$(TZ='Australia/Brisbane' date +%Y%m%d%H%M%S%Z)_task_result_(Agent).md}: $ARGUMENTS.task" \
   "$(pwd)"
 ```
 

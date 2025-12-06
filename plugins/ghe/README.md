@@ -528,6 +528,159 @@ After editing `.claude/ghe.local.md`, restart Claude Code for changes to take ef
 
 ---
 
+## Mandatory Transcription & Agent Rules
+
+**These rules are enforced via hooks on EVERY message exchange.**
+
+### 1. TRANSCRIPTION RULES (Mnemosyne)
+
+When an issue is set for transcription, **EVERY message MUST be posted to GitHub:**
+
+```
+Mnemosyne, transcribe to Issue #N:
+- Content: <EXACT message with ✕✕REDACTED✕✕ applied>
+- Element type: KNOWLEDGE/ACTION/JUDGEMENT
+```
+
+**Redaction (MANDATORY before posting):**
+
+| Type | Replace With |
+|------|--------------|
+| API Keys (`sk-...`, `ghp_...`, `gho_...`) | `✕✕REDACTED✕✕` |
+| Tokens, passwords, secrets | `✕✕REDACTED✕✕` |
+| Emails (except `@noreply.github.com`) | `✕✕REDACTED✕✕` |
+| User paths `/Users/name/` | `/Users/✕✕REDACTED✕✕/` |
+| User paths `/home/name/` | `/home/✕✕REDACTED✕✕/` |
+
+### 2. DELEGATION RULES (ALWAYS DELEGATE!)
+
+**NEVER do development work in main thread:**
+
+| Task Type | Delegate To |
+|-----------|-------------|
+| Code implementation | Hephaestus (background) |
+| Testing | Artemis (background) |
+| Code review | Hera (background) |
+| Status checks | **Hermes** (saves context!) |
+
+### 3. REPORT POSTING RULES (CRITICAL!)
+
+**ALL reports MUST be posted to BOTH locations:**
+
+1. **GitHub Issue Thread** - Full report text (NOT just a link!)
+2. **GHE_REPORTS/** - Same full report text (FLAT structure, no subfolders!)
+
+**Report Naming Convention:**
+- **Format:** `<TIMESTAMP>_<title or meaningful description>_(<AGENT>).md`
+- **Timestamp format:** `YYYYMMDDHHMMSSTimezone`
+
+**Example filenames:**
+```
+20250928163059GMT+05_ci_run_4579_failed_(Chronos).md
+20251206143022GMT+01_issue_42_dev_complete_(Hephaestus).md
+20251206150000GMT+01_issue_42_tests_passed_(Artemis).md
+20251206160000GMT+01_issue_42_review_complete_(Hera).md
+20251206170000GMT+01_phase_transition_approved_(Themis).md
+20251206180000GMT+01_memory_sync_complete_(Mnemosyne).md
+20251206190000GMT+01_violation_warning_issued_(Ares).md
+20251206200000GMT+01_status_report_(Hermes).md
+20251206210000GMT+01_monitoring_alert_(Argos).md
+20251206220000GMT+01_session_context_loaded_(Athena).md
+```
+
+**ALL agents write reports here:**
+| Agent | Reports |
+|-------|---------|
+| Athena | Planning, coordination, context loading |
+| Hephaestus | DEV work, code implementation |
+| Artemis | TEST work, test results |
+| Hera | REVIEW work, code reviews |
+| Themis | Phase transitions, gate decisions |
+| Mnemosyne | Transcription, memory operations |
+| Hermes | Status reports, notifications |
+| Ares | Policy enforcement, violations |
+| Chronos | CI/CD events, timing |
+| Argos Panoptes | Monitoring alerts, labeling |
+| Cerberus | PR checks |
+
+**REQUIREMENTS/ is SEPARATE:**
+- Contains DESIGN DOCUMENTS with legal validity
+- Permanent storage - NEVER deleted
+- Not a subfolder of GHE_REPORTS!
+
+**GHE_REPORTS Deletion Policy:**
+- This folder should be git-tracked - it constitutes the pulse of the whole GHE plugin
+- **DELETE ONLY when:** User EXPLICITLY orders deletion due to space constraints
+- **DO NOT delete:** During normal project cleanup or just because reports were archived to GitHub
+
+### 4. STATUS CHECK RULES (Delegate to Hermes!)
+
+**Delegate ALL checks to Hermes to save context tokens:**
+
+```
+Hermes, perform GHE status check:
+1. Check GHE_REPORTS/ for NEW reports from ALL agents:
+   - Athena (planning), Hephaestus (DEV), Artemis (TEST), Hera (REVIEW)
+   - Themis (transitions), Mnemosyne (transcription), Ares (enforcement)
+   - Chronos (CI/CD), Argos Panoptes (monitoring), Cerberus (PR checks)
+   Report naming: <TIMESTAMP>_<title>_(<AGENT>).md
+2. Check REQUIREMENTS/ for new design documents (permanent, never deleted)
+3. Check if Athena launched a WAVE from any epic issue
+4. Check labels/issues from all agents
+5. Check for CI error reports from any agent
+6. Return ONLY user notifications (suppress all other output)
+```
+
+**Notification format:**
+```
+[GHE] Issue #N "Title" - AgentName posted TYPE report
+[GHE] Issue #N "Title" - Ready for your review
+[GHE] Epic #N - Athena launched WAVE with issues #X, #Y, #Z
+```
+
+### 5. USER REVIEW RULES
+
+**NEVER ask user to review UNTIL:**
+1. Hera has written REVIEW report
+2. Report posted to issue thread (full text!)
+3. Report saved to `GHE_REPORTS/<TIMESTAMP>_issue_N_review_complete_(Hera).md`
+
+### 6. REQUIREMENTS RULES (Athena)
+
+When user discusses a new feature:
+```
+Athena, write requirements for: <feature>
+- Create EARS-format requirements document
+- Post to issue thread (full text!)
+- Save to REQUIREMENTS/ folder (permanent design docs - NEVER deleted)
+- Also save summary report to GHE_REPORTS/<TIMESTAMP>_requirements_<feature>_(Athena).md
+```
+
+### 7. ISSUE DETECTION RULES
+
+Detect in user messages: `issue #N`, `#N`, `work on N`, GitHub URLs, new topics.
+
+### 8. WAVE MONITORING
+
+Check for active WAVEs: `gh issue list --label "epic" --label "wave-active"`
+
+---
+
+## Hook System
+
+GHE uses Claude Code hooks to inject instructions. **IMPORTANT**: Only `"type": "command"` is valid!
+
+| Hook | Script | Purpose |
+|------|--------|---------|
+| SessionStart | `session-context.sh` | Load GHE context |
+| UserPromptSubmit | `transcribe-user-prompt.sh` | Process user message |
+| Stop | `transcribe-stop.sh` | Process assistant response |
+| PreToolUse (Bash) | `transcribe-reminder.sh` | Remind on significant commands |
+
+**NOTE**: `"type": "prompt"` does NOT exist in Claude Code! All hooks must use `"type": "command"`.
+
+---
+
 ## Critical Rule: One Source of Truth for Hooks
 
 **PARAMOUNT**: Hooks must exist in ONE location only.
