@@ -56,6 +56,20 @@ if [[ -n "$REGISTERED_REPO" && "$REGISTERED_REPO" != "$PROJECT_ROOT" ]]; then
     [[ -n "$LOG_FILE" ]] && echo "[$(date)] Added registered repo to allowed dirs: $REGISTERED_REPO" >> "$LOG_FILE"
 fi
 
+# If registered repo is inside a parent git repo, also allow the parent
+# This handles the case where SKILL_FACTORY contains github-elements-marketplace
+if [[ -n "$REGISTERED_REPO" ]]; then
+    PARENT_GIT_ROOT=$(cd "$REGISTERED_REPO" && git -C .. rev-parse --show-toplevel 2>/dev/null || echo "")
+    if [[ -n "$PARENT_GIT_ROOT" && "$PARENT_GIT_ROOT" != "$REGISTERED_REPO" && "$PARENT_GIT_ROOT" != "$PROJECT_ROOT" ]]; then
+        if [[ -n "$EXTRA_PROJECT_DIRS" ]]; then
+            EXTRA_PROJECT_DIRS="${EXTRA_PROJECT_DIRS}:${PARENT_GIT_ROOT}"
+        else
+            EXTRA_PROJECT_DIRS="${PARENT_GIT_ROOT}"
+        fi
+        [[ -n "$LOG_FILE" ]] && echo "[$(date)] Added parent repo to allowed dirs: $PARENT_GIT_ROOT" >> "$LOG_FILE"
+    fi
+fi
+
 # === PLATFORM DETECTION ===
 # Detect OS and set platform-specific paths
 
