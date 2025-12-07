@@ -1,5 +1,6 @@
 {
-  "SessionStart": [
+  "hooks": {
+    "SessionStart": [
       {
         "matcher": ".*",
         "hooks": [
@@ -67,4 +68,5 @@
         ]
       }
     ]
+  }
 }
