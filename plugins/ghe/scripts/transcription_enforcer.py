@@ -260,6 +260,18 @@ def store_pending_message() -> None:
     if not prompt:
         sys.exit(0)
 
+    # Skip hook feedback messages (these are system-injected, not real user messages)
+    skip_patterns = [
+        "Stop hook feedback:",
+        "TRANSCRIPTION BLOCKING",
+        "PreToolUse hook feedback:",
+        "PostToolUse hook feedback:",
+        "SessionStart hook feedback:",
+    ]
+    for pattern in skip_patterns:
+        if pattern in prompt:
+            sys.exit(0)
+
     # Load existing pending messages
     data = load_pending()
 
