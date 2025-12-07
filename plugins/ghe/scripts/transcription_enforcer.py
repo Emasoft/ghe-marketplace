@@ -237,7 +237,7 @@ def message_matches_comment(message: Dict[str, Any], comment_body: str) -> bool:
 
 def get_current_issue() -> Optional[int]:
     """Get the current issue number from config."""
-    # Try to read from last_active_issue.json
+    # Try to read from last_active_issue.json first (preferred - has title too)
     pending_path = get_pending_file_path()
     config_path = pending_path.parent / "last_active_issue.json"
 
@@ -245,8 +245,30 @@ def get_current_issue() -> Optional[int]:
         try:
             with open(config_path) as f:
                 data = json.load(f)
-                return data.get("issue")
+                issue = data.get("issue")
+                if issue:
+                    return issue
         except (json.JSONDecodeError, IOError):
+            pass
+
+    # Fallback: read from ghe.local.md settings
+    issue_str = ghe_get_setting("current_issue", "")
+    if issue_str and issue_str != "null":
+        try:
+            issue_num = int(issue_str)
+            # Create last_active_issue.json for future reads
+            try:
+                with open(config_path, 'w') as f:
+                    json.dump({
+                        'issue': issue_num,
+                        'title': f'Issue #{issue_num}',
+                        'last_active': datetime.now(timezone.utc).isoformat()
+                    }, f)
+                debug_print(f"Created last_active_issue.json from ghe.local.md (issue #{issue_num})")
+            except IOError:
+                pass
+            return issue_num
+        except ValueError:
             pass
 
     return None
