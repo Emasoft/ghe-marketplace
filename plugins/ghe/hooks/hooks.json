@@ -33,6 +33,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py store",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_issue_set.py",
             "timeout": 5
           },
@@ -52,6 +57,11 @@
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_stop.py",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py verify",
+            "timeout": 30
           }
         ]
       }

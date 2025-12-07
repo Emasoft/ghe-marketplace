@@ -48,3 +48,4 @@ build/
 
 # Backup folder
 backup/
+.claude/ghe_pending_transcriptions.json
