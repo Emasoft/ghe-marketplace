@@ -676,6 +676,18 @@ def verify_transcription() -> None:
         error_msg += "\n\nEDIT the problematic comments to fix issues, or POST missing messages!"
         error_msg += "\n" + "="*60
 
+        # DEBUG: Show pending messages breakdown
+        error_msg += "\n\n[DEBUG] Pending messages breakdown:"
+        user_count = sum(1 for m in pending if m.get("speaker") == "user")
+        claude_count = sum(1 for m in pending if m.get("speaker") == "claude")
+        other_count = len(pending) - user_count - claude_count
+        error_msg += f"\n  Total: {len(pending)} | User: {user_count} | Claude: {claude_count} | Other: {other_count}"
+        for i, m in enumerate(pending[:5]):  # Show first 5
+            speaker = m.get("speaker", "?")
+            preview = m.get("preview", "???")[:40]
+            ts = m.get("timestamp", "?")[:19]
+            error_msg += f"\n  [{i+1}] {speaker}: \"{preview}...\" @ {ts}"
+
         print(error_msg, file=sys.stderr)
         sys.exit(2)  # Exit code 2 blocks Claude from stopping
 
