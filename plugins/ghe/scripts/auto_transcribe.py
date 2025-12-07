@@ -706,15 +706,28 @@ def post_assistant_message(message: str, requested_agent: Optional[str] = None) 
     return False
 
 
-def inject_claude_md_reminder(issue_num: str) -> None:
+def inject_claude_md_reminder(issue_num: str, title: str = "") -> None:
     """
     Inject issue reminder into project CLAUDE.md
 
     Args:
         issue_num: Issue number
+        title: Issue title (optional, fetched from GitHub if not provided)
     """
+    # Fetch title from GitHub if not provided
+    if not title:
+        try:
+            result = run_gh("issue", "view", issue_num, "--json", "title", "--jq", ".title")
+            title = result.stdout.strip()
+        except subprocess.CalledProcessError:
+            title = ""
+
     claude_md = Path("CLAUDE.md")
     marker = "<!-- GHE-CURRENT-ISSUE -->"
+
+    # Format title line if available
+    title_line = f": {title}" if title else ""
+
     instruction = f"""
 {marker}
 ## GHE Active Transcription
@@ -722,7 +735,7 @@ def inject_claude_md_reminder(issue_num: str) -> None:
 **CRITICAL**: All conversation is being transcribed to GitHub.
 
 ```
-Currently discussing issue n.{issue_num}
+Currently discussing issue n.{issue_num}{title_line}
 ```
 
 **You MUST include this line in your responses when referencing the current work.**
@@ -794,12 +807,14 @@ def set_current_issue(issue_num: str) -> bool:
 
     ensure_config()
 
-    # Verify issue exists
+    # Verify issue exists and get title
     try:
-        result = run_gh("issue", "view", issue_num, "--json", "number", "--jq", ".number")
-        if result.stdout.strip() != issue_num:
+        result = run_gh("issue", "view", issue_num, "--json", "number,title", "--jq", "[.number, .title] | @tsv")
+        parts = result.stdout.strip().split("\t")
+        if parts[0] != issue_num:
             print(f"Issue #{issue_num} not found", file=sys.stderr)
             return False
+        issue_title = parts[1] if len(parts) > 1 else ""
     except subprocess.CalledProcessError:
         print(f"Issue #{issue_num} not found", file=sys.stderr)
         return False
@@ -816,8 +831,8 @@ def set_current_issue(issue_num: str) -> bool:
     set_config("current_issue", issue_num)
     set_config("current_phase", "CONVERSATION")  # Special phase for main thread
 
-    # Inject reminder into CLAUDE.md
-    inject_claude_md_reminder(issue_num)
+    # Inject reminder into CLAUDE.md (with title)
+    inject_claude_md_reminder(issue_num, issue_title)
 
     # Mark issue as active conversation (NOT phase:dev - that's for feature threads)
     try:
@@ -836,21 +851,30 @@ def set_current_issue(issue_num: str) -> bool:
     print("To develop a feature/fix a bug, ask Claude and a BACKGROUND thread will be created.")
     print()
     print("Include in your responses:")
-    print(f"  Currently discussing issue n.{issue_num}")
+    title_suffix = f": {issue_title}" if issue_title else ""
+    print(f"  Currently discussing issue n.{issue_num}{title_suffix}")
     return True
 
 
 def get_current_issue() -> None:
     """
-    Get current issue
+    Get current issue with title
     """
     ensure_config()
     issue = get_config("current_issue", "")
     if issue and issue != "null":
+        # Get title from GitHub
+        try:
+            result = run_gh("issue", "view", issue, "--json", "title", "--jq", ".title")
+            title = result.stdout.strip()
+        except subprocess.CalledProcessError:
+            title = ""
+
         print(f"{GREEN}TRANSCRIPTION ACTIVE{NC}")
-        print(f"Current issue: #{issue}")
+        title_display = f": {title}" if title else ""
+        print(f"Current issue: #{issue}{title_display}")
         print()
-        print(f"Include in responses: Currently discussing issue n.{issue}")
+        print(f"Include in responses: Currently discussing issue n.{issue}{title_display}")
     else:
         print(f"{YELLOW}TRANSCRIPTION INACTIVE{NC}")
         print("No current issue set")
