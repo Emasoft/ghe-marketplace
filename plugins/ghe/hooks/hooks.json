@@ -7,22 +7,26 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/ghe_init.py",
-            "timeout": 15
+            "timeout": 15,
+            "suppressOutput": true
           },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py check",
-            "timeout": 10
+            "timeout": 10,
+            "suppressOutput": true
           },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_recover.py",
-            "timeout": 30
+            "timeout": 30,
+            "suppressOutput": true
           },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_context.py",
-            "timeout": 10
+            "timeout": 10,
+            "suppressOutput": true
           }
         ]
       }
@@ -34,17 +38,20 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py store",
-            "timeout": 5
+            "timeout": 5,
+            "suppressOutput": true
           },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_issue_set.py",
-            "timeout": 5
+            "timeout": 5,
+            "suppressOutput": true
           },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_user_prompt.py",
-            "timeout": 10
+            "timeout": 10,
+            "suppressOutput": true
           }
         ]
       }
@@ -56,17 +63,20 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_stop.py",
-            "timeout": 10
+            "timeout": 10,
+            "suppressOutput": true
           },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py store-response",
-            "timeout": 10
+            "timeout": 10,
+            "suppressOutput": true
           },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py verify",
-            "timeout": 30
+            "timeout": 30,
+            "suppressOutput": true
           }
         ]
       }
@@ -78,7 +88,8 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_reminder.py",
-            "timeout": 5000
+            "timeout": 5000,
+            "suppressOutput": true
           }
         ]
       }
