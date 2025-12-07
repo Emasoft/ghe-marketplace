@@ -490,6 +490,21 @@ def main() -> None:
         debug_log("GitHub connectivity check failed - continuing anyway", "WARN")
 
     # =========================================================================
+    # PHASE 2.5: Recover messages from previous session transcript
+    # =========================================================================
+    # This ensures NO messages are ever lost - we extract them from the
+    # transcript file that was saved by the Stop hook in the previous session
+    try:
+        from recover_transcript import recover_messages
+        recovered = recover_messages()
+        if recovered > 0:
+            debug_log(f"Recovered {recovered} messages from previous session")
+    except ImportError:
+        debug_log("recover_transcript not available", "WARN")
+    except Exception as e:
+        debug_log(f"Transcript recovery failed: {e}", "WARN")
+
+    # =========================================================================
     # PHASE 3: Session recovery
     # =========================================================================
     # First check if there's already an active issue in config
