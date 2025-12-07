@@ -511,6 +511,60 @@ def create_release(config: MarketplaceConfig, plugin_name: str, new_version: str
         Path(temp_file).unlink(missing_ok=True)
 
 
+def clear_local_plugin_cache(config: MarketplaceConfig, plugin_name: str) -> None:
+    """
+    Clear local Claude Code plugin caches to force fresh install.
+
+    Claude Code has a bug where 'plugins install' doesn't properly update
+    the installed cache from the marketplace cache. This function clears
+    the relevant caches to force a clean reinstall.
+    """
+    import shutil
+
+    home = Path.home()
+    marketplace_name = config.marketplace_name
+
+    # Cache locations to clear
+    cache_locations = [
+        # Installed plugin cache (the main culprit)
+        home / ".claude" / "plugins" / "cache" / f"{marketplace_name}-{plugin_name}",
+        # Alternative naming patterns
+        home / ".claude" / "plugins" / "cache" / plugin_name,
+    ]
+
+    cleared_any = False
+    for cache_path in cache_locations:
+        if cache_path.exists():
+            try:
+                shutil.rmtree(cache_path)
+                success(f"Cleared cache: {cache_path}")
+                cleared_any = True
+            except Exception as e:
+                warn(f"Failed to clear {cache_path}: {e}")
+
+    if not cleared_any:
+        info("No local plugin caches found to clear")
+
+    # Also update the marketplace cache by pulling latest
+    marketplace_path = home / ".claude" / "plugins" / "marketplaces" / marketplace_name
+    if marketplace_path.exists() and (marketplace_path / ".git").exists():
+        info("Updating marketplace cache from GitHub...")
+        try:
+            result = run_cmd(f'cd "{marketplace_path}" && git fetch origin && git reset --hard origin/main',
+                           check=False, capture=True)
+            if result.returncode == 0:
+                success("Marketplace cache updated")
+            else:
+                warn("Could not update marketplace cache - run 'claude plugins marketplace update' manually")
+        except Exception:
+            warn("Could not update marketplace cache")
+
+    print()
+    info("To complete installation, run:")
+    print(f"  claude plugins install {plugin_name}")
+    print()
+
+
 def list_plugins(config: MarketplaceConfig) -> None:
     """List all plugins and their current versions."""
     print()
@@ -626,37 +680,41 @@ Each plugin maintains its own version independently.
     print()
 
     # Step 1: Validate plugin
-    info("Step 1/7: Validating plugin...")
+    info("Step 1/8: Validating plugin...")
     validate_plugin(config, args.plugin_name)
 
     # Step 2: Update JSON files
-    info("Step 2/7: Updating JSON files...")
+    info("Step 2/8: Updating JSON files...")
     update_marketplace_json_for_plugin(config, args.plugin_name, new_version)
     update_plugin_json(config, args.plugin_name, new_version)
 
     # Step 3: Update script versions (only for marketplace-utils)
-    info("Step 3/7: Updating script versions...")
+    info("Step 3/8: Updating script versions...")
     update_script_versions(config, args.plugin_name, new_version)
 
     # Reload config to get updated version for README generation
     config = MarketplaceConfig(repo_root)
 
     # Step 4: Update READMEs
-    info("Step 4/7: Updating READMEs...")
+    info("Step 4/8: Updating READMEs...")
     update_readme_for_plugin(config, args.plugin_name, current_version, new_version)
     update_marketplace_readme(config)
 
     # Step 5: Create commit
-    info("Step 5/7: Creating commit...")
+    info("Step 5/8: Creating commit...")
     create_commit(args.plugin_name, new_version, args.notes)
 
     # Step 6: Create and push tag
-    info("Step 6/7: Creating and pushing tag...")
+    info("Step 6/8: Creating and pushing tag...")
     create_tag(args.plugin_name, new_version, args.notes)
 
     # Step 7: Create GitHub release
-    info("Step 7/7: Creating GitHub release...")
+    info("Step 7/8: Creating GitHub release...")
     create_release(config, args.plugin_name, new_version, args.notes)
+
+    # Step 8: Clear local caches to force fresh install
+    info("Step 8/8: Clearing local plugin caches...")
+    clear_local_plugin_cache(config, args.plugin_name)
 
     print()
     success(f"Release {args.plugin_name}-v{new_version} complete!")
