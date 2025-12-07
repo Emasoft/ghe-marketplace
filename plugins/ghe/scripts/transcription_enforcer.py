@@ -672,29 +672,35 @@ def verify_transcription() -> None:
                 "issues": msg_issues
             })
 
-    # Auto-transcribe Claude responses to avoid infinite loop
-    claude_pending = [m for m in still_pending if m.get("speaker") == "claude"]
-    if claude_pending and issue_num:
+    # Auto-transcribe all pending messages to avoid infinite loop
+    if still_pending and issue_num:
         try:
             # Add scripts directory to path for import
             scripts_dir = str(Path(__file__).parent)
             if scripts_dir not in sys.path:
                 sys.path.insert(0, scripts_dir)
-            from auto_transcribe import post_to_issue, get_posting_agent
+            from auto_transcribe import post_to_issue, get_posting_agent, ghe_get_github_user
 
-            for claude_msg in claude_pending:
-                # Get full message content from the pending record
-                content = claude_msg.get("content", "")  # Full content stored by store-response
+            # Process messages in order (oldest first)
+            for msg in list(still_pending):  # Use list() to avoid modifying while iterating
+                speaker = msg.get("speaker", "")
+                content = msg.get("content", "") or msg.get("preview", "")
+
                 if not content:
-                    # Fallback to preview if content not available
-                    content = claude_msg.get("preview", "")
+                    continue
 
-                if content:
-                    # Get appropriate agent name and post directly with issue_num
+                if speaker == "claude":
+                    # Claude messages: use phase-appropriate agent
                     agent = get_posting_agent(str(issue_num), None)
                     post_to_issue(str(issue_num), agent, content, False)
-                    still_pending.remove(claude_msg)
+                    still_pending.remove(msg)
                     print(f"DEBUG auto-transcribed Claude response to issue #{issue_num}", file=sys.stderr)
+                elif speaker == "user":
+                    # User messages: use GitHub username
+                    username = ghe_get_github_user()
+                    post_to_issue(str(issue_num), username, content, True)
+                    still_pending.remove(msg)
+                    print(f"DEBUG auto-transcribed user message to issue #{issue_num}", file=sys.stderr)
         except Exception as e:
             # If auto-transcribe fails, continue with blocking
             print(f"DEBUG auto-transcribe failed: {e}", file=sys.stderr)
