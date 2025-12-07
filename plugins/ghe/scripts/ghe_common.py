@@ -149,6 +149,127 @@ def ghe_get_github_user() -> str:
     return 'unknown'
 
 
+def ghe_validate_issue(issue_num: int) -> Dict[str, Any]:
+    """
+    Validate that an issue exists and is open.
+
+    Args:
+        issue_num: Issue number to validate
+
+    Returns:
+        Dict with keys:
+            - valid: bool - True if issue exists and is open
+            - exists: bool - True if issue exists (even if closed)
+            - state: str - 'OPEN', 'CLOSED', or 'NOT_FOUND'
+            - title: str - Issue title if exists
+            - error: str - Error message if any
+    """
+    # Run from plugin's repo directory
+    plugin_repo_root = str(Path(GHE_PLUGIN_ROOT).parent.parent)
+
+    try:
+        result = subprocess.run(
+            ['gh', 'issue', 'view', str(issue_num), '--json', 'state,title'],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=plugin_repo_root
+        )
+
+        if result.returncode != 0:
+            # Issue doesn't exist or error
+            error_msg = result.stderr.strip() if result.stderr else "Issue not found"
+            return {
+                'valid': False,
+                'exists': False,
+                'state': 'NOT_FOUND',
+                'title': '',
+                'error': error_msg
+            }
+
+        import json
+        data = json.loads(result.stdout)
+        state = data.get('state', 'UNKNOWN')
+        title = data.get('title', '')
+
+        return {
+            'valid': state == 'OPEN',
+            'exists': True,
+            'state': state,
+            'title': title,
+            'error': '' if state == 'OPEN' else f'Issue is {state}'
+        }
+
+    except (subprocess.SubprocessError, json.JSONDecodeError) as e:
+        return {
+            'valid': False,
+            'exists': False,
+            'state': 'ERROR',
+            'title': '',
+            'error': str(e)
+        }
+
+
+def ghe_get_or_create_fallback_issue() -> Optional[int]:
+    """
+    Get or create a GENERAL DISCUSSION fallback issue.
+
+    Returns:
+        Issue number if found/created, None on failure
+    """
+    plugin_repo_root = str(Path(GHE_PLUGIN_ROOT).parent.parent)
+
+    # First, check if a GENERAL DISCUSSION issue already exists and is open
+    try:
+        result = subprocess.run(
+            ['gh', 'issue', 'list', '--search', 'GENERAL DISCUSSION in:title', '--state', 'open', '--json', 'number,title', '--limit', '1'],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=plugin_repo_root
+        )
+
+        if result.returncode == 0:
+            import json
+            issues = json.loads(result.stdout)
+            if issues:
+                return issues[0]['number']
+
+        # No existing issue found, create one
+        from datetime import datetime, timezone
+        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d')
+
+        result = subprocess.run(
+            ['gh', 'issue', 'create',
+             '--title', f'[GENERAL] GENERAL DISCUSSION - {timestamp}',
+             '--label', 'general,auto-created',
+             '--body', '''## General Discussion Thread
+
+This issue was auto-created as a fallback for transcription when no specific issue is configured.
+
+Messages posted here should be moved to appropriate issues when the topic becomes clear.
+
+---
+**Auto-created by GHE Plugin**
+'''],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=plugin_repo_root
+        )
+
+        if result.returncode == 0:
+            # Extract issue number from URL (https://github.com/owner/repo/issues/XX)
+            url = result.stdout.strip()
+            if '/issues/' in url:
+                return int(url.split('/issues/')[-1])
+
+    except (subprocess.SubprocessError, ValueError) as e:
+        print(f"Error creating fallback issue: {e}", file=sys.stderr)
+
+    return None
+
+
 # Agent avatar configuration - SINGLE SOURCE OF TRUTH
 # All scripts should import this instead of defining their own
 GHE_AGENT_AVATARS: Dict[str, str] = {
@@ -487,6 +608,8 @@ __all__ = [
     # GitHub functions
     'ghe_get_github_repo', 'ghe_get_github_user',
     'ghe_get_avatar_base_url', 'ghe_get_avatar_url',
+    # Issue validation
+    'ghe_validate_issue', 'ghe_get_or_create_fallback_issue',
     # Logging functions
     'ghe_info', 'ghe_warn', 'ghe_error',
     # Utility functions

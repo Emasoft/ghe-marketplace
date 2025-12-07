@@ -32,6 +32,8 @@ try:
     from ghe_common import (
         ghe_get_setting,
         ghe_find_config_file,
+        ghe_validate_issue,
+        ghe_get_or_create_fallback_issue,
         GHE_PLUGIN_ROOT,
     )
 except ImportError:
@@ -40,6 +42,10 @@ except ImportError:
     def ghe_get_setting(key: str, default: Any = None) -> Any:
         return default
     def ghe_find_config_file() -> Optional[str]:
+        return None
+    def ghe_validate_issue(issue_num: int) -> Dict[str, Any]:
+        return {'valid': False, 'exists': False, 'state': 'ERROR', 'title': '', 'error': 'ghe_common not available'}
+    def ghe_get_or_create_fallback_issue() -> Optional[int]:
         return None
 
 
@@ -601,9 +607,47 @@ def verify_transcription() -> None:
 
     # Get current issue
     issue_num = get_current_issue()
+
+    # Validate issue exists and is open
+    if issue_num:
+        validation = ghe_validate_issue(issue_num)
+        if not validation['valid']:
+            # Issue is closed, deleted, or invalid
+            print(f"DEBUG: Issue #{issue_num} invalid: {validation['error']}", file=sys.stderr)
+
+            if validation['state'] == 'CLOSED':
+                # Issue was closed - get or create fallback
+                fallback = ghe_get_or_create_fallback_issue()
+                if fallback:
+                    print(f"DEBUG: Using fallback issue #{fallback}", file=sys.stderr)
+                    issue_num = fallback
+                    # Update the config file to use fallback
+                    pending_path = get_pending_file_path()
+                    config_path = pending_path.parent / "last_active_issue.json"
+                    with open(config_path, 'w') as f:
+                        json.dump({'issue': fallback, 'title': 'GENERAL DISCUSSION (fallback)', 'last_active': datetime.now(timezone.utc).isoformat()}, f)
+                else:
+                    # Can't create fallback - allow stop (will lose messages)
+                    print("DEBUG: Failed to create fallback issue", file=sys.stderr)
+                    silent_exit()
+            else:
+                # Issue doesn't exist or error - try fallback
+                fallback = ghe_get_or_create_fallback_issue()
+                if fallback:
+                    print(f"DEBUG: Issue not found, using fallback #{fallback}", file=sys.stderr)
+                    issue_num = fallback
+                else:
+                    silent_exit()
+
     if not issue_num:
-        # No issue configured, can't verify - allow stop
-        silent_exit()
+        # No issue configured - try to create fallback
+        fallback = ghe_get_or_create_fallback_issue()
+        if fallback:
+            print(f"DEBUG: No issue configured, created fallback #{fallback}", file=sys.stderr)
+            issue_num = fallback
+        else:
+            # Can't verify without an issue - allow stop
+            silent_exit()
 
     # Find the oldest pending message timestamp for efficient filtering
     oldest_timestamp = min(m.get("timestamp", "") for m in pending)
