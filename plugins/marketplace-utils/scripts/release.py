@@ -425,6 +425,7 @@ def update_marketplace_readme(config: MarketplaceConfig) -> None:
     # Find shields.io version badge and update with the first plugin's version (usually main plugin)
     if config.plugins:
         main_plugin = config.plugins[0]
+        main_name = main_plugin.get('name', 'ghe')
         main_version = main_plugin.get('version', '0.0.0')
         base, suffix = parse_version(main_version)
         suffix_escaped = suffix.replace('-', '--') if suffix else ''
@@ -435,9 +436,22 @@ def update_marketplace_readme(config: MarketplaceConfig) -> None:
         content = re.sub(badge_pattern, new_badge, content)
 
         # Update release tag links
-        old_tag_pattern = r'(releases/tag/)v?\d+\.\d+\.\d+(?:-[a-zA-Z0-9]+)?'
-        new_tag = f'\\g<1>{main_plugin.get("name")}-v{main_version}'
+        old_tag_pattern = r'(releases/tag/)[\w-]+-v\d+\.\d+\.\d+(?:-[a-zA-Z0-9]+)?'
+        new_tag = f'\\g<1>{main_name}-v{main_version}'
         content = re.sub(old_tag_pattern, new_tag, content)
+
+        # Update section headers with version (e.g., "### GHE v0.5.8" -> "### GHE v0.5.9")
+        # Match plugin name (case-insensitive) followed by version
+        name_upper = main_name.upper()
+        header_pattern = rf'(###\s+{name_upper}\s+v)\d+\.\d+\.\d+'
+        content = re.sub(header_pattern, f'\\g<1>{main_version}', content, flags=re.IGNORECASE)
+
+        # Update TOC links with version anchors (e.g., "#ghe-v058" -> "#ghe-v059")
+        # The anchor format is: #pluginname-vXYZ (no dots, lowercase)
+        version_nodots = main_version.replace('.', '')
+        toc_pattern = rf'(\[{name_upper}\s+v)\d+\.\d+\.\d+(\]\(#{main_name.lower()}-v)\d+(\))'
+        toc_replacement = f'\\g<1>{main_version}\\g<2>{version_nodots}\\g<3>'
+        content = re.sub(toc_pattern, toc_replacement, content, flags=re.IGNORECASE)
 
     with open(readme_path, 'w') as f:
         f.write(content)
