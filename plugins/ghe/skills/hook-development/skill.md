@@ -236,6 +236,105 @@ There are three ways to invoke Python hooks. Each has tradeoffs:
 2. Fix the errors
 3. Add `suppressOutput: true` back for production
 
+## Output Visibility Reference
+
+### Who Sees What
+
+| Output Channel | Visible To | When | How to Use |
+|----------------|------------|------|------------|
+| **stdout (JSON)** | Claude Code | Always | `print(json.dumps({...}), flush=True)` |
+| **stdout (text)** | User (in chat) | When `suppressOutput: false` | `print("message")` |
+| **stderr** | User (in chat) | When `suppressOutput: false` | `print("error", file=sys.stderr)` |
+| **File log** | Developer (via file) | Always | Write to `.claude/hook_debug.log` |
+| **Exit code** | Claude Code | Always | `sys.exit(0)` or `sys.exit(2)` |
+
+### Output Behavior Matrix
+
+| `suppressOutput` | stdout JSON | stdout text | stderr | File log |
+|------------------|-------------|-------------|--------|----------|
+| `true` | Parsed by Claude Code | Hidden | Hidden | Always works |
+| `false`/omitted | Parsed by Claude Code | Shown to user | Shown to user | Always works |
+
+### JSON Output Fields (stdout)
+
+Claude Code parses JSON from stdout to control behavior:
+
+| Field | Type | Effect |
+|-------|------|--------|
+| `decision` | `"block"` | Blocks the operation (PreToolUse/UserPromptSubmit) |
+| `reason` | string | Shown to user when blocking |
+| `additionalContext` | string | Added to Claude's context |
+| `suppressOutput` | boolean | In JSON response, not hooks.json |
+
+Example blocking response:
+```python
+print(json.dumps({
+    "decision": "block",
+    "reason": "Operation not allowed: dangerous command detected"
+}), flush=True)
+sys.exit(2)  # Exit code 2 = block
+```
+
+Example adding context:
+```python
+print(json.dumps({
+    "additionalContext": "Note: User is in production environment"
+}), flush=True)
+sys.exit(0)
+```
+
+### Exit Codes
+
+| Exit Code | Meaning | Effect |
+|-----------|---------|--------|
+| `0` | Success | Operation proceeds normally |
+| `2` | Block | Operation is blocked, stderr shown to user |
+| Other | Error | Non-blocking error, stderr shown in verbose mode |
+
+### Redirecting Output
+
+#### To hide all user-visible output:
+```json
+"suppressOutput": true
+```
+
+#### To log to file (always works):
+```python
+def debug_log(message: str) -> None:
+    log_file = Path(".claude/hook_debug.log")
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().isoformat()
+    with open(log_file, "a") as f:
+        f.write(f"[{timestamp}] {message}\n")
+```
+
+#### To show message to user (when not suppressed):
+```python
+# Via stderr (recommended for errors)
+print("Warning: something happened", file=sys.stderr)
+
+# Via stdout text (before JSON)
+print("Info: processing...")
+print(json.dumps({"event": "UserPromptSubmit"}), flush=True)
+```
+
+#### To send context to Claude (not shown to user):
+```python
+print(json.dumps({
+    "additionalContext": "This info goes to Claude's context only"
+}), flush=True)
+```
+
+### Summary: Where to Put Output
+
+| What You Want | Where to Put It |
+|---------------|-----------------|
+| Debug during development | `stderr` + `suppressOutput: false` |
+| Permanent debug log | File (`.claude/hook_debug.log`) |
+| Block operation with message | JSON `decision: "block"` + `reason` + exit 2 |
+| Add context for Claude | JSON `additionalContext` |
+| Silent production operation | `suppressOutput: true` + file logging |
+
 ## Hook Events Reference
 
 | Event | When It Fires | Input Schema |
