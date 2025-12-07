@@ -345,6 +345,116 @@ print(json.dumps({
 | `PreToolUse` | Before a tool runs | `{tool_name, tool_input}` |
 | `PostToolUse` | After a tool runs | `{tool_name, tool_input, tool_output}` |
 
+### Event-Specific Output Handling
+
+**IMPORTANT**: Each event type handles JSON output differently!
+
+#### UserPromptSubmit (SPECIAL HANDLING)
+
+This event has unique output behavior:
+
+| Exit Code | JSON Field | Effect |
+|-----------|------------|--------|
+| `0` | (none) | Prompt proceeds normally |
+| `0` | `additionalContext` | Text added to Claude's context (user doesn't see) |
+| `0` | `systemMessage` | Shown as system message in chat |
+| `2` | `decision: "block"` | Prompt is **erased from context**, stderr shown to user |
+| `2` | `reason` | Shown to user explaining why blocked |
+
+```python
+# Allow prompt but add context for Claude
+print(json.dumps({
+    "additionalContext": "User is working on production database"
+}), flush=True)
+sys.exit(0)
+
+# Block prompt completely (erased from history!)
+print(json.dumps({
+    "decision": "block",
+    "reason": "Cannot execute destructive commands in production"
+}), flush=True)
+sys.exit(2)
+```
+
+**Key difference**: When UserPromptSubmit blocks with exit code 2, the **prompt is erased from context** - Claude never sees it!
+
+#### PreToolUse
+
+| Exit Code | JSON Field | Effect |
+|-----------|------------|--------|
+| `0` | (none) | Tool executes normally |
+| `0` | `permissionDecision: "allow"` | Explicitly allow |
+| `0` | `permissionDecision: "deny"` | Block tool, show reason |
+| `2` | `decision: "block"` | Block tool execution |
+| `2` | `reason` | Shown to user |
+
+```python
+# Block dangerous command
+if "rm -rf" in tool_input.get("command", ""):
+    print(json.dumps({
+        "decision": "block",
+        "reason": "Dangerous command blocked: rm -rf"
+    }), flush=True)
+    sys.exit(2)
+```
+
+#### PostToolUse
+
+| Exit Code | JSON Field | Effect |
+|-----------|------------|--------|
+| `0` | (none) | Continue normally |
+| `0` | `additionalContext` | Add info about tool result |
+
+```python
+# Add context about what happened
+print(json.dumps({
+    "additionalContext": f"Tool {tool_name} modified 5 files"
+}), flush=True)
+sys.exit(0)
+```
+
+#### Stop
+
+| Exit Code | JSON Field | Effect |
+|-----------|------------|--------|
+| `0` | (none) | Session ends normally |
+| `0` | `additionalContext` | Added for next turn |
+
+```python
+# Add reminder for next turn
+print(json.dumps({
+    "additionalContext": "Remember to run tests before committing"
+}), flush=True)
+sys.exit(0)
+```
+
+#### SessionStart
+
+| Exit Code | JSON Field | Effect |
+|-----------|------------|--------|
+| `0` | (none) | Session starts normally |
+| `0` | `additionalContext` | Added to initial context |
+| `0` | `systemMessage` | Shown to user at start |
+
+```python
+# Welcome message and context
+print(json.dumps({
+    "systemMessage": "GHE plugin loaded. Transcription active.",
+    "additionalContext": "Project: my-app, Branch: feature/new-ui"
+}), flush=True)
+sys.exit(0)
+```
+
+### Event Comparison Matrix
+
+| Event | Can Block? | Erases Context? | `additionalContext` | `systemMessage` |
+|-------|------------|-----------------|---------------------|-----------------|
+| `SessionStart` | No | No | Yes | Yes |
+| `UserPromptSubmit` | Yes (exit 2) | **Yes** (when blocked) | Yes | Yes |
+| `PreToolUse` | Yes (exit 2) | No | Yes | No |
+| `PostToolUse` | No | No | Yes | No |
+| `Stop` | No | No | Yes | No |
+
 ## Complete Example: Message Logger
 
 ### Hook Script (log_messages.py)
