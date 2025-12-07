@@ -56,3 +56,5 @@ scripts_dev/
 examples_dev/
 samples_dev/
 logs/
+*.lock
+ghe_wal.jsonl
