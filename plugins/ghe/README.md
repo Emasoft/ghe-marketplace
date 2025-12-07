@@ -1,6 +1,6 @@
 # GitHub Elements Plugin (GHE)
 
-[![Version](https://img.shields.io/badge/version-0.6.36-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/ghe-v0.6.36)
+[![Version](https://img.shields.io/badge/version-0.6.37-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/ghe-v0.6.37)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GitHub Issues](https://img.shields.io/github/issues/Emasoft/ghe-marketplace)](https://github.com/Emasoft/ghe-marketplace/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/Emasoft/ghe-marketplace)](https://github.com/Emasoft/ghe-marketplace/stargazers)
