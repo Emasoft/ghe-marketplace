@@ -202,30 +202,44 @@ def get_current_issue() -> Optional[int]:
     return None
 
 
-def fetch_github_comments(issue_num: int) -> List[str]:
-    """Fetch comments from a GitHub issue."""
+def fetch_github_comments(issue_num: int, since: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Fetch comments from a GitHub issue.
+
+    Args:
+        issue_num: The issue number
+        since: Optional ISO timestamp - only return comments after this time
+
+    Returns:
+        List of comment dicts with 'body' and 'createdAt' fields
+    """
     try:
         result = subprocess.run(
-            ["gh", "issue", "view", str(issue_num), "--json", "comments",
-             "--jq", ".comments[].body"],
+            ["gh", "issue", "view", str(issue_num), "--json", "comments"],
             capture_output=True,
             text=True,
             check=False,
             timeout=30
         )
-        if result.returncode == 0 and result.stdout.strip():
-            # Each comment is separated by newlines, but comments can contain newlines
-            # So we fetch them differently
-            result2 = subprocess.run(
-                ["gh", "issue", "view", str(issue_num), "--json", "comments"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30
-            )
-            if result2.returncode == 0:
-                data = json.loads(result2.stdout)
-                return [c.get("body", "") for c in data.get("comments", [])]
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            comments = data.get("comments", [])
+
+            # Filter by timestamp if provided
+            if since:
+                filtered = []
+                for c in comments:
+                    created = c.get("createdAt", "")
+                    # Compare ISO timestamps (lexicographic comparison works for ISO format)
+                    if created >= since:
+                        filtered.append({
+                            "body": c.get("body", ""),
+                            "createdAt": created
+                        })
+                return filtered
+            else:
+                return [{"body": c.get("body", ""), "createdAt": c.get("createdAt", "")}
+                        for c in comments]
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, json.JSONDecodeError):
         pass
 
@@ -290,21 +304,34 @@ def verify_transcription() -> None:
               file=sys.stderr)
         sys.exit(0)
 
-    # Fetch GitHub comments
-    comments = fetch_github_comments(issue_num)
+    # Find the oldest pending message timestamp for efficient filtering
+    oldest_timestamp = min(m.get("timestamp", "") for m in pending)
+
+    # Convert local timestamp to UTC for GitHub API comparison
+    # GitHub uses ISO format with Z suffix (UTC)
+    # Our local timestamps are also ISO format
+    # Fetch only comments after the oldest pending message
+    comments = fetch_github_comments(issue_num, since=oldest_timestamp)
 
     if not comments:
-        # Can't fetch comments - allow stop but warn
-        print(f"Warning: Could not fetch comments from issue #{issue_num}",
-              file=sys.stderr)
-        sys.exit(0)
+        # No comments found after our timestamp
+        # This could mean: 1) No transcription happened, or 2) API issue
+        # Check if we can at least fetch the issue
+        all_comments = fetch_github_comments(issue_num)
+        if all_comments is None:
+            print(f"Warning: Could not fetch comments from issue #{issue_num}",
+                  file=sys.stderr)
+            sys.exit(0)
+        # API works but no comments after timestamp - transcription didn't happen
+        comments = []
 
-    # Check each pending message
+    # Check each pending message against fetched comments
     still_pending = []
     for msg in pending:
         found = False
         for comment in comments:
-            if message_matches_comment(msg, comment):
+            # comment is now a dict with 'body' and 'createdAt'
+            if message_matches_comment(msg, comment.get("body", "")):
                 found = True
                 break
 
