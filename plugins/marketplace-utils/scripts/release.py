@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 # Script version - automatically updated by release.py when releasing marketplace-utils
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 SCRIPT_NAME = "release.py"
 
 
