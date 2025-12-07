@@ -26,19 +26,6 @@
         ]
       }
     ],
-    "Stop": [
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/capture_claude.py",
-            "timeout": 2,
-            "suppressOutput": true
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
