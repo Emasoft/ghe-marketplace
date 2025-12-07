@@ -336,16 +336,22 @@ def extract_claude_response(transcript_path: str) -> Optional[str]:
                 try:
                     entry = json.loads(line)
                     entry_count += 1
-                    entry_type = entry.get("type", "unknown")
-                    entry_role = entry.get("role", "unknown")
+
+                    # The transcript structure has message object with role inside
+                    # Structure: {"message": {"role": "assistant", "content": [...]}}
+                    message = entry.get("message", {})
+                    if not isinstance(message, dict):
+                        continue
+
+                    message_role = message.get("role", "")
 
                     # Look for assistant messages
-                    if entry_type == "assistant" or entry_role == "assistant":
+                    if message_role == "assistant":
                         assistant_count += 1
-                        # Get the content
-                        content = entry.get("content", "")
+                        # Get the content from inside message
+                        content = message.get("content", "")
                         if isinstance(content, list):
-                            # Content might be a list of blocks
+                            # Content is a list of blocks (text, tool_use, thinking, etc.)
                             text_parts = []
                             for block in content:
                                 if isinstance(block, dict) and block.get("type") == "text":
