@@ -58,6 +58,23 @@ MIN_MATCH_THRESHOLD = 0.7  # 70% similarity required
 DEBUG_MODE = os.environ.get("GHE_DEBUG", "0") == "1"
 
 
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+
+    Format: YYYY-MM-DD HH:MM:SS,mmm LEVEL [logger] - message
+    Compatible with: lnav, glogg, Splunk, ELK, Log4j viewers
+    """
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [transcription_enforcer] - {message}\n")
+    except Exception:
+        pass  # Never fail on logging
+
+
 def debug_print(msg: str) -> None:
     """Print debug message only if DEBUG_MODE is enabled."""
     if DEBUG_MODE:
@@ -1066,22 +1083,29 @@ def main() -> None:
         sys.exit(1)
 
     command = sys.argv[1].lower()
+    debug_log(f"Command: {command}")
 
     if command == "store":
         # Store user message (UserPromptSubmit hook)
+        debug_log("Executing store (UserPromptSubmit)")
         store_pending_message()
     elif command == "store-response":
         # Store Claude response (Stop hook, before verify)
+        debug_log("Executing store-response (Stop)")
         store_claude_response()
     elif command == "verify":
         # Verify all pending messages are transcribed (Stop hook)
+        debug_log("Executing verify (Stop)")
         verify_transcription()
     elif command == "clear":
         hash_to_clear = sys.argv[2] if len(sys.argv) > 2 else None
+        debug_log(f"Executing clear (hash={hash_to_clear})")
         clear_pending(hash_to_clear)
     elif command == "show":
+        debug_log("Executing show")
         show_pending()
     else:
+        debug_log(f"Unknown command: {command}", "ERROR")
         print(f"Unknown command: {command}", file=sys.stderr)
         sys.exit(1)
 

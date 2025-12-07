@@ -5,11 +5,26 @@ Outputs the complete instructions that were previously in the invalid "type": "p
 """
 
 import os
+from datetime import datetime
+from pathlib import Path
+
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """Append debug message to .claude/hook_debug.log in standard log format."""
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [session_context] - {message}\n")
+    except Exception:
+        pass
+
 
 # Get plugin root for path references
-PLUGIN_ROOT = os.environ.get('CLAUDE_PLUGIN_ROOT', '')
+PLUGIN_ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT", "")
 
-CONTEXT_OUTPUT = f'''## GHE Context Loader (Athena)
+CONTEXT_OUTPUT = """## GHE Context Loader (Athena)
 
 ### Step 0: Detect Git Repositories
 
@@ -112,23 +127,23 @@ If you need to recall specific information from a tracked issue:
 
 ```bash
 # Recall CODE/IMPLEMENTATIONS
-python3 ${{CLAUDE_PLUGIN_ROOT}}/scripts/recall_elements.py --issue NUM --type action
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/recall_elements.py --issue NUM --type action
 
 # Recall REQUIREMENTS/SPECS/DESIGN
-python3 ${{CLAUDE_PLUGIN_ROOT}}/scripts/recall_elements.py --issue NUM --type knowledge
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/recall_elements.py --issue NUM --type knowledge
 
 # Recall BUGS/ISSUES/FEEDBACK
-python3 ${{CLAUDE_PLUGIN_ROOT}}/scripts/recall_elements.py --issue NUM --type judgement
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/recall_elements.py --issue NUM --type judgement
 
 # Smart recovery (all context)
-python3 ${{CLAUDE_PLUGIN_ROOT}}/scripts/recall_elements.py --issue NUM --recover
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/recall_elements.py --issue NUM --recover
 ```
 
 ### To Start Transcribing
 
 **Option 1: Explicitly choose an issue**
 ```bash
-python3 ${{CLAUDE_PLUGIN_ROOT}}/scripts/auto_transcribe.py set-issue <NUMBER>
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py set-issue <NUMBER>
 ```
 
 **Option 2: Use pattern in conversation** - Say:
@@ -143,13 +158,16 @@ python3 ${{CLAUDE_PLUGIN_ROOT}}/scripts/auto_transcribe.py set-issue <NUMBER>
 | ![](https://img.shields.io/badge/element-knowledge-blue) | KNOWLEDGE | Specs, requirements, design, algorithms |
 | ![](https://img.shields.io/badge/element-action-green) | ACTION | Code, implementations, file changes |
 | ![](https://img.shields.io/badge/element-judgement-orange) | JUDGEMENT | Reviews, feedback, bug reports |
-'''
+"""
 
 
 def main() -> None:
     """Output the context instructions"""
+    debug_log("session_context.py started")
+    debug_log(f"PLUGIN_ROOT={PLUGIN_ROOT}")
     print(CONTEXT_OUTPUT)
+    debug_log("session_context.py completed successfully")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

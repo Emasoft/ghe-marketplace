@@ -9,21 +9,22 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Any, Dict
 
 # Determine plugin root if not already set
 # Library is at plugins/ghe/scripts/, so go up 1 level to get to plugins/ghe/
 _script_dir = Path(__file__).parent.resolve()
-GHE_PLUGIN_ROOT = os.environ.get('CLAUDE_PLUGIN_ROOT', str(_script_dir.parent))
+GHE_PLUGIN_ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT", str(_script_dir.parent))
 
 # Colors for terminal output (ANSI escape codes)
-GHE_RED = '\033[0;31m'
-GHE_GREEN = '\033[0;32m'
-GHE_YELLOW = '\033[1;33m'
-GHE_BLUE = '\033[0;34m'
-GHE_CYAN = '\033[0;36m'
-GHE_NC = '\033[0m'  # No Color
+GHE_RED = "\033[0;31m"
+GHE_GREEN = "\033[0;32m"
+GHE_YELLOW = "\033[1;33m"
+GHE_BLUE = "\033[0;34m"
+GHE_CYAN = "\033[0;36m"
+GHE_NC = "\033[0m"  # No Color
 
 # Global state (set by ghe_init())
 GHE_CONFIG_FILE: Optional[str] = None
@@ -36,6 +37,23 @@ GHE_AUTO_TRANSCRIBE: str = "false"
 # Cached GitHub repo info (populated by ghe_get_github_repo)
 _github_owner: Optional[str] = None
 _github_repo: Optional[str] = None
+
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+
+    Format: YYYY-MM-DD HH:MM:SS,mmm LEVEL [logger] - message
+    Compatible with: lnav, glogg, Splunk, ELK, Log4j viewers
+    """
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [ghe_common] - {message}\n")
+    except Exception:
+        pass  # Never fail on logging
 
 
 def ghe_get_github_repo() -> tuple[Optional[str], Optional[str]]:
@@ -57,17 +75,18 @@ def ghe_get_github_repo() -> tuple[Optional[str], Optional[str]]:
     try:
         # Try gh CLI first (most reliable) - run from plugin repo
         result = subprocess.run(
-            ['gh', 'repo', 'view', '--json', 'owner,name'],
+            ["gh", "repo", "view", "--json", "owner,name"],
             capture_output=True,
             text=True,
             check=False,
-            cwd=plugin_repo_root  # Run from plugin's repo directory
+            cwd=plugin_repo_root,  # Run from plugin's repo directory
         )
         if result.returncode == 0:
             import json
+
             data = json.loads(result.stdout)
-            _github_owner = data.get('owner', {}).get('login')
-            _github_repo = data.get('name')
+            _github_owner = data.get("owner", {}).get("login")
+            _github_repo = data.get("name")
             if _github_owner and _github_repo:
                 return _github_owner, _github_repo
     except (subprocess.SubprocessError, json.JSONDecodeError):
@@ -76,15 +95,15 @@ def ghe_get_github_repo() -> tuple[Optional[str], Optional[str]]:
     try:
         # Fallback to parsing git remote URL - run from plugin repo
         result = subprocess.run(
-            ['git', '-C', plugin_repo_root, 'remote', 'get-url', 'origin'],
+            ["git", "-C", plugin_repo_root, "remote", "get-url", "origin"],
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
         if result.returncode == 0:
             url = result.stdout.strip()
             # Parse github.com/owner/repo from various URL formats
-            match = re.search(r'github\.com[/:]([^/]+)/([^/.]+)', url)
+            match = re.search(r"github\.com[/:]([^/]+)/([^/.]+)", url)
             if match:
                 _github_owner = match.group(1)
                 _github_repo = match.group(2)
@@ -117,16 +136,16 @@ def ghe_get_github_user() -> str:
         GitHub username or 'unknown' if not authenticated
     """
     # Check environment first
-    env_user = os.environ.get('GITHUB_OWNER') or os.environ.get('GITHUB_USER')
+    env_user = os.environ.get("GITHUB_OWNER") or os.environ.get("GITHUB_USER")
     if env_user:
         return env_user
 
     try:
         result = subprocess.run(
-            ['gh', 'api', 'user', '--jq', '.login'],
+            ["gh", "api", "user", "--jq", ".login"],
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
@@ -136,17 +155,14 @@ def ghe_get_github_user() -> str:
     try:
         # Fallback to git config
         result = subprocess.run(
-            ['git', 'config', 'user.name'],
-            capture_output=True,
-            text=True,
-            check=False
+            ["git", "config", "user.name"], capture_output=True, text=True, check=False
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
     except subprocess.SubprocessError:
         pass
 
-    return 'unknown'
+    return "unknown"
 
 
 def ghe_validate_issue(issue_num: int) -> Dict[str, Any]:
@@ -169,44 +185,45 @@ def ghe_validate_issue(issue_num: int) -> Dict[str, Any]:
 
     try:
         result = subprocess.run(
-            ['gh', 'issue', 'view', str(issue_num), '--json', 'state,title'],
+            ["gh", "issue", "view", str(issue_num), "--json", "state,title"],
             capture_output=True,
             text=True,
             check=False,
-            cwd=plugin_repo_root
+            cwd=plugin_repo_root,
         )
 
         if result.returncode != 0:
             # Issue doesn't exist or error
             error_msg = result.stderr.strip() if result.stderr else "Issue not found"
             return {
-                'valid': False,
-                'exists': False,
-                'state': 'NOT_FOUND',
-                'title': '',
-                'error': error_msg
+                "valid": False,
+                "exists": False,
+                "state": "NOT_FOUND",
+                "title": "",
+                "error": error_msg,
             }
 
         import json
+
         data = json.loads(result.stdout)
-        state = data.get('state', 'UNKNOWN')
-        title = data.get('title', '')
+        state = data.get("state", "UNKNOWN")
+        title = data.get("title", "")
 
         return {
-            'valid': state == 'OPEN',
-            'exists': True,
-            'state': state,
-            'title': title,
-            'error': '' if state == 'OPEN' else f'Issue is {state}'
+            "valid": state == "OPEN",
+            "exists": True,
+            "state": state,
+            "title": title,
+            "error": "" if state == "OPEN" else f"Issue is {state}",
         }
 
     except (subprocess.SubprocessError, json.JSONDecodeError) as e:
         return {
-            'valid': False,
-            'exists': False,
-            'state': 'ERROR',
-            'title': '',
-            'error': str(e)
+            "valid": False,
+            "exists": False,
+            "state": "ERROR",
+            "title": "",
+            "error": str(e),
         }
 
 
@@ -222,28 +239,48 @@ def ghe_get_or_create_fallback_issue() -> Optional[int]:
     # First, check if a GENERAL DISCUSSION issue already exists and is open
     try:
         result = subprocess.run(
-            ['gh', 'issue', 'list', '--search', 'GENERAL DISCUSSION in:title', '--state', 'open', '--json', 'number,title', '--limit', '1'],
+            [
+                "gh",
+                "issue",
+                "list",
+                "--search",
+                "GENERAL DISCUSSION in:title",
+                "--state",
+                "open",
+                "--json",
+                "number,title",
+                "--limit",
+                "1",
+            ],
             capture_output=True,
             text=True,
             check=False,
-            cwd=plugin_repo_root
+            cwd=plugin_repo_root,
         )
 
         if result.returncode == 0:
             import json
+
             issues = json.loads(result.stdout)
             if issues:
-                return issues[0]['number']
+                return issues[0]["number"]
 
         # No existing issue found, create one
         from datetime import datetime, timezone
-        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d')
+
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d")
 
         result = subprocess.run(
-            ['gh', 'issue', 'create',
-             '--title', f'[GENERAL] GENERAL DISCUSSION - {timestamp}',
-             '--label', 'general,auto-created',
-             '--body', '''## General Discussion Thread
+            [
+                "gh",
+                "issue",
+                "create",
+                "--title",
+                f"[GENERAL] GENERAL DISCUSSION - {timestamp}",
+                "--label",
+                "general,auto-created",
+                "--body",
+                """## General Discussion Thread
 
 This issue was auto-created as a fallback for transcription when no specific issue is configured.
 
@@ -251,18 +288,19 @@ Messages posted here should be moved to appropriate issues when the topic become
 
 ---
 **Auto-created by GHE Plugin**
-'''],
+""",
+            ],
             capture_output=True,
             text=True,
             check=False,
-            cwd=plugin_repo_root
+            cwd=plugin_repo_root,
         )
 
         if result.returncode == 0:
             # Extract issue number from URL (https://github.com/owner/repo/issues/XX)
             url = result.stdout.strip()
-            if '/issues/' in url:
-                return int(url.split('/issues/')[-1])
+            if "/issues/" in url:
+                return int(url.split("/issues/")[-1])
 
     except (subprocess.SubprocessError, ValueError) as e:
         print(f"Error creating fallback issue: {e}", file=sys.stderr)
@@ -333,28 +371,28 @@ def ghe_find_config_file() -> Optional[str]:
     """
     # Try plugin-relative first (plugin is at REPO/plugins/ghe/)
     plugin_repo = Path(GHE_PLUGIN_ROOT).parent.parent
-    config_path = plugin_repo / '.claude' / 'ghe.local.md'
+    config_path = plugin_repo / ".claude" / "ghe.local.md"
     if config_path.is_file():
         return str(config_path)
 
     # Try git root
     try:
         result = subprocess.run(
-            ['git', 'rev-parse', '--show-toplevel'],
+            ["git", "rev-parse", "--show-toplevel"],
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
         if result.returncode == 0:
             git_root = result.stdout.strip()
-            config_path = Path(git_root) / '.claude' / 'ghe.local.md'
+            config_path = Path(git_root) / ".claude" / "ghe.local.md"
             if config_path.is_file():
                 return str(config_path)
     except (subprocess.SubprocessError, FileNotFoundError):
         pass
 
     # Try current directory
-    config_path = Path.cwd() / '.claude' / 'ghe.local.md'
+    config_path = Path.cwd() / ".claude" / "ghe.local.md"
     if config_path.is_file():
         return str(config_path)
 
@@ -377,10 +415,12 @@ def ghe_get_repo_path(config_file: Optional[str] = None) -> str:
 
     if config_file and Path(config_file).is_file():
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
+            with open(config_file, "r", encoding="utf-8") as f:
                 content = f.read()
             # Extract repo_path from YAML frontmatter
-            match = re.search(r'^repo_path:\s*["\']?([^"\'\n]+)["\']?', content, re.MULTILINE)
+            match = re.search(
+                r'^repo_path:\s*["\']?([^"\'\n]+)["\']?', content, re.MULTILINE
+            )
             if match:
                 path = match.group(1).strip()
                 if path and Path(path).is_dir():
@@ -409,7 +449,7 @@ def ghe_get_setting(key: str, default: str = "") -> str:
 
     if config_file and Path(config_file).is_file():
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
+            with open(config_file, "r", encoding="utf-8") as f:
                 content = f.read()
             # Extract value from YAML frontmatter
             pattern = rf'^{re.escape(key)}:\s*["\']?([^"\'\n]+)["\']?'
@@ -439,11 +479,11 @@ def ghe_gh(*args: str, capture: bool = False) -> subprocess.CompletedProcess:
     repo_root = GHE_REPO_ROOT or ghe_get_repo_path()
 
     return subprocess.run(
-        ['gh'] + list(args),
+        ["gh"] + list(args),
         cwd=repo_root,
         capture_output=capture,
         text=True,
-        check=False
+        check=False,
     )
 
 
@@ -462,10 +502,10 @@ def ghe_git(*args: str, capture: bool = False) -> subprocess.CompletedProcess:
     repo_root = GHE_REPO_ROOT or ghe_get_repo_path()
 
     return subprocess.run(
-        ['git', '-C', repo_root] + list(args),
+        ["git", "-C", repo_root] + list(args),
         capture_output=capture,
         text=True,
-        check=False
+        check=False,
     )
 
 
@@ -477,47 +517,64 @@ def ghe_init() -> None:
     global GHE_CONFIG_FILE, GHE_REPO_ROOT, GHE_ENABLED
     global GHE_CURRENT_ISSUE, GHE_CURRENT_PHASE, GHE_AUTO_TRANSCRIBE
 
-    # Set config file
-    GHE_CONFIG_FILE = os.environ.get('GHE_CONFIG_FILE') or ghe_find_config_file()
+    debug_log("ghe_init() called")
 
-    # Set repo root
-    GHE_REPO_ROOT = os.environ.get('GHE_REPO_ROOT') or ghe_get_repo_path(GHE_CONFIG_FILE)
+    try:
+        # Set config file
+        GHE_CONFIG_FILE = os.environ.get("GHE_CONFIG_FILE") or ghe_find_config_file()
+        if GHE_CONFIG_FILE:
+            debug_log(f"Found config: {GHE_CONFIG_FILE}")
+        else:
+            debug_log("No config file found", level="WARN")
 
-    # Read settings
-    GHE_ENABLED = ghe_get_setting("enabled", "false")
-    GHE_CURRENT_ISSUE = ghe_get_setting("current_issue", "")
-    GHE_CURRENT_PHASE = ghe_get_setting("current_phase", "")
-    GHE_AUTO_TRANSCRIBE = ghe_get_setting("auto_transcribe", "false")
+        # Set repo root
+        GHE_REPO_ROOT = os.environ.get("GHE_REPO_ROOT") or ghe_get_repo_path(
+            GHE_CONFIG_FILE
+        )
+        debug_log(f"Set GHE_REPO_ROOT={GHE_REPO_ROOT}")
 
-    # Also export to environment for subprocess compatibility
-    os.environ['GHE_CONFIG_FILE'] = GHE_CONFIG_FILE or ""
-    os.environ['GHE_REPO_ROOT'] = GHE_REPO_ROOT or ""
-    os.environ['GHE_ENABLED'] = GHE_ENABLED
-    os.environ['GHE_CURRENT_ISSUE'] = GHE_CURRENT_ISSUE
-    os.environ['GHE_CURRENT_PHASE'] = GHE_CURRENT_PHASE
-    os.environ['GHE_AUTO_TRANSCRIBE'] = GHE_AUTO_TRANSCRIBE
+        # Read settings
+        GHE_ENABLED = ghe_get_setting("enabled", "false")
+        GHE_CURRENT_ISSUE = ghe_get_setting("current_issue", "")
+        GHE_CURRENT_PHASE = ghe_get_setting("current_phase", "")
+        GHE_AUTO_TRANSCRIBE = ghe_get_setting("auto_transcribe", "false")
+        debug_log(f"Set GHE_PLUGIN_ROOT={GHE_PLUGIN_ROOT}")
+
+        # Also export to environment for subprocess compatibility
+        os.environ["GHE_CONFIG_FILE"] = GHE_CONFIG_FILE or ""
+        os.environ["GHE_REPO_ROOT"] = GHE_REPO_ROOT or ""
+        os.environ["GHE_ENABLED"] = GHE_ENABLED
+        os.environ["GHE_CURRENT_ISSUE"] = GHE_CURRENT_ISSUE
+        os.environ["GHE_CURRENT_PHASE"] = GHE_CURRENT_PHASE
+        os.environ["GHE_AUTO_TRANSCRIBE"] = GHE_AUTO_TRANSCRIBE
+
+        debug_log("ghe_init() completed")
+    except Exception as e:
+        debug_log(f"ghe_init() error: {e}", level="ERROR")
+        raise
 
 
 def ghe_info(*args: Any) -> None:
     """Print info message with green [GHE] prefix"""
-    message = ' '.join(str(arg) for arg in args)
+    message = " ".join(str(arg) for arg in args)
     print(f"{GHE_GREEN}[GHE]{GHE_NC} {message}")
 
 
 def ghe_warn(*args: Any) -> None:
     """Print warning message with yellow [GHE] prefix to stderr"""
-    message = ' '.join(str(arg) for arg in args)
+    message = " ".join(str(arg) for arg in args)
     print(f"{GHE_YELLOW}[GHE]{GHE_NC} {message}", file=sys.stderr)
 
 
 def ghe_error(*args: Any) -> None:
     """Print error message with red [GHE] prefix to stderr"""
-    message = ' '.join(str(arg) for arg in args)
+    message = " ".join(str(arg) for arg in args)
     print(f"{GHE_RED}[GHE]{GHE_NC} {message}", file=sys.stderr)
 
 
-def run_command(cmd: List[str], cwd: Optional[str] = None,
-                capture: bool = True, check: bool = False) -> subprocess.CompletedProcess:
+def run_command(
+    cmd: List[str], cwd: Optional[str] = None, capture: bool = True, check: bool = False
+) -> subprocess.CompletedProcess:
     """
     Run a command and return the result
 
@@ -530,13 +587,7 @@ def run_command(cmd: List[str], cwd: Optional[str] = None,
     Returns:
         CompletedProcess instance
     """
-    return subprocess.run(
-        cmd,
-        cwd=cwd,
-        capture_output=capture,
-        text=True,
-        check=check
-    )
+    return subprocess.run(cmd, cwd=cwd, capture_output=capture, text=True, check=check)
 
 
 def ensure_directory(path: str) -> bool:
@@ -567,7 +618,7 @@ def read_file(path: str) -> Optional[str]:
         File contents or None if error
     """
     try:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             return f.read()
     except (IOError, OSError):
         return None
@@ -585,7 +636,7 @@ def write_file(path: str, content: str) -> bool:
         True if successful
     """
     try:
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
         return True
     except (IOError, OSError):
@@ -595,23 +646,47 @@ def write_file(path: str, content: str) -> bool:
 # Export all public symbols
 __all__ = [
     # Constants
-    'GHE_PLUGIN_ROOT',
-    'GHE_RED', 'GHE_GREEN', 'GHE_YELLOW', 'GHE_BLUE', 'GHE_CYAN', 'GHE_NC',
+    "GHE_PLUGIN_ROOT",
+    "GHE_RED",
+    "GHE_GREEN",
+    "GHE_YELLOW",
+    "GHE_BLUE",
+    "GHE_CYAN",
+    "GHE_NC",
     # Agent configuration
-    'GHE_AGENT_AVATARS', 'GHE_AGENT_NAMES',
+    "GHE_AGENT_AVATARS",
+    "GHE_AGENT_NAMES",
     # State variables
-    'GHE_CONFIG_FILE', 'GHE_REPO_ROOT', 'GHE_ENABLED',
-    'GHE_CURRENT_ISSUE', 'GHE_CURRENT_PHASE', 'GHE_AUTO_TRANSCRIBE',
+    "GHE_CONFIG_FILE",
+    "GHE_REPO_ROOT",
+    "GHE_ENABLED",
+    "GHE_CURRENT_ISSUE",
+    "GHE_CURRENT_PHASE",
+    "GHE_AUTO_TRANSCRIBE",
+    # Debug logging
+    "debug_log",
     # Core functions
-    'ghe_find_config_file', 'ghe_get_repo_path', 'ghe_get_setting',
-    'ghe_gh', 'ghe_git', 'ghe_init',
+    "ghe_find_config_file",
+    "ghe_get_repo_path",
+    "ghe_get_setting",
+    "ghe_gh",
+    "ghe_git",
+    "ghe_init",
     # GitHub functions
-    'ghe_get_github_repo', 'ghe_get_github_user',
-    'ghe_get_avatar_base_url', 'ghe_get_avatar_url',
+    "ghe_get_github_repo",
+    "ghe_get_github_user",
+    "ghe_get_avatar_base_url",
+    "ghe_get_avatar_url",
     # Issue validation
-    'ghe_validate_issue', 'ghe_get_or_create_fallback_issue',
+    "ghe_validate_issue",
+    "ghe_get_or_create_fallback_issue",
     # Logging functions
-    'ghe_info', 'ghe_warn', 'ghe_error',
+    "ghe_info",
+    "ghe_warn",
+    "ghe_error",
     # Utility functions
-    'run_command', 'ensure_directory', 'read_file', 'write_file',
+    "run_command",
+    "ensure_directory",
+    "read_file",
+    "write_file",
 ]

@@ -29,6 +29,20 @@ from zoneinfo import ZoneInfo
 from ghe_common import ghe_init, ghe_get_setting, ghe_get_repo_path, GHE_PLUGIN_ROOT
 
 
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+    """
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [spawn_agent] - {message}\n")
+    except Exception:
+        pass
+
+
 # Agent metadata - maps agent names to their Greek identities and roles
 AGENT_GREEK_NAME = {
     "dev-thread-manager": "Hephaestus",
@@ -57,8 +71,9 @@ AGENT_PHASE = {
 }
 
 
-def show_usage():
+def show_usage() -> None:
     """Display usage information with all available agents."""
+    debug_log("show_usage() called - no agent name provided", "WARN")
     print("ERROR: Agent name required")
     print("Usage: spawn_agent.py <agent-name> <issue-number> [context]")
     print()
@@ -75,7 +90,18 @@ def show_usage():
     print("  github-elements-orchestrator - Athena (orchestration)")
 
 
-def build_agent_prompt(agent_name, issue_num, context, greek_name, phase, current_phase, project_root, config_path, plugin_root, timestamp):
+def build_agent_prompt(
+    agent_name: str,
+    issue_num: str,
+    context: str,
+    greek_name: str,
+    phase: str,
+    current_phase: str,
+    project_root: str,
+    config_path: str,
+    plugin_root: str,
+    timestamp: str,
+) -> str:
     """Build agent-specific prompt based on agent type.
 
     Args:
@@ -93,12 +119,15 @@ def build_agent_prompt(agent_name, issue_num, context, greek_name, phase, curren
     Returns:
         Complete prompt string for the agent
     """
+    debug_log(
+        f"build_agent_prompt() called for {greek_name} ({agent_name}), issue #{issue_num}"
+    )
     # Base context
     prompt = f"""You are {greek_name}, the GHE {phase} agent.
 
 ## Current Context
-- **Issue**: #{issue_num or 'NONE'}
-- **Phase**: {current_phase or 'UNKNOWN'}
+- **Issue**: #{issue_num or "NONE"}
+- **Phase**: {current_phase or "UNKNOWN"}
 - **Project**: {project_root}
 - **Config**: {config_path}
 """
@@ -407,8 +436,10 @@ Save report to: GHE_REPORTS/{timestamp}_issue_{issue_num}_{agent_name}_({greek_n
     return prompt
 
 
-def main():
+def main() -> None:
     """Main entry point for spawn_agent.py"""
+    debug_log("main() entry")
+    debug_log(f"sys.argv={sys.argv}")
     # Parse arguments
     if len(sys.argv) < 2:
         show_usage()
@@ -417,17 +448,23 @@ def main():
     agent_name = sys.argv[1]
     issue_num = sys.argv[2] if len(sys.argv) > 2 else ""
     context = sys.argv[3] if len(sys.argv) > 3 else ""
+    debug_log(
+        f"Parsed args: agent_name={agent_name}, issue_num={issue_num}, context={context[:50] if context else ''}"
+    )
 
     # Validate agent name
     greek_name = AGENT_GREEK_NAME.get(agent_name)
     if not greek_name:
+        debug_log(f"Unknown agent: {agent_name}", "ERROR")
         print(f"ERROR: Unknown agent: {agent_name}")
         print("Run without arguments to see available agents")
         sys.exit(1)
 
     phase = AGENT_PHASE[agent_name]
+    debug_log(f"Agent validated: {greek_name} ({agent_name}), phase={phase}")
 
     # Initialize GHE environment
+    debug_log("Calling ghe_init()")
     ghe_init()
 
     # Get config values
@@ -437,21 +474,30 @@ def main():
     repo_owner = ghe_get_setting("repo_owner", "")
     current_issue = ghe_get_setting("current_issue", "")
     current_phase = ghe_get_setting("current_phase", "")
+    debug_log(f"Config loaded: project_root={project_root}, config_path={config_path}")
+    debug_log(f"Repo info: repo_remote={repo_remote}, repo_owner={repo_owner}")
+    debug_log(
+        f"Issue info: current_issue={current_issue}, current_phase={current_phase}"
+    )
 
     # Use provided issue number or current issue
     if not issue_num:
+        debug_log(f"No issue_num provided, using current_issue={current_issue}")
         issue_num = current_issue
 
     # Create GHE_REPORTS directory (FLAT structure - no subfolders!)
     reports_dir = Path(project_root) / "GHE_REPORTS"
     reports_dir.mkdir(exist_ok=True)
+    debug_log(f"Reports directory: {reports_dir}")
 
     # Generate timestamp in Brisbane timezone (YYYYMMDDHHMMSSTimezone)
-    brisbane_tz = ZoneInfo('Australia/Brisbane')
+    brisbane_tz = ZoneInfo("Australia/Brisbane")
     now = datetime.now(brisbane_tz)
-    timestamp = now.strftime('%Y%m%d%H%M%S%Z')
+    timestamp = now.strftime("%Y%m%d%H%M%S%Z")
+    debug_log(f"Generated timestamp: {timestamp}")
 
     # Build the prompt
+    debug_log("Building agent prompt")
     full_prompt = build_agent_prompt(
         agent_name=agent_name,
         issue_num=issue_num,
@@ -462,33 +508,43 @@ def main():
         project_root=project_root,
         config_path=config_path,
         plugin_root=GHE_PLUGIN_ROOT,
-        timestamp=timestamp
+        timestamp=timestamp,
     )
 
     # Log spawn event (internal log, not a GHE report)
     log_file = reports_dir / ".spawn_log.txt"
-    log_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with open(log_file, 'a') as f:
-        f.write(f"[{log_timestamp}] Spawning {greek_name} ({agent_name}) for issue #{issue_num}\n")
+    log_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(log_file, "a") as f:
+        f.write(
+            f"[{log_timestamp}] Spawning {greek_name} ({agent_name}) for issue #{issue_num}\n"
+        )
+    debug_log(f"Wrote to spawn log: {log_file}")
 
     # Spawn using background script
     spawn_script = Path(GHE_PLUGIN_ROOT) / "scripts" / "spawn_background.py"
+    debug_log(f"Spawn script path: {spawn_script}")
     if not spawn_script.exists():
+        debug_log(f"spawn_background.py not found at {spawn_script}", "ERROR")
         print(f"ERROR: spawn_background.py not found at {spawn_script}")
         sys.exit(1)
 
     if not spawn_script.stat().st_mode & 0o111:
+        debug_log(f"spawn_background.py not executable at {spawn_script}", "ERROR")
         print(f"ERROR: spawn_background.py not executable at {spawn_script}")
         sys.exit(1)
 
     # Execute spawn_background.py using sys.executable for portability
+    debug_log(f"Executing: {sys.executable} {spawn_script} <prompt> {project_root}")
     try:
         subprocess.run(
-            [sys.executable, str(spawn_script), full_prompt, project_root],
-            check=True
+            [sys.executable, str(spawn_script), full_prompt, project_root], check=True
+        )
+        debug_log(
+            f"Successfully spawned {greek_name} ({agent_name}) for issue #{issue_num}"
         )
         print(f"Spawned {greek_name} ({agent_name}) for issue #{issue_num}")
     except subprocess.CalledProcessError as e:
+        debug_log(f"Failed to spawn agent: {e}", "ERROR")
         print(f"ERROR: Failed to spawn agent: {e}")
         sys.exit(1)
 

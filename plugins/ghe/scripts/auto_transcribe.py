@@ -6,7 +6,6 @@ Posts every conversation exchange to GitHub issues with element classification
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -15,10 +14,32 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+
+    Format: YYYY-MM-DD HH:MM:SS,mmm LEVEL [logger] - message
+    Compatible with: lnav, glogg, Splunk, ELK, Log4j viewers
+    """
+    try:
+        from pathlib import Path
+        from datetime import datetime
+
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [auto_transcribe] - {message}\n")
+    except Exception:
+        pass  # Never fail on logging
+
+
 # Import from ghe_common module
 try:
     import ghe_common
 except ImportError:
+    debug_log("Failed to import ghe_common", "ERROR")
     print("Error: Cannot import from ghe_common module", file=sys.stderr)
     sys.exit(1)
 
@@ -26,7 +47,7 @@ except ImportError:
 ghe_common.ghe_init()
 
 # Now import the initialized variables
-from ghe_common import (
+from ghe_common import (  # noqa: E402 - Must import after ghe_init()
     GHE_PLUGIN_ROOT,
     GHE_CONFIG_FILE,
     GHE_REPO_ROOT,
@@ -35,10 +56,11 @@ from ghe_common import (
     GHE_YELLOW,
     GHE_NC,
     GHE_AGENT_AVATARS,
-    ghe_get_setting,
     ghe_get_github_user,
     ghe_get_avatar_url,
 )
+
+debug_log("auto_transcribe.py loaded")
 
 # Legacy aliases for compatibility with existing code
 PLUGIN_ROOT = GHE_PLUGIN_ROOT
@@ -207,7 +229,9 @@ def set_config(key: str, value: str) -> None:
             content = re.sub(pattern, f"{key}: {value}", content, flags=re.MULTILINE)
         else:
             # Add after frontmatter opening
-            content = re.sub(r"^---$", f"---\n{key}: {value}", content, count=1, flags=re.MULTILINE)
+            content = re.sub(
+                r"^---$", f"---\n{key}: {value}", content, count=1, flags=re.MULTILINE
+            )
 
         with open(CONFIG_FILE, "w") as f:
             f.write(content)
@@ -348,7 +372,9 @@ def extract_explicit_issue(text: str) -> Optional[str]:
         return match.group(1)
 
     # Pattern 6: claim/fix/resume/close/check with # - claim #123, fix #123
-    match = re.search(r"(?:[Cc]laim|[Ff]ix|[Rr]esume|[Cc]lose|[Cc]heck) (?:issue )?#(\d+)", text)
+    match = re.search(
+        r"(?:[Cc]laim|[Ff]ix|[Rr]esume|[Cc]lose|[Cc]heck) (?:issue )?#(\d+)", text
+    )
     if match:
         return match.group(1)
 
@@ -363,7 +389,9 @@ def extract_explicit_issue(text: str) -> Optional[str]:
         return match.group(1)
 
     # Pattern 9: claim/fix/resume/close/check WITHOUT # - claim 123, fix issue 123
-    match = re.search(r"(?:[Cc]laim|[Ff]ix|[Rr]esume|[Cc]lose|[Cc]heck) (?:issue )?(\d+)", text)
+    match = re.search(
+        r"(?:[Cc]laim|[Ff]ix|[Rr]esume|[Cc]lose|[Cc]heck) (?:issue )?(\d+)", text
+    )
     if match:
         return match.group(1)
 
@@ -396,7 +424,9 @@ def find_or_create_issue(topic: str) -> Optional[str]:
     if explicit_issue:
         # Verify it exists (open or closed - we can still post to closed issues)
         try:
-            result = run_gh("issue", "view", explicit_issue, "--json", "number", "--jq", ".number")
+            result = run_gh(
+                "issue", "view", explicit_issue, "--json", "number", "--jq", ".number"
+            )
             if result.stdout.strip() == explicit_issue:
                 set_config("current_issue", explicit_issue)
                 return explicit_issue
@@ -409,26 +439,37 @@ def find_or_create_issue(topic: str) -> Optional[str]:
     if current_issue and current_issue != "null":
         # Verify it still exists and is open
         try:
-            result = run_gh("issue", "view", current_issue, "--json", "state", "--jq", ".state")
+            result = run_gh(
+                "issue", "view", current_issue, "--json", "state", "--jq", ".state"
+            )
             if "OPEN" in result.stdout:
                 return current_issue
         except subprocess.CalledProcessError:
             pass
 
     # Try to find an existing open issue matching the topic
-    keywords = " ".join(
-        word for word in re.findall(r"[a-z]{4,}", topic.lower())[:5]
-    )
+    keywords = " ".join(word for word in re.findall(r"[a-z]{4,}", topic.lower())[:5])
 
     if keywords:
         try:
-            result = run_gh("issue", "list", "--state", "open", "--limit", "10", "--json", "number,title,body")
+            result = run_gh(
+                "issue",
+                "list",
+                "--state",
+                "open",
+                "--limit",
+                "10",
+                "--json",
+                "number,title,body",
+            )
             issues = json.loads(result.stdout)
 
             # Filter for matching issues
             first_keyword = keywords.split()[0]
             for issue in issues:
-                searchable = (issue.get("title", "") + " " + issue.get("body", "")).lower()
+                searchable = (
+                    issue.get("title", "") + " " + issue.get("body", "")
+                ).lower()
                 if first_keyword in searchable:
                     found_issue = str(issue["number"])
                     set_config("current_issue", found_issue)
@@ -457,7 +498,9 @@ This issue tracks the conversation and work done during this development session
 """
 
     try:
-        result = run_gh("issue", "create", "--title", title, "--label", "session", "--body", body)
+        result = run_gh(
+            "issue", "create", "--title", title, "--label", "session", "--body", body
+        )
         # Extract issue number from URL (format: https://github.com/owner/repo/issues/N)
         issue_url = result.stdout.strip()
         match = re.search(r"/(\d+)$", issue_url)
@@ -484,7 +527,9 @@ def linkify_content(content: str) -> str:
         Linkified content
     """
     try:
-        result = run_gh("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner")
+        result = run_gh(
+            "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"
+        )
         repo = result.stdout.strip()
     except subprocess.CalledProcessError:
         return content
@@ -557,7 +602,9 @@ def linkify_content(content: str) -> str:
         Path(f"{tmpfile_path}.bak").unlink(missing_ok=True)
 
 
-def post_to_issue(issue_num: str, speaker: str, message: str, is_user: bool = False) -> None:
+def post_to_issue(
+    issue_num: str, speaker: str, message: str, is_user: bool = False
+) -> None:
     """
     Post message to issue
 
@@ -595,8 +642,10 @@ def post_to_issue(issue_num: str, speaker: str, message: str, is_user: bool = Fa
     try:
         scripts_dir = Path(__file__).parent
         subprocess.run(
-            ['python3', str(scripts_dir / 'toc_manager.py'), 'update', str(issue_num)],
-            capture_output=True, check=False, timeout=30
+            ["python3", str(scripts_dir / "toc_manager.py"), "update", str(issue_num)],
+            capture_output=True,
+            check=False,
+            timeout=30,
         )
     except (subprocess.TimeoutExpired, subprocess.SubprocessError):
         pass  # TOC update is non-critical, don't block on failure
@@ -654,7 +703,9 @@ def get_posting_agent(issue_num: str, requested_agent: Optional[str] = None) -> 
 
     # Check if epic issue (has epic label)
     try:
-        result = run_gh("issue", "view", issue_num, "--json", "labels", "--jq", ".labels[].name")
+        result = run_gh(
+            "issue", "view", issue_num, "--json", "labels", "--jq", ".labels[].name"
+        )
         labels = result.stdout.lower()
 
         if "epic" in labels:
@@ -717,7 +768,9 @@ def inject_claude_md_reminder(issue_num: str, title: str = "") -> None:
     # Fetch title from GitHub if not provided
     if not title:
         try:
-            result = run_gh("issue", "view", issue_num, "--json", "title", "--jq", ".title")
+            result = run_gh(
+                "issue", "view", issue_num, "--json", "title", "--jq", ".title"
+            )
             title = result.stdout.strip()
         except subprocess.CalledProcessError:
             title = ""
@@ -809,7 +862,15 @@ def set_current_issue(issue_num: str) -> bool:
 
     # Verify issue exists and get title
     try:
-        result = run_gh("issue", "view", issue_num, "--json", "number,title", "--jq", "[.number, .title] | @tsv")
+        result = run_gh(
+            "issue",
+            "view",
+            issue_num,
+            "--json",
+            "number,title",
+            "--jq",
+            "[.number, .title] | @tsv",
+        )
         parts = result.stdout.strip().split("\t")
         if parts[0] != issue_num:
             print(f"Issue #{issue_num} not found", file=sys.stderr)
@@ -845,10 +906,14 @@ def set_current_issue(issue_num: str) -> bool:
     print(f"{GREEN}Issue #{issue_num} is now the MAIN CONVERSATION THREAD{NC}")
     print()
     print("TRANSCRIPTION IS NOW ACTIVE")
-    print(f"All exchanges between you and Claude will be posted VERBATIM to issue #{issue_num}")
+    print(
+        f"All exchanges between you and Claude will be posted VERBATIM to issue #{issue_num}"
+    )
     print()
     print("This is the foreground thread - NO agents will be spawned here.")
-    print("To develop a feature/fix a bug, ask Claude and a BACKGROUND thread will be created.")
+    print(
+        "To develop a feature/fix a bug, ask Claude and a BACKGROUND thread will be created."
+    )
     print()
     print("Include in your responses:")
     title_suffix = f": {issue_title}" if issue_title else ""
@@ -874,7 +939,9 @@ def get_current_issue() -> None:
         title_display = f": {title}" if title else ""
         print(f"Current issue: #{issue}{title_display}")
         print()
-        print(f"Include in responses: Currently discussing issue n.{issue}{title_display}")
+        print(
+            f"Include in responses: Currently discussing issue n.{issue}{title_display}"
+        )
     else:
         print(f"{YELLOW}TRANSCRIPTION INACTIVE{NC}")
         print("No current issue set")
@@ -1015,6 +1082,12 @@ def main() -> None:
     """
     CLI interface
     """
+    # Parse args early to log the command
+    import sys
+
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "no-command"
+    debug_log(f"Command: {cmd}")
+
     parser = argparse.ArgumentParser(
         description="GHE Auto-Transcribe System - Posts conversation exchanges to GitHub issues",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1077,7 +1150,9 @@ Resume workflow:
         if len(args.args) < 1:
             print("Error: set-issue command requires an issue number", file=sys.stderr)
             sys.exit(1)
-        if not set_current_issue(args.args[0]):
+        issue_num = args.args[0]
+        debug_log(f"Setting issue to {issue_num}")
+        if not set_current_issue(issue_num):
             sys.exit(1)
 
     elif args.command == "get-issue":
@@ -1109,10 +1184,19 @@ Resume workflow:
             sys.exit(1)
 
     elif args.command == "check":
+        debug_log("Executing check command")
         if check_github_repo():
             print(json.dumps({"event": "SessionStart", "suppressOutput": True}))
         else:
-            print(json.dumps({"event": "SessionStart", "suppressOutput": True, "error": "No GitHub repo"}))
+            print(
+                json.dumps(
+                    {
+                        "event": "SessionStart",
+                        "suppressOutput": True,
+                        "error": "No GitHub repo",
+                    }
+                )
+            )
             sys.exit(1)
 
     else:

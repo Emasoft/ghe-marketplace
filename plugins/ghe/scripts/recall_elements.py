@@ -15,25 +15,53 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import sys
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import List, Optional
 from pathlib import Path
 
 # Import GHE common utilities
-from ghe_common import ghe_init, ghe_gh, GHE_RED, GHE_GREEN, GHE_YELLOW, GHE_BLUE, GHE_CYAN, GHE_NC
+from ghe_common import (
+    ghe_init,
+    ghe_gh,
+    GHE_RED,
+    GHE_GREEN,
+    GHE_YELLOW,
+    GHE_BLUE,
+    GHE_CYAN,
+    GHE_NC,
+)
+
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+
+    Format: YYYY-MM-DD HH:MM:SS,mmm LEVEL [logger] - message
+    Compatible with: lnav, glogg, Splunk, ELK, Log4j viewers
+    """
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [recall_elements] - {message}\n")
+    except Exception:
+        pass  # Never fail on logging
+
 
 # Create color aliases for backward compatibility
 class Colors:
     """ANSI color codes for terminal output (aliased from ghe_common)."""
+
     RED = GHE_RED
     GREEN = GHE_GREEN
     BLUE = GHE_BLUE
     YELLOW = GHE_YELLOW
-    ORANGE = '\033[0;33m'  # Keep ORANGE as it's not in ghe_common
+    ORANGE = "\033[0;33m"  # Keep ORANGE as it's not in ghe_common
     CYAN = GHE_CYAN
     NC = GHE_NC
-    BOLD = '\033[1m'  # Keep BOLD as it's not in ghe_common
+    BOLD = "\033[1m"  # Keep BOLD as it's not in ghe_common
 
 
 # Badge patterns for searching
@@ -52,11 +80,11 @@ def get_pattern(element_type: str) -> str:
         Badge pattern string
     """
     patterns = {
-        'knowledge': PATTERN_KNOWLEDGE,
-        'action': PATTERN_ACTION,
-        'judgement': PATTERN_JUDGEMENT
+        "knowledge": PATTERN_KNOWLEDGE,
+        "action": PATTERN_ACTION,
+        "judgement": PATTERN_JUDGEMENT,
     }
-    return patterns.get(element_type, '')
+    return patterns.get(element_type, "")
 
 
 def get_color(element_type: str) -> str:
@@ -69,9 +97,9 @@ def get_color(element_type: str) -> str:
         ANSI color code string
     """
     colors = {
-        'knowledge': Colors.BLUE,
-        'action': Colors.GREEN,
-        'judgement': Colors.ORANGE
+        "knowledge": Colors.BLUE,
+        "action": Colors.GREEN,
+        "judgement": Colors.ORANGE,
     }
     return colors.get(element_type, Colors.NC)
 
@@ -89,7 +117,8 @@ def run_gh_command(args: List[str]) -> Optional[str]:
     result = ghe_gh(*args, capture=True)
     if result is None or result.returncode != 0:
         return None
-    return result.stdout
+    stdout: str = result.stdout
+    return stdout
 
 
 def get_repo_name() -> str:
@@ -98,8 +127,10 @@ def get_repo_name() -> str:
     Returns:
         Repository name or empty string if not in a repo
     """
-    output = run_gh_command(['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner'])
-    return output.strip() if output else ''
+    output = run_gh_command(
+        ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]
+    )
+    return output.strip() if output else ""
 
 
 def transform_links(content: str) -> str:
@@ -123,43 +154,41 @@ def transform_links(content: str) -> str:
         return content
 
     # Transform issue references (#123 -> full URL)
-    content = re.sub(
-        r'#(\d+)',
-        rf'[#\1](https://github.com/{repo}/issues/\1)',
-        content
-    )
+    content = re.sub(r"#(\d+)", rf"[#\1](https://github.com/{repo}/issues/\1)", content)
 
     # Transform file references (path/to/file.py -> clickable link)
-    file_extensions = r'\.(py|js|ts|md|yaml|yml|json|sh|tsx|jsx|css|html|txt|conf|cfg)'
-    file_pattern = rf'([a-zA-Z0-9_/.@-]+{file_extensions})'
+    file_extensions = r"\.(py|js|ts|md|yaml|yml|json|sh|tsx|jsx|css|html|txt|conf|cfg)"
+    file_pattern = rf"([a-zA-Z0-9_/.@-]+{file_extensions})"
 
-    def replace_file_path(match):
+    def replace_file_path(match: re.Match[str]) -> str:
         """Replace file path with link if file exists."""
         file_path = match.group(1)
         if Path(file_path).is_file():
             # Check for line number
-            line_match = re.search(r':(\d+)', content[match.end():match.end()+10])
+            line_match = re.search(r":(\d+)", content[match.end() : match.end() + 10])
             if line_match:
                 line_num = line_match.group(1)
-                return f'[`{file_path}:{line_num}`](https://github.com/{repo}/blob/main/{file_path}#L{line_num})'
+                return f"[`{file_path}:{line_num}`](https://github.com/{repo}/blob/main/{file_path}#L{line_num})"
             else:
-                return f'[`{file_path}`](https://github.com/{repo}/blob/main/{file_path})'
+                return (
+                    f"[`{file_path}`](https://github.com/{repo}/blob/main/{file_path})"
+                )
         return match.group(0)
 
     content = re.sub(file_pattern, replace_file_path, content)
 
     # Transform REQUIREMENTS/ directory references
     content = re.sub(
-        r'REQUIREMENTS/([^\s\)]+\.md)',
-        rf'[REQUIREMENTS/\1](https://github.com/{repo}/blob/main/REQUIREMENTS/\1)',
-        content
+        r"REQUIREMENTS/([^\s\)]+\.md)",
+        rf"[REQUIREMENTS/\1](https://github.com/{repo}/blob/main/REQUIREMENTS/\1)",
+        content,
     )
 
     # Transform docs/ directory references
     content = re.sub(
-        r'docs/([^\s\)]+\.(md|txt))',
-        rf'[docs/\1](https://github.com/{repo}/blob/main/docs/\1)',
-        content
+        r"docs/([^\s\)]+\.(md|txt))",
+        rf"[docs/\1](https://github.com/{repo}/blob/main/docs/\1)",
+        content,
     )
 
     return content
@@ -174,7 +203,9 @@ def apply_link_transformation(output: str) -> str:
     Returns:
         Transformed or original text
     """
-    transform_links_enabled = os.environ.get('TRANSFORM_LINKS', 'true').lower() == 'true'
+    transform_links_enabled = (
+        os.environ.get("TRANSFORM_LINKS", "true").lower() == "true"
+    )
 
     if transform_links_enabled:
         return transform_links(output)
@@ -187,12 +218,14 @@ def show_stats(issue: str) -> None:
     Args:
         issue: GitHub issue number
     """
-    print(f"{Colors.BOLD}{Colors.CYAN}GitHub Elements Statistics: Issue #{issue}{Colors.NC}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}GitHub Elements Statistics: Issue #{issue}{Colors.NC}"
+    )
     print(f"{Colors.CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.NC}")
     print()
 
     # Get statistics using jq
-    jq_query = '''
+    jq_query = """
         {
             total: .comments | length,
             knowledge: [.comments[] | select(.body | contains("element-knowledge"))] | length,
@@ -204,24 +237,21 @@ def show_stats(issue: str) -> None:
                 ((.body | contains("element-action")) and (.body | contains("element-judgement")))
             )] | length
         }
-    '''
+    """
 
-    output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', jq_query
-    ])
+    output = run_gh_command(
+        ["issue", "view", issue, "--comments", "--json", "comments", "--jq", jq_query]
+    )
 
     if not output:
         return
 
     stats = json.loads(output)
-    total = stats['total']
-    knowledge = stats['knowledge']
-    action = stats['action']
-    judgement = stats['judgement']
-    compound = stats['compound']
+    total = stats["total"]
+    knowledge = stats["knowledge"]
+    action = stats["action"]
+    judgement = stats["judgement"]
+    compound = stats["compound"]
 
     # Calculate percentages
     k_pct = (knowledge * 100 // total) if total > 0 else 0
@@ -233,18 +263,18 @@ def show_stats(issue: str) -> None:
     print()
 
     # Knowledge bar
-    print(f"  {Colors.BLUE}KNOWLEDGE{Colors.NC}  {knowledge:<3} ", end='')
-    print(f"{Colors.BLUE}{'█' * (k_pct // 5)}{Colors.NC}", end='')
+    print(f"  {Colors.BLUE}KNOWLEDGE{Colors.NC}  {knowledge:<3} ", end="")
+    print(f"{Colors.BLUE}{'█' * (k_pct // 5)}{Colors.NC}", end="")
     print(f"{'░' * (20 - k_pct // 5)} {k_pct}%")
 
     # Action bar
-    print(f"  {Colors.GREEN}ACTION{Colors.NC}     {action:<3} ", end='')
-    print(f"{Colors.GREEN}{'█' * (a_pct // 5)}{Colors.NC}", end='')
+    print(f"  {Colors.GREEN}ACTION{Colors.NC}     {action:<3} ", end="")
+    print(f"{Colors.GREEN}{'█' * (a_pct // 5)}{Colors.NC}", end="")
     print(f"{'░' * (20 - a_pct // 5)} {a_pct}%")
 
     # Judgement bar
-    print(f"  {Colors.ORANGE}JUDGEMENT{Colors.NC}  {judgement:<3} ", end='')
-    print(f"{Colors.ORANGE}{'█' * (j_pct // 5)}{Colors.NC}", end='')
+    print(f"  {Colors.ORANGE}JUDGEMENT{Colors.NC}  {judgement:<3} ", end="")
+    print(f"{Colors.ORANGE}{'█' * (j_pct // 5)}{Colors.NC}", end="")
     print(f"{'░' * (20 - j_pct // 5)} {j_pct}%")
 
     print()
@@ -254,7 +284,9 @@ def show_stats(issue: str) -> None:
     print()
 
 
-def query_by_type(issue: str, element_type: str, last_n: int = 0, search_pattern: str = '') -> None:
+def query_by_type(
+    issue: str, element_type: str, last_n: int = 0, search_pattern: str = ""
+) -> None:
     """Query and display elements by type.
 
     Args:
@@ -266,7 +298,9 @@ def query_by_type(issue: str, element_type: str, last_n: int = 0, search_pattern
     pattern = get_pattern(element_type)
     color = get_color(element_type)
 
-    print(f"{Colors.BOLD}{color}Recalling {element_type.upper()} elements from Issue #{issue}{Colors.NC}")
+    print(
+        f"{Colors.BOLD}{color}Recalling {element_type.upper()} elements from Issue #{issue}{Colors.NC}"
+    )
     print(f"{color}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.NC}")
     print()
 
@@ -281,51 +315,54 @@ def query_by_type(issue: str, element_type: str, last_n: int = 0, search_pattern
         jq_filter = f'[.comments[] | select(.body | contains("{pattern}"))]'
 
     # Add sorting
-    jq_filter += ' | sort_by(.createdAt)'
+    jq_filter += " | sort_by(.createdAt)"
 
     # Add limiting
     if last_n > 0:
-        jq_filter += f' | .[-{last_n}:]'
+        jq_filter += f" | .[-{last_n}:]"
 
     # Format output
-    jq_filter += ' | .[] | {date: .createdAt, author: .author.login, body: .body}'
+    jq_filter += " | .[] | {date: .createdAt, author: .author.login, body: .body}"
 
     # Execute query
-    output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', jq_filter
-    ])
+    output = run_gh_command(
+        ["issue", "view", issue, "--comments", "--json", "comments", "--jq", jq_filter]
+    )
 
-    if not output or output.strip() == '':
+    if not output or output.strip() == "":
         print(f"{Colors.YELLOW}No {element_type} elements found{Colors.NC}")
         if search_pattern:
             print(f'{Colors.YELLOW}(searched for: "{search_pattern}"){Colors.NC}')
         return
 
     # Parse and display results
-    for line in output.strip().split('\n'):
+    for line in output.strip().split("\n"):
         if not line.strip():
             continue
 
         try:
             element = json.loads(line)
-            date = element['date'].split('T')[0]
-            author = element['author']
-            body = element['body']
+            date = element["date"].split("T")[0]
+            author = element["author"]
+            body = element["body"]
 
             # Format output with box drawing
-            formatted = f"┌──────────────────────────────────────────────────────────────┐\n"
+            formatted = (
+                "┌──────────────────────────────────────────────────────────────┐\n"
+            )
             formatted += f"│ {date} │ @{author}\n"
-            formatted += f"├──────────────────────────────────────────────────────────────┤\n"
+            formatted += (
+                "├──────────────────────────────────────────────────────────────┤\n"
+            )
 
             # Show first 15 lines of body
-            body_lines = body.split('\n')[:15]
+            body_lines = body.split("\n")[:15]
             for body_line in body_lines:
                 formatted += f"│ {body_line}\n"
 
-            formatted += f"└──────────────────────────────────────────────────────────────┘\n"
+            formatted += (
+                "└──────────────────────────────────────────────────────────────┘\n"
+            )
 
             # Apply link transformation and print
             print(apply_link_transformation(formatted))
@@ -342,20 +379,22 @@ def query_compound(issue: str, types: str, last_n: int = 0) -> None:
         types: Compound type string (e.g., "knowledge+action")
         last_n: Return only the last N elements (0 = all)
     """
-    print(f"{Colors.BOLD}{Colors.CYAN}Recalling COMPOUND elements ({types}) from Issue #{issue}{Colors.NC}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}Recalling COMPOUND elements ({types}) from Issue #{issue}{Colors.NC}"
+    )
     print(f"{Colors.CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.NC}")
     print()
 
     # Parse compound type and build conditions
     conditions = []
 
-    if 'knowledge' in types:
+    if "knowledge" in types:
         conditions.append(f'(.body | contains("{PATTERN_KNOWLEDGE}"))')
 
-    if 'action' in types:
+    if "action" in types:
         conditions.append(f'(.body | contains("{PATTERN_ACTION}"))')
 
-    if 'judgement' in types:
+    if "judgement" in types:
         conditions.append(f'(.body | contains("{PATTERN_JUDGEMENT}"))')
 
     if not conditions:
@@ -363,50 +402,53 @@ def query_compound(issue: str, types: str, last_n: int = 0) -> None:
         return
 
     # Join conditions with 'and'
-    condition_str = ' and '.join(conditions)
+    condition_str = " and ".join(conditions)
 
     # Build jq filter
-    jq_filter = f'[.comments[] | select({condition_str})] | sort_by(.createdAt)'
+    jq_filter = f"[.comments[] | select({condition_str})] | sort_by(.createdAt)"
 
     if last_n > 0:
-        jq_filter += f' | .[-{last_n}:]'
+        jq_filter += f" | .[-{last_n}:]"
 
-    jq_filter += ' | .[] | {date: .createdAt, author: .author.login, body: .body}'
+    jq_filter += " | .[] | {date: .createdAt, author: .author.login, body: .body}"
 
     # Execute query
-    output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', jq_filter
-    ])
+    output = run_gh_command(
+        ["issue", "view", issue, "--comments", "--json", "comments", "--jq", jq_filter]
+    )
 
-    if not output or output.strip() == '':
+    if not output or output.strip() == "":
         print(f"{Colors.YELLOW}No compound elements found matching: {types}{Colors.NC}")
         return
 
     # Parse and display results
-    for line in output.strip().split('\n'):
+    for line in output.strip().split("\n"):
         if not line.strip():
             continue
 
         try:
             element = json.loads(line)
-            date = element['date'].split('T')[0]
-            author = element['author']
-            body = element['body']
+            date = element["date"].split("T")[0]
+            author = element["author"]
+            body = element["body"]
 
             # Format output with box drawing
-            formatted = f"┌──────────────────────────────────────────────────────────────┐\n"
+            formatted = (
+                "┌──────────────────────────────────────────────────────────────┐\n"
+            )
             formatted += f"│ {date} │ @{author}\n"
-            formatted += f"├──────────────────────────────────────────────────────────────┤\n"
+            formatted += (
+                "├──────────────────────────────────────────────────────────────┤\n"
+            )
 
             # Show first 15 lines of body
-            body_lines = body.split('\n')[:15]
+            body_lines = body.split("\n")[:15]
             for body_line in body_lines:
                 formatted += f"│ {body_line}\n"
 
-            formatted += f"└──────────────────────────────────────────────────────────────┘\n"
+            formatted += (
+                "└──────────────────────────────────────────────────────────────┘\n"
+            )
 
             # Apply link transformation and print
             print(apply_link_transformation(formatted))
@@ -428,19 +470,27 @@ def smart_recover(issue: str) -> None:
     Args:
         issue: GitHub issue number
     """
-    print(f"{Colors.BOLD}{Colors.CYAN}╔════════════════════════════════════════════════════════════════╗{Colors.NC}")
-    print(f"{Colors.BOLD}{Colors.CYAN}║         GHE SMART RECOVERY: Issue #{issue:<27}║{Colors.NC}")
-    print(f"{Colors.BOLD}{Colors.CYAN}╚════════════════════════════════════════════════════════════════╝{Colors.NC}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}╔════════════════════════════════════════════════════════════════╗{Colors.NC}"
+    )
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}║         GHE SMART RECOVERY: Issue #{issue:<27}║{Colors.NC}"
+    )
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}╚════════════════════════════════════════════════════════════════╝{Colors.NC}"
+    )
     print()
 
     # 1. Show statistics first
     show_stats(issue)
 
     # 2. Get first KNOWLEDGE (original context)
-    print(f"{Colors.BOLD}{Colors.BLUE}═══ ORIGINAL CONTEXT (First Knowledge Element) ═══{Colors.NC}")
+    print(
+        f"{Colors.BOLD}{Colors.BLUE}═══ ORIGINAL CONTEXT (First Knowledge Element) ═══{Colors.NC}"
+    )
     print()
 
-    jq_query = '''
+    jq_query = """
         [.comments[] | select(.body | contains("element-knowledge"))] |
         first |
         if . then
@@ -448,17 +498,14 @@ def smart_recover(issue: str) -> None:
         else
             "No knowledge elements found"
         end
-    '''
+    """
 
-    output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', jq_query
-    ])
+    output = run_gh_command(
+        ["issue", "view", issue, "--comments", "--json", "comments", "--jq", jq_query]
+    )
 
-    if output and output.strip() and output.strip() != 'null':
-        first_knowledge = output.strip().strip('"').replace('\\n', '\n')
+    if output and output.strip() and output.strip() != "null":
+        first_knowledge = output.strip().strip('"').replace("\\n", "\n")
         first_knowledge = apply_link_transformation(first_knowledge)
         print(f"{Colors.BLUE}{first_knowledge}{Colors.NC}")
     else:
@@ -467,10 +514,12 @@ def smart_recover(issue: str) -> None:
     print()
 
     # 3. Get last ACTION (current state)
-    print(f"{Colors.BOLD}{Colors.GREEN}═══ CURRENT STATE (Last Action Element) ═══{Colors.NC}")
+    print(
+        f"{Colors.BOLD}{Colors.GREEN}═══ CURRENT STATE (Last Action Element) ═══{Colors.NC}"
+    )
     print()
 
-    jq_query = '''
+    jq_query = """
         [.comments[] | select(.body | contains("element-action"))] |
         last |
         if . then
@@ -478,17 +527,14 @@ def smart_recover(issue: str) -> None:
         else
             "No action elements found"
         end
-    '''
+    """
 
-    output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', jq_query
-    ])
+    output = run_gh_command(
+        ["issue", "view", issue, "--comments", "--json", "comments", "--jq", jq_query]
+    )
 
-    if output and output.strip() and output.strip() != 'null':
-        last_action = output.strip().strip('"').replace('\\n', '\n')
+    if output and output.strip() and output.strip() != "null":
+        last_action = output.strip().strip('"').replace("\\n", "\n")
         last_action = apply_link_transformation(last_action)
         print(f"{Colors.GREEN}{last_action}{Colors.NC}")
     else:
@@ -497,25 +543,24 @@ def smart_recover(issue: str) -> None:
     print()
 
     # 4. Get recent JUDGEMENT (open issues)
-    print(f"{Colors.BOLD}{Colors.ORANGE}═══ OPEN ISSUES (Recent Judgement Elements) ═══{Colors.NC}")
+    print(
+        f"{Colors.BOLD}{Colors.ORANGE}═══ OPEN ISSUES (Recent Judgement Elements) ═══{Colors.NC}"
+    )
     print()
 
-    jq_query = '''
+    jq_query = """
         [.comments[] | select(.body | contains("element-judgement"))] |
         .[-3:] |
         .[] |
         "┌─ \\(.createdAt | split("T")[0]) │ @\\(.author.login)\\n\\(.body | split("\\n")[0:10] | .[] | "│ \\(.)")\\n└─────────────────────────────────"
-    '''
+    """
 
-    output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', jq_query
-    ])
+    output = run_gh_command(
+        ["issue", "view", issue, "--comments", "--json", "comments", "--jq", jq_query]
+    )
 
     if output and output.strip():
-        recent_judgements = output.strip().strip('"').replace('\\n', '\n')
+        recent_judgements = output.strip().strip('"').replace("\\n", "\n")
         recent_judgements = apply_link_transformation(recent_judgements)
         print(f"{Colors.ORANGE}{recent_judgements}{Colors.NC}")
     else:
@@ -528,46 +573,78 @@ def smart_recover(issue: str) -> None:
     print()
 
     # Get counts for analysis
-    action_count_output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', '[.comments[] | select(.body | contains("element-action"))] | length'
-    ])
+    action_count_output = run_gh_command(
+        [
+            "issue",
+            "view",
+            issue,
+            "--comments",
+            "--json",
+            "comments",
+            "--jq",
+            '[.comments[] | select(.body | contains("element-action"))] | length',
+        ]
+    )
     action_count = int(action_count_output.strip()) if action_count_output else 0
 
-    knowledge_count_output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', '[.comments[] | select(.body | contains("element-knowledge"))] | length'
-    ])
-    knowledge_count = int(knowledge_count_output.strip()) if knowledge_count_output else 0
+    knowledge_count_output = run_gh_command(
+        [
+            "issue",
+            "view",
+            issue,
+            "--comments",
+            "--json",
+            "comments",
+            "--jq",
+            '[.comments[] | select(.body | contains("element-knowledge"))] | length',
+        ]
+    )
+    knowledge_count = (
+        int(knowledge_count_output.strip()) if knowledge_count_output else 0
+    )
 
-    judgement_count_output = run_gh_command([
-        'issue', 'view', issue,
-        '--comments',
-        '--json', 'comments',
-        '--jq', '[.comments[] | select(.body | contains("element-judgement"))] | length'
-    ])
-    judgement_count = int(judgement_count_output.strip()) if judgement_count_output else 0
+    judgement_count_output = run_gh_command(
+        [
+            "issue",
+            "view",
+            issue,
+            "--comments",
+            "--json",
+            "comments",
+            "--jq",
+            '[.comments[] | select(.body | contains("element-judgement"))] | length',
+        ]
+    )
+    judgement_count = (
+        int(judgement_count_output.strip()) if judgement_count_output else 0
+    )
 
     # Provide recommendations
     if judgement_count > 0:
-        print(f"1. {Colors.ORANGE}Address recent judgements{Colors.NC} - There are {judgement_count} issues/feedback to review")
+        print(
+            f"1. {Colors.ORANGE}Address recent judgements{Colors.NC} - There are {judgement_count} issues/feedback to review"
+        )
 
     if action_count > 0:
-        print(f"2. {Colors.GREEN}Continue from last action{Colors.NC} - Resume development from last checkpoint")
+        print(
+            f"2. {Colors.GREEN}Continue from last action{Colors.NC} - Resume development from last checkpoint"
+        )
 
     if knowledge_count > 0 and action_count == 0:
-        print(f"1. {Colors.BLUE}Start implementation{Colors.NC} - Knowledge exists but no actions yet")
+        print(
+            f"1. {Colors.BLUE}Start implementation{Colors.NC} - Knowledge exists but no actions yet"
+        )
 
     if knowledge_count == 0 and action_count == 0 and judgement_count == 0:
-        print(f"{Colors.YELLOW}No elements found. This issue may not be using GHE element tracking.{Colors.NC}")
+        print(
+            f"{Colors.YELLOW}No elements found. This issue may not be using GHE element tracking.{Colors.NC}"
+        )
 
     print()
     print(f"{Colors.CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.NC}")
-    print(f"{Colors.CYAN}Recovery complete. Use --type to drill into specific elements.{Colors.NC}")
+    print(
+        f"{Colors.CYAN}Recovery complete. Use --type to drill into specific elements.{Colors.NC}"
+    )
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -577,9 +654,9 @@ def create_parser() -> argparse.ArgumentParser:
         Configured ArgumentParser instance
     """
     parser = argparse.ArgumentParser(
-        description='Element-based memory recall from GitHub Issues',
+        description="Element-based memory recall from GitHub Issues",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
+        epilog="""
 ELEMENT TYPES:
   knowledge   "The Talk" - Requirements, specs, design, algorithms (blue)
   action      "The Reality" - Code, assets, images, sounds, video, configs (green)
@@ -617,56 +694,51 @@ RECALL DECISION GUIDE:
   "What issues remain?"            → --type judgement
   "What feedback was given?"       → --type judgement
   "Full context"                   → --recover
-        '''
+        """,
     )
 
     parser.add_argument(
-        '--issue',
+        "--issue", type=str, required=True, help="Issue number to query (required)"
+    )
+
+    parser.add_argument(
+        "--type",
         type=str,
-        required=True,
-        help='Issue number to query (required)'
+        choices=["knowledge", "action", "judgement"],
+        help="Element type to recall (knowledge|action|judgement)",
     )
 
     parser.add_argument(
-        '--type',
-        type=str,
-        choices=['knowledge', 'action', 'judgement'],
-        help='Element type to recall (knowledge|action|judgement)'
-    )
-
-    parser.add_argument(
-        '--last',
+        "--last",
         type=int,
         default=0,
-        metavar='N',
-        help='Return only the last N elements of the type'
+        metavar="N",
+        help="Return only the last N elements of the type",
     )
 
     parser.add_argument(
-        '--search',
+        "--search",
         type=str,
-        default='',
-        metavar='PATTERN',
-        help='Filter elements containing PATTERN (case-insensitive)'
+        default="",
+        metavar="PATTERN",
+        help="Filter elements containing PATTERN (case-insensitive)",
     )
 
     parser.add_argument(
-        '--stats',
-        action='store_true',
-        help='Show element distribution statistics'
+        "--stats", action="store_true", help="Show element distribution statistics"
     )
 
     parser.add_argument(
-        '--recover',
-        action='store_true',
-        help='Smart recovery mode - show context for resuming work'
+        "--recover",
+        action="store_true",
+        help="Smart recovery mode - show context for resuming work",
     )
 
     parser.add_argument(
-        '--compound',
+        "--compound",
         type=str,
-        metavar='TYPE',
-        help='Get elements with multiple badges (e.g., "knowledge+action")'
+        metavar="TYPE",
+        help='Get elements with multiple badges (e.g., "knowledge+action")',
     )
 
     return parser
@@ -683,35 +755,56 @@ def validate_args(args: argparse.Namespace) -> None:
     """
     # Validate issue number
     if not args.issue.isdigit():
+        debug_log(
+            f"Validation error: issue '{args.issue}' is not a number", level="ERROR"
+        )
         print(f"{Colors.RED}Error: Issue must be a number{Colors.NC}", file=sys.stderr)
         sys.exit(1)
 
     # Check that at least one mode is specified
     if not any([args.type, args.stats, args.recover, args.compound]):
-        print(f"{Colors.RED}Error: Specify --type, --stats, --recover, or --compound{Colors.NC}", file=sys.stderr)
+        debug_log("Validation error: no operation mode specified", level="ERROR")
+        print(
+            f"{Colors.RED}Error: Specify --type, --stats, --recover, or --compound{Colors.NC}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
 
 def main() -> None:
     """Main entry point for the script."""
+    debug_log("recall_elements.py started")
+
     # Initialize GHE environment
     ghe_init()
 
     parser = create_parser()
     args = parser.parse_args()
 
+    debug_log(
+        f"Args: issue={args.issue}, recover={args.recover}, type={args.type}, stats={args.stats}, compound={args.compound}"
+    )
+
     validate_args(args)
 
     # Execute requested operation
     if args.stats:
+        debug_log(f"Fetching stats for issue #{args.issue}")
         show_stats(args.issue)
     elif args.recover:
+        debug_log(f"Running smart recovery for issue #{args.issue}")
         smart_recover(args.issue)
     elif args.compound:
+        debug_log(
+            f"Fetching compound elements ({args.compound}) for issue #{args.issue}"
+        )
         query_compound(args.issue, args.compound, args.last)
     elif args.type:
+        debug_log(f"Fetching {args.type} elements for issue #{args.issue}")
         query_by_type(args.issue, args.type, args.last, args.search)
 
+    debug_log("recall_elements completed")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

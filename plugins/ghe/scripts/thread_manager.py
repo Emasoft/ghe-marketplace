@@ -17,11 +17,9 @@ Usage:
 """
 
 import argparse
-import os
 import re
 import subprocess
 import sys
-import tempfile
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -31,13 +29,30 @@ from ghe_common import (
     ghe_gh,
     GHE_RED as RED,
     GHE_GREEN as GREEN,
-    GHE_YELLOW as YELLOW,
-    GHE_CYAN as CYAN,
-    GHE_NC as NC
+    GHE_NC as NC,
 )
 
 # Import from post_with_avatar module
 from post_with_avatar import get_avatar_url
+from pathlib import Path
+
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+
+    Format: YYYY-MM-DD HH:MM:SS,mmm LEVEL [logger] - message
+    Compatible with: lnav, glogg, Splunk, ELK, Log4j viewers
+    """
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [thread_manager] - {message}\n")
+    except Exception:
+        pass  # Never fail on logging
+
 
 # Phase to Manager mapping
 PHASE_MANAGERS = {
@@ -81,7 +96,16 @@ def is_epic_issue(issue_num: int) -> bool:
         True if issue has 'epic' label, False otherwise
     """
     try:
-        result = ghe_gh("issue", "view", str(issue_num), "--json", "labels", "--jq", ".labels[].name", capture=True)
+        result = ghe_gh(
+            "issue",
+            "view",
+            str(issue_num),
+            "--json",
+            "labels",
+            "--jq",
+            ".labels[].name",
+            capture=True,
+        )
         labels = result.stdout.lower()
         return "epic" in labels
     except subprocess.CalledProcessError:
@@ -99,7 +123,16 @@ def get_issue_phase(issue_num: int) -> str:
         Current phase (dev/test/review), defaults to 'dev'
     """
     try:
-        result = ghe_gh("issue", "view", str(issue_num), "--json", "labels", "--jq", ".labels[].name", capture=True)
+        result = ghe_gh(
+            "issue",
+            "view",
+            str(issue_num),
+            "--json",
+            "labels",
+            "--jq",
+            ".labels[].name",
+            capture=True,
+        )
         labels = result.stdout
 
         if "phase:review" in labels:
@@ -177,7 +210,9 @@ def update_first_post_manager(issue_num: int, new_phase: str) -> None:
     role = MANAGER_ROLES[new_manager]
 
     # Get current first post (issue body)
-    result = ghe_gh("issue", "view", str(issue_num), "--json", "body", "--jq", ".body", capture=True)
+    result = ghe_gh(
+        "issue", "view", str(issue_num), "--json", "body", "--jq", ".body", capture=True
+    )
     current_body = result.stdout
 
     # Create new header
@@ -186,9 +221,9 @@ def update_first_post_manager(issue_num: int, new_phase: str) -> None:
 **Role:** {role}'''
 
     # Extract everything after the header (from ## Requirements onwards)
-    match = re.search(r'^## Requirements', current_body, re.MULTILINE)
+    match = re.search(r"^## Requirements", current_body, re.MULTILINE)
     if match:
-        content_after_header = current_body[match.start():]
+        content_after_header = current_body[match.start() :]
     else:
         # Fallback if structure is unexpected
         content_after_header = current_body
@@ -202,7 +237,9 @@ def update_first_post_manager(issue_num: int, new_phase: str) -> None:
     print(f"{GREEN}Updated thread manager to {new_manager} for issue #{issue_num}{NC}")
 
 
-def add_changelog_entry(issue_num: int, entry: str, comment_id: Optional[str] = None) -> None:
+def add_changelog_entry(
+    issue_num: int, entry: str, comment_id: Optional[str] = None
+) -> None:
     """
     Add changelog entry.
 
@@ -215,18 +252,30 @@ def add_changelog_entry(issue_num: int, entry: str, comment_id: Optional[str] = 
     link_text = ""
 
     if comment_id:
-        result = ghe_gh("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner", capture=True)
+        result = ghe_gh(
+            "repo",
+            "view",
+            "--json",
+            "nameWithOwner",
+            "--jq",
+            ".nameWithOwner",
+            capture=True,
+        )
         repo = result.stdout.strip()
         link_text = f" -> [details](https://github.com/{repo}/issues/{issue_num}#issuecomment-{comment_id})"
 
     new_entry = f"- [{timestamp}] {entry}{link_text}"
 
     # Get current body
-    result = ghe_gh("issue", "view", str(issue_num), "--json", "body", "--jq", ".body", capture=True)
+    result = ghe_gh(
+        "issue", "view", str(issue_num), "--json", "body", "--jq", ".body", capture=True
+    )
     current_body = result.stdout
 
     # Process the body to add the changelog entry
-    updated_body = _add_log_entry(current_body, new_entry, "Changelog (DEV)", "_No entries yet_")
+    updated_body = _add_log_entry(
+        current_body, new_entry, "Changelog (DEV)", "_No entries yet_"
+    )
 
     # Update timestamp
     updated_body = _update_timestamp(updated_body)
@@ -237,7 +286,9 @@ def add_changelog_entry(issue_num: int, entry: str, comment_id: Optional[str] = 
     print(f"Added changelog entry to issue #{issue_num}")
 
 
-def add_testlog_entry(issue_num: int, entry: str, comment_id: Optional[str] = None) -> None:
+def add_testlog_entry(
+    issue_num: int, entry: str, comment_id: Optional[str] = None
+) -> None:
     """
     Add test log entry.
 
@@ -250,18 +301,30 @@ def add_testlog_entry(issue_num: int, entry: str, comment_id: Optional[str] = No
     link_text = ""
 
     if comment_id:
-        result = ghe_gh("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner", capture=True)
+        result = ghe_gh(
+            "repo",
+            "view",
+            "--json",
+            "nameWithOwner",
+            "--jq",
+            ".nameWithOwner",
+            capture=True,
+        )
         repo = result.stdout.strip()
         link_text = f" -> [details](https://github.com/{repo}/issues/{issue_num}#issuecomment-{comment_id})"
 
     new_entry = f"- [{timestamp}] {entry}{link_text}"
 
     # Get current body
-    result = ghe_gh("issue", "view", str(issue_num), "--json", "body", "--jq", ".body", capture=True)
+    result = ghe_gh(
+        "issue", "view", str(issue_num), "--json", "body", "--jq", ".body", capture=True
+    )
     current_body = result.stdout
 
     # Process the body to add the test log entry
-    updated_body = _add_log_entry(current_body, new_entry, "Test Log (TEST)", "_Phase not started_")
+    updated_body = _add_log_entry(
+        current_body, new_entry, "Test Log (TEST)", "_Phase not started_"
+    )
 
     # Update timestamp
     updated_body = _update_timestamp(updated_body)
@@ -272,7 +335,9 @@ def add_testlog_entry(issue_num: int, entry: str, comment_id: Optional[str] = No
     print(f"Added test log entry to issue #{issue_num}")
 
 
-def add_reviewlog_entry(issue_num: int, entry: str, comment_id: Optional[str] = None) -> None:
+def add_reviewlog_entry(
+    issue_num: int, entry: str, comment_id: Optional[str] = None
+) -> None:
     """
     Add review log entry.
 
@@ -285,18 +350,30 @@ def add_reviewlog_entry(issue_num: int, entry: str, comment_id: Optional[str] = 
     link_text = ""
 
     if comment_id:
-        result = ghe_gh("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner", capture=True)
+        result = ghe_gh(
+            "repo",
+            "view",
+            "--json",
+            "nameWithOwner",
+            "--jq",
+            ".nameWithOwner",
+            capture=True,
+        )
         repo = result.stdout.strip()
         link_text = f" -> [details](https://github.com/{repo}/issues/{issue_num}#issuecomment-{comment_id})"
 
     new_entry = f"- [{timestamp}] {entry}{link_text}"
 
     # Get current body
-    result = ghe_gh("issue", "view", str(issue_num), "--json", "body", "--jq", ".body", capture=True)
+    result = ghe_gh(
+        "issue", "view", str(issue_num), "--json", "body", "--jq", ".body", capture=True
+    )
     current_body = result.stdout
 
     # Process the body to add the review log entry
-    updated_body = _add_log_entry(current_body, new_entry, "Review Log (REVIEW)", "_Phase not started_")
+    updated_body = _add_log_entry(
+        current_body, new_entry, "Review Log (REVIEW)", "_Phase not started_"
+    )
 
     # Update timestamp
     updated_body = _update_timestamp(updated_body)
@@ -320,7 +397,7 @@ def _add_log_entry(body: str, entry: str, section_header: str, placeholder: str)
     Returns:
         Updated body with new entry
     """
-    lines = body.split('\n')
+    lines = body.split("\n")
     result = []
     in_section = False
     entry_added = False
@@ -344,7 +421,7 @@ def _add_log_entry(body: str, entry: str, section_header: str, placeholder: str)
         else:
             result.append(line)
 
-    return '\n'.join(result)
+    return "\n".join(result)
 
 
 def _update_timestamp(body: str) -> str:
@@ -358,15 +435,13 @@ def _update_timestamp(body: str) -> str:
         Body with updated timestamp
     """
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    updated = re.sub(
-        r'_Last updated:.*_',
-        f'_Last updated: {timestamp}_',
-        body
-    )
+    updated = re.sub(r"_Last updated:.*_", f"_Last updated: {timestamp}_", body)
     return updated
 
 
-def init_thread(issue_num: int, requirements: str = "No requirements specified") -> None:
+def init_thread(
+    issue_num: int, requirements: str = "No requirements specified"
+) -> None:
     """
     Initialize thread with first post.
 
@@ -374,6 +449,7 @@ def init_thread(issue_num: int, requirements: str = "No requirements specified")
         issue_num: Issue number
         requirements: Requirements text
     """
+    debug_log(f"Creating thread for issue #{issue_num}")
     # Check if epic
     if is_epic_issue(issue_num):
         phase = "epic"
@@ -402,7 +478,14 @@ def transition_phase(issue_num: int, new_phase: str) -> None:
 
     # Remove old phase label (ignore errors if it doesn't exist)
     try:
-        ghe_gh("issue", "edit", str(issue_num), "--remove-label", f"phase:{old_phase}", capture=True)
+        ghe_gh(
+            "issue",
+            "edit",
+            str(issue_num),
+            "--remove-label",
+            f"phase:{old_phase}",
+            capture=True,
+        )
     except subprocess.CalledProcessError:
         pass  # Ignore if label doesn't exist
 
@@ -437,6 +520,7 @@ def get_posting_agent(issue_num: int) -> str:
 
 def main() -> None:
     """Main CLI entry point."""
+    debug_log("thread_manager started")
     # Initialize GHE environment
     ghe_init()
 
@@ -460,7 +544,7 @@ Phase managers:
   test   -> Artemis (hunts bugs)
   review -> Hera (evaluates quality)
   epic   -> Athena (coordinates design)
-        """
+        """,
     )
 
     parser.add_argument("command", help="Command to execute")
@@ -470,6 +554,7 @@ Phase managers:
 
     command = args.command
     cmd_args = args.args
+    debug_log(f"Command: {command}")
 
     try:
         if command == "init":
@@ -477,12 +562,17 @@ Phase managers:
                 print(f"{RED}Error: init requires issue number{NC}", file=sys.stderr)
                 sys.exit(1)
             issue_num = int(cmd_args[0])
-            requirements = cmd_args[1] if len(cmd_args) > 1 else "No requirements specified"
+            requirements = (
+                cmd_args[1] if len(cmd_args) > 1 else "No requirements specified"
+            )
             init_thread(issue_num, requirements)
 
         elif command == "transition":
             if len(cmd_args) < 2:
-                print(f"{RED}Error: transition requires issue number and phase{NC}", file=sys.stderr)
+                print(
+                    f"{RED}Error: transition requires issue number and phase{NC}",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             issue_num = int(cmd_args[0])
             new_phase = cmd_args[1]
@@ -490,7 +580,10 @@ Phase managers:
 
         elif command == "add-changelog":
             if len(cmd_args) < 2:
-                print(f"{RED}Error: add-changelog requires issue number and entry{NC}", file=sys.stderr)
+                print(
+                    f"{RED}Error: add-changelog requires issue number and entry{NC}",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             issue_num = int(cmd_args[0])
             entry = cmd_args[1]
@@ -499,7 +592,10 @@ Phase managers:
 
         elif command == "add-testlog":
             if len(cmd_args) < 2:
-                print(f"{RED}Error: add-testlog requires issue number and entry{NC}", file=sys.stderr)
+                print(
+                    f"{RED}Error: add-testlog requires issue number and entry{NC}",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             issue_num = int(cmd_args[0])
             entry = cmd_args[1]
@@ -508,7 +604,10 @@ Phase managers:
 
         elif command == "add-reviewlog":
             if len(cmd_args) < 2:
-                print(f"{RED}Error: add-reviewlog requires issue number and entry{NC}", file=sys.stderr)
+                print(
+                    f"{RED}Error: add-reviewlog requires issue number and entry{NC}",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             issue_num = int(cmd_args[0])
             entry = cmd_args[1]
@@ -524,7 +623,10 @@ Phase managers:
 
         elif command == "get-posting-agent":
             if len(cmd_args) < 1:
-                print(f"{RED}Error: get-posting-agent requires issue number{NC}", file=sys.stderr)
+                print(
+                    f"{RED}Error: get-posting-agent requires issue number{NC}",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             issue_num = int(cmd_args[0])
             print(get_posting_agent(issue_num))
@@ -538,21 +640,29 @@ Phase managers:
 
         elif command == "update-manager":
             if len(cmd_args) < 2:
-                print(f"{RED}Error: update-manager requires issue number and phase{NC}", file=sys.stderr)
+                print(
+                    f"{RED}Error: update-manager requires issue number and phase{NC}",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             issue_num = int(cmd_args[0])
             new_phase = cmd_args[1]
             update_first_post_manager(issue_num, new_phase)
 
         else:
+            debug_log(f"Unknown command: {command}", level="ERROR")
             print(f"{RED}Error: Unknown command '{command}'{NC}", file=sys.stderr)
             parser.print_help()
             sys.exit(1)
 
+        debug_log("thread_manager completed")
+
     except subprocess.CalledProcessError as e:
+        debug_log(f"Error executing gh command: {e}", level="ERROR")
         print(f"{RED}Error executing gh command: {e}{NC}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
+        debug_log(f"Error: {e}", level="ERROR")
         print(f"{RED}Error: {e}{NC}", file=sys.stderr)
         sys.exit(1)
 

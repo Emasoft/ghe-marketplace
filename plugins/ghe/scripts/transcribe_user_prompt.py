@@ -4,7 +4,23 @@ Hook: UserPromptSubmit - Full GHE instructions for processing user messages
 Outputs the complete instructions that were previously in the invalid "type": "prompt"
 """
 
-USER_PROMPT_OUTPUT = '''## GHE Issue Tracker (Mnemosyne)
+from datetime import datetime
+from pathlib import Path
+
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """Append debug message to .claude/hook_debug.log in standard log format."""
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [transcribe_user_prompt] - {message}\n")
+    except Exception:
+        pass
+
+
+USER_PROMPT_OUTPUT = """## GHE Issue Tracker (Mnemosyne)
 
 ### CRITICAL: SENSITIVE DATA REDACTION
 
@@ -156,13 +172,17 @@ Only THEN notify:
 **ALL 11 agents write here:** Athena, Hephaestus, Artemis, Hera, Themis, Mnemosyne, Hermes, Ares, Chronos, Argos Panoptes, Cerberus
 
 **REQUIREMENTS/** is SEPARATE - permanent design documents, never deleted.
-'''
+"""
 
 
 def main() -> None:
     """Output the user prompt instructions"""
+    debug_log("Hook triggered: transcribe_user_prompt starting")
+    debug_log(f"Output length: {len(USER_PROMPT_OUTPUT)} chars")
     print(USER_PROMPT_OUTPUT)
+    debug_log("Hook completed: transcribe_user_prompt finished")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    debug_log("Script invoked directly via __main__")
     main()

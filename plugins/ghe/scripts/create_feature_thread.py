@@ -24,7 +24,6 @@ import argparse
 import json
 import subprocess
 import sys
-import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -35,12 +34,25 @@ from ghe_common import (
     ghe_git,
     GHE_PLUGIN_ROOT,
     GHE_REPO_ROOT,
-    GHE_CONFIG_FILE,
     GHE_GREEN,
     GHE_CYAN,
     GHE_RED,
     GHE_NC,
 )
+
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+    """
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [create_feature_thread] - {message}\n")
+    except Exception:
+        pass
 
 
 def ensure_threads_file(threads_file: Path) -> None:
@@ -50,13 +62,13 @@ def ensure_threads_file(threads_file: Path) -> None:
     Args:
         threads_file: Path to the background threads JSON file
     """
+    debug_log(f"ensure_threads_file called with: {threads_file}")
     if not threads_file.exists():
-        initial_data = {
-            "threads": [],
-            "last_updated": ""
-        }
-        with open(threads_file, 'w', encoding='utf-8') as f:
+        debug_log(f"Creating new threads file: {threads_file}")
+        initial_data = {"threads": [], "last_updated": ""}
+        with open(threads_file, "w", encoding="utf-8") as f:
             json.dump(initial_data, f, indent=2)
+        debug_log("Threads file created successfully")
 
 
 def add_thread(
@@ -66,7 +78,7 @@ def add_thread(
     title: str,
     parent: Optional[int],
     phase: str,
-    timestamp: str
+    timestamp: str,
 ) -> None:
     """
     Add a thread to the tracking file.
@@ -80,10 +92,13 @@ def add_thread(
         phase: Current phase
         timestamp: Creation timestamp
     """
+    debug_log(
+        f"add_thread called: issue={issue_num}, type={thread_type}, title={title}"
+    )
     ensure_threads_file(threads_file)
 
     # Read current data
-    with open(threads_file, 'r', encoding='utf-8') as f:
+    with open(threads_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     # Add new thread
@@ -95,15 +110,16 @@ def add_thread(
         "phase": phase,
         "status": "active",
         "created": timestamp,
-        "updated": timestamp
+        "updated": timestamp,
     }
 
     data["threads"].append(new_thread)
     data["last_updated"] = timestamp
 
     # Write back
-    with open(threads_file, 'w', encoding='utf-8') as f:
+    with open(threads_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    debug_log(f"Thread #{issue_num} added successfully")
 
 
 def update_thread(
@@ -111,7 +127,7 @@ def update_thread(
     issue_num: int,
     phase: str,
     status: str = "active",
-    timestamp: Optional[str] = None
+    timestamp: Optional[str] = None,
 ) -> None:
     """
     Update a thread's status and phase.
@@ -123,13 +139,16 @@ def update_thread(
         status: New status (default: "active")
         timestamp: Update timestamp
     """
+    debug_log(
+        f"update_thread called: issue={issue_num}, phase={phase}, status={status}"
+    )
     ensure_threads_file(threads_file)
 
     if timestamp is None:
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Read current data
-    with open(threads_file, 'r', encoding='utf-8') as f:
+    with open(threads_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     # Update thread
@@ -138,12 +157,13 @@ def update_thread(
             thread["phase"] = phase
             thread["status"] = status
             thread["updated"] = timestamp
+            debug_log(f"Thread #{issue_num} updated to phase={phase}, status={status}")
             break
 
     data["last_updated"] = timestamp
 
     # Write back
-    with open(threads_file, 'w', encoding='utf-8') as f:
+    with open(threads_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
@@ -157,9 +177,10 @@ def get_active_threads(threads_file: Path) -> list[str]:
     Returns:
         List of active thread descriptions
     """
+    debug_log(f"get_active_threads called with: {threads_file}")
     ensure_threads_file(threads_file)
 
-    with open(threads_file, 'r', encoding='utf-8') as f:
+    with open(threads_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     active = []
@@ -169,57 +190,64 @@ def get_active_threads(threads_file: Path) -> list[str]:
                 f"Issue #{thread['issue']}: {thread['title']} [{thread['phase']}]"
             )
 
+    debug_log(f"Found {len(active)} active threads")
     return active
 
 
 def main() -> None:
     """Main entry point for creating feature threads."""
+    debug_log("main() started")
     # Parse arguments
     parser = argparse.ArgumentParser(
         description="Create a new feature/bug development thread"
     )
     parser.add_argument(
-        'thread_type',
-        choices=['feature', 'bug', 'enhancement', 'fix'],
-        help='Type of thread to create'
+        "thread_type",
+        choices=["feature", "bug", "enhancement", "fix"],
+        help="Type of thread to create",
     )
-    parser.add_argument('title', help='Issue title')
-    parser.add_argument('description', help='Issue description')
+    parser.add_argument("title", help="Issue title")
+    parser.add_argument("description", help="Issue description")
     parser.add_argument(
-        'parent_issue',
-        nargs='?',
-        type=int,
-        help='Parent conversation issue number'
+        "parent_issue", nargs="?", type=int, help="Parent conversation issue number"
     )
 
     args = parser.parse_args()
+    debug_log(
+        f"Parsed args: type={args.thread_type}, title={args.title}, parent={args.parent_issue}"
+    )
 
     # Initialize GHE environment
     ghe_init()
+    debug_log("GHE environment initialized")
 
     if not GHE_REPO_ROOT:
-        print(f"{GHE_RED}ERROR: Could not determine repository root{GHE_NC}", file=sys.stderr)
+        debug_log("ERROR: Could not determine repository root", "ERROR")
+        print(
+            f"{GHE_RED}ERROR: Could not determine repository root{GHE_NC}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # Setup paths
     project_root = Path(GHE_REPO_ROOT)
     plugin_root = Path(GHE_PLUGIN_ROOT)
-    threads_file = project_root / '.claude' / 'ghe-background-threads.json'
+    threads_file = project_root / ".claude" / "ghe-background-threads.json"
 
     # Timestamps
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # Timestamp for GHE_REPORTS (Brisbane timezone)
-    timestamp_short = datetime.now().strftime('%Y%m%d%H%M%SAEST')
+    timestamp_short = datetime.now().strftime("%Y%m%d%H%M%SAEST")
 
     print(f"{GHE_CYAN}Creating {args.thread_type} thread: {args.title}{GHE_NC}")
 
     # Determine label based on type
-    if args.thread_type in ('feature', 'enhancement'):
-        type_label = 'enhancement'
-    elif args.thread_type in ('bug', 'fix'):
-        type_label = 'bug'
+    if args.thread_type in ("feature", "enhancement"):
+        type_label = "enhancement"
+    elif args.thread_type in ("bug", "fix"):
+        type_label = "bug"
     else:
-        type_label = 'enhancement'
+        type_label = "enhancement"
 
     # Build issue body
     body = f"""## Overview
@@ -241,23 +269,35 @@ def main() -> None:
 
     # Create GitHub issue
     print("Creating GitHub issue...")
+    debug_log("Creating GitHub issue via gh CLI")
 
     result = ghe_gh(
-        'issue', 'create',
-        '--title', args.title,
-        '--body', body,
-        '--label', type_label,
-        '--label', 'phase:dev',
-        '--json', 'number',
-        '--jq', '.number',
-        capture=True
+        "issue",
+        "create",
+        "--title",
+        args.title,
+        "--body",
+        body,
+        "--label",
+        type_label,
+        "--label",
+        "phase:dev",
+        "--json",
+        "number",
+        "--jq",
+        ".number",
+        capture=True,
     )
 
     if result.returncode != 0 or not result.stdout.strip():
+        debug_log(
+            f"Failed to create GitHub issue: returncode={result.returncode}", "ERROR"
+        )
         print(f"{GHE_RED}ERROR: Failed to create GitHub issue{GHE_NC}", file=sys.stderr)
         sys.exit(1)
 
     new_issue = int(result.stdout.strip())
+    debug_log(f"GitHub issue created: #{new_issue}")
     print(f"{GHE_GREEN}Created issue #{new_issue}{GHE_NC}")
 
     # Add to tracking
@@ -268,7 +308,7 @@ def main() -> None:
         args.title,
         args.parent_issue,
         "REQUIREMENTS",
-        timestamp
+        timestamp,
     )
 
     # Create worktree for the feature
@@ -277,36 +317,45 @@ def main() -> None:
     branch_name = f"issue-{new_issue}-dev"
 
     print("Creating worktree...")
+    debug_log(f"Creating worktree at {worktree_path} on branch {branch_name}")
     worktree_base.mkdir(parents=True, exist_ok=True)
 
     # Check if branch exists
     branch_check = ghe_git(
-        'show-ref', '--verify', '--quiet', f'refs/heads/{branch_name}',
-        capture=True
+        "show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}", capture=True
     )
 
     if branch_check.returncode == 0:
         # Branch exists, add worktree
-        ghe_git('worktree', 'add', str(worktree_path), branch_name, capture=True)
+        debug_log(f"Branch {branch_name} exists, adding worktree")
+        ghe_git("worktree", "add", str(worktree_path), branch_name, capture=True)
     else:
         # Create new branch from base
+        debug_log(f"Branch {branch_name} does not exist, creating new branch")
         base_branch_result = ghe_git(
-            'symbolic-ref', 'refs/remotes/origin/HEAD',
-            capture=True
+            "symbolic-ref", "refs/remotes/origin/HEAD", capture=True
         )
 
         if base_branch_result.returncode == 0:
-            base_branch = base_branch_result.stdout.strip().replace('refs/remotes/origin/', '')
+            base_branch = base_branch_result.stdout.strip().replace(
+                "refs/remotes/origin/", ""
+            )
         else:
-            base_branch = 'main'
+            base_branch = "main"
 
+        debug_log(f"Creating worktree with new branch from {base_branch}")
         ghe_git(
-            'worktree', 'add', str(worktree_path),
-            '-b', branch_name, base_branch,
-            capture=True
+            "worktree",
+            "add",
+            str(worktree_path),
+            "-b",
+            branch_name,
+            base_branch,
+            capture=True,
         )
 
     if worktree_path.exists():
+        debug_log(f"Worktree created successfully: {worktree_path}")
         print(f"{GHE_GREEN}Worktree created: {worktree_path}{GHE_NC}")
 
     # Build Athena's prompt for requirements generation
@@ -322,7 +371,7 @@ You MUST write the REQUIREMENTS for issue #{new_issue} as the FIRST substantive 
 **Type**: {args.thread_type}
 **Title**: {args.title}
 **Description**: {args.description}
-**Parent Conversation**: {args.parent_issue if args.parent_issue else 'none'}
+**Parent Conversation**: {args.parent_issue if args.parent_issue else "none"}
 
 ## Requirements Format
 
@@ -385,12 +434,14 @@ python3 "{plugin_root}/scripts/agent_request_spawn.py" dev-thread-manager {new_i
 Save your work to: GHE_REPORTS/{timestamp_short}_issue_{new_issue}_requirements_(Athena).md"""
 
     # Spawn Athena in background
-    spawn_script = plugin_root / 'scripts' / 'spawn_background.py'
+    spawn_script = plugin_root / "scripts" / "spawn_background.py"
+    debug_log(f"Spawning Athena via {spawn_script}")
     subprocess.Popen(
-        ['python3', str(spawn_script), athena_prompt, str(project_root)],
+        ["python3", str(spawn_script), athena_prompt, str(project_root)],
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+        stderr=subprocess.DEVNULL,
     )
+    debug_log("Athena spawned successfully")
 
     # Output summary
     print()
@@ -422,10 +473,11 @@ Save your work to: GHE_REPORTS/{timestamp_short}_issue_{new_issue}_requirements_
         "title": args.title,
         "type": args.thread_type,
         "worktree": str(worktree_path),
-        "branch": branch_name
+        "branch": branch_name,
     }
     print(json.dumps(result_json))
+    debug_log(f"main() completed successfully: issue #{new_issue}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

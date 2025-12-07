@@ -16,21 +16,34 @@ Usage as CLI:
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 # Add script directory to path for imports
 script_dir = Path(__file__).parent
 sys.path.insert(0, str(script_dir))
 
-from ghe_common import (
+from ghe_common import (  # noqa: E402
     ghe_init,
     ghe_gh,
     ghe_get_avatar_url,
     ghe_get_avatar_base_url,
-    GHE_AGENT_AVATARS,
     GHE_AGENT_NAMES,
 )
+
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+    """
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [post_with_avatar] - {message}\n")
+    except Exception:
+        pass
 
 
 def get_github_user_avatar(username: str, size: int = 77) -> str:
@@ -103,11 +116,14 @@ def format_comment(name: str, content: str) -> str:
     Returns:
         Formatted markdown with avatar and content
     """
+    debug_log(f"format_comment called with name={name}, content_length={len(content)}")
     # If name starts with "ghe:", map to display name
     if name.startswith("ghe:"):
         name = GHE_AGENT_NAMES.get(name, name)
+        debug_log(f"Mapped agent ID to display name: {name}")
 
     avatar_url = get_avatar_url(name)
+    debug_log(f"Using avatar URL: {avatar_url}")
 
     return f'''<p><img src="{avatar_url}" width="81" height="81" alt="{name}" align="middle">&nbsp;&nbsp;&nbsp;&nbsp;<span style="vertical-align: middle;"><strong>{name} said:</strong></span></p>
 
@@ -126,8 +142,11 @@ def post_issue_comment(issue_num: int, agent_name: str, content: str) -> None:
     Raises:
         subprocess.CalledProcessError: If gh command fails
     """
+    debug_log(f"post_issue_comment called: issue={issue_num}, agent={agent_name}")
     formatted = format_comment(agent_name, content)
+    debug_log(f"Posting comment to issue #{issue_num}")
     ghe_gh("issue", "comment", str(issue_num), "--body", formatted, capture=True)
+    debug_log(f"Successfully posted comment to issue #{issue_num}")
 
 
 def post_pr_comment(pr_num: int, agent_name: str, content: str) -> None:
@@ -142,8 +161,11 @@ def post_pr_comment(pr_num: int, agent_name: str, content: str) -> None:
     Raises:
         subprocess.CalledProcessError: If gh command fails
     """
+    debug_log(f"post_pr_comment called: pr={pr_num}, agent={agent_name}")
     formatted = format_comment(agent_name, content)
+    debug_log(f"Posting comment to PR #{pr_num}")
     ghe_gh("pr", "comment", str(pr_num), "--body", formatted, capture=True)
+    debug_log(f"Successfully posted comment to PR #{pr_num}")
 
 
 def avatar_header(name: str) -> str:
@@ -202,7 +224,9 @@ def run_tests() -> None:
 
 def main() -> None:
     """Main CLI entry point."""
+    debug_log("main() started")
     ghe_init()  # Initialize GHE environment
+    debug_log("GHE environment initialized")
 
     parser = argparse.ArgumentParser(
         description="Helper for posting GitHub comments with avatar banners",
@@ -234,28 +258,32 @@ Agent IDs:
   ghe:reporter                 -> Hermes
   ghe:ci-issue-opener          -> Chronos
   ghe:pr-checker               -> Cerberus
-        """
+        """,
     )
 
     parser.add_argument(
-        "--test",
-        action="store_true",
-        help="Run tests to verify functionality"
+        "--test", action="store_true", help="Run tests to verify functionality"
     )
 
     parser.add_argument(
         "--header-only",
         metavar="AGENT_NAME",
-        help="Print avatar header for the given agent and exit"
+        help="Print avatar header for the given agent and exit",
     )
 
     args = parser.parse_args()
+    debug_log(f"Parsed arguments: header_only={args.header_only}, test={args.test}")
 
     if args.header_only:
+        debug_log(f"Generating header for agent: {args.header_only}")
         print(avatar_header(args.header_only))
+        debug_log("Header generation complete")
     elif args.test:
+        debug_log("Running tests")
         run_tests()
+        debug_log("Tests complete")
     else:
+        debug_log("No arguments provided, printing help")
         parser.print_help()
 
 

@@ -4,7 +4,23 @@ Hook: Stop - Full GHE instructions for transcribing assistant response
 Outputs the complete instructions that were previously in the invalid "type": "prompt"
 """
 
-STOP_OUTPUT = '''## GHE Session End (Mnemosyne)
+from datetime import datetime
+from pathlib import Path
+
+
+def debug_log(message: str, level: str = "INFO") -> None:
+    """Append debug message to .claude/hook_debug.log in standard log format."""
+    try:
+        log_file = Path(".claude/hook_debug.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+        with open(log_file, "a") as f:
+            f.write(f"{timestamp} {level:<5} [transcribe_stop] - {message}\n")
+    except Exception:
+        pass
+
+
+STOP_OUTPUT = """## GHE Session End (Mnemosyne)
 
 ### CRITICAL: SENSITIVE DATA REDACTION
 
@@ -125,13 +141,16 @@ Write to `.serena/memories/activeContext.md`:
 - Current issue number and phase
 - Recent progress summary
 - Active background agents
-'''
+"""
 
 
 def main() -> None:
     """Output the stop instructions"""
+    debug_log("Stop hook triggered - outputting transcription instructions")
     print(STOP_OUTPUT)
+    debug_log("Stop hook completed - instructions output successfully")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    debug_log("transcribe_stop.py invoked as main script")
     main()
