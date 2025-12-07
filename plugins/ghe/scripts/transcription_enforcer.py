@@ -372,33 +372,46 @@ def extract_claude_response(transcript_path: str) -> Optional[str]:
 
 def store_claude_response() -> None:
     """Store Claude's response from transcript (called at Stop hook)."""
+    # Load pending first to store debug info
+    data = load_pending()
+
     try:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError:
-        print("DEBUG store_claude_response: Failed to parse JSON input", file=sys.stderr)
+        data["last_store_debug"] = "Failed to parse JSON input from Stop hook"
+        save_pending(data)
         silent_exit()
 
     transcript_path = input_data.get("transcript_path", "")
     session_id = input_data.get("session_id", "")
 
-    print(f"DEBUG store_claude_response: transcript_path={transcript_path}", file=sys.stderr)
-    print(f"DEBUG store_claude_response: transcript exists={Path(transcript_path).exists() if transcript_path else False}", file=sys.stderr)
+    # Expand tilde for checking
+    expanded_path = os.path.expanduser(transcript_path) if transcript_path else ""
+    path_exists = Path(expanded_path).exists() if expanded_path else False
+
+    # Store debug info in pending file (visible via verify)
+    debug_info = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "transcript_path": transcript_path,
+        "expanded_path": expanded_path,
+        "path_exists": path_exists,
+    }
 
     # Extract Claude's last response from transcript
     response = extract_claude_response(transcript_path)
 
-    print(f"DEBUG store_claude_response: response found={bool(response)}", file=sys.stderr)
-    if response:
-        print(f"DEBUG store_claude_response: response length={len(response)}", file=sys.stderr)
-        print(f"DEBUG store_claude_response: response preview={response[:200]}...", file=sys.stderr)
+    debug_info["response_found"] = bool(response)
+    debug_info["response_length"] = len(response) if response else 0
 
     if not response:
-        # No response to store
-        print("DEBUG store_claude_response: No response found, exiting silently", file=sys.stderr)
+        # No response to store - save debug info for visibility
+        debug_info["error"] = "No assistant message found in transcript"
+        data["last_store_debug"] = debug_info
+        save_pending(data)
         silent_exit()
 
-    # Load existing pending messages
-    data = load_pending()
+    # Store successful debug info
+    data["last_store_debug"] = debug_info
 
     # Create message record - marked as CLAUDE message
     message = {
@@ -694,6 +707,21 @@ def verify_transcription() -> None:
             preview = m.get("preview", "???")[:40]
             ts = m.get("timestamp", "?")[:19]
             error_msg += f"\n  [{i+1}] {speaker}: \"{preview}...\" @ {ts}"
+
+        # DEBUG: Show last store-response debug info
+        last_debug = data.get("last_store_debug")
+        if last_debug:
+            error_msg += "\n\n[DEBUG] Last store-response:"
+            if isinstance(last_debug, dict):
+                error_msg += f"\n  transcript_path: {last_debug.get('transcript_path', 'N/A')}"
+                error_msg += f"\n  expanded_path: {last_debug.get('expanded_path', 'N/A')}"
+                error_msg += f"\n  path_exists: {last_debug.get('path_exists', 'N/A')}"
+                error_msg += f"\n  response_found: {last_debug.get('response_found', 'N/A')}"
+                error_msg += f"\n  response_length: {last_debug.get('response_length', 'N/A')}"
+                if last_debug.get('error'):
+                    error_msg += f"\n  ERROR: {last_debug.get('error')}"
+            else:
+                error_msg += f"\n  {last_debug}"
 
         print(error_msg, file=sys.stderr)
         sys.exit(2)  # Exit code 2 blocks Claude from stopping
