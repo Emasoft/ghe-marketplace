@@ -514,15 +514,13 @@ def create_release(config: MarketplaceConfig, plugin_name: str, new_version: str
         Path(temp_file).unlink(missing_ok=True)
 
 
-def clear_local_plugin_cache(config: MarketplaceConfig, plugin_name: str, new_version: str) -> None:
+def clear_local_plugin_cache(config: MarketplaceConfig, plugin_name: str) -> None:
     """
-    Clear local Claude Code plugin caches and update registry to force fresh install.
+    Clear local Claude Code plugin caches to force fresh install on next update.
 
-    Claude Code has a bug where 'plugins install' doesn't properly update
-    the installed cache from the marketplace cache. This function:
-    1. Clears the plugin cache directory
-    2. Updates the marketplace cache via git
-    3. Updates installed_plugins.json with new version and commit SHA
+    This function clears cached plugin data so users get the latest version
+    when they run 'claude plugins install'. It does NOT modify installed_plugins.json
+    as that is managed by Claude Code when users install plugins.
     """
     import shutil
 
@@ -570,34 +568,8 @@ def clear_local_plugin_cache(config: MarketplaceConfig, plugin_name: str, new_ve
         except Exception:
             warn("Could not update marketplace cache")
 
-    # Update installed_plugins.json with new version
-    installed_plugins_path = home / ".claude" / "plugins" / "installed_plugins.json"
-    if installed_plugins_path.exists():
-        try:
-            with open(installed_plugins_path) as f:
-                installed_data = json.load(f)
-
-            plugin_key = f"{plugin_name}@{marketplace_name}"
-            if plugin_key in installed_data.get("plugins", {}):
-                from datetime import datetime, timezone
-                old_version = installed_data["plugins"][plugin_key].get("version", "unknown")
-                installed_data["plugins"][plugin_key]["version"] = new_version
-                installed_data["plugins"][plugin_key]["lastUpdated"] = datetime.now(timezone.utc).isoformat()
-                if new_commit_sha:
-                    installed_data["plugins"][plugin_key]["gitCommitSha"] = new_commit_sha
-
-                with open(installed_plugins_path, 'w') as f:
-                    json.dump(installed_data, f, indent=2)
-                    f.write('\n')
-                success(f"{installed_plugins_path}")
-                print(f"       plugins[{plugin_key}].version: {old_version} -> {new_version}")
-            else:
-                info(f"Plugin {plugin_key} not in installed_plugins.json (will be added on install)")
-        except Exception as e:
-            warn(f"Could not update installed_plugins.json: {e}")
-
     print()
-    info("Plugin updated! Restart Claude Code to apply changes.")
+    info("Release complete! Users can update with: claude plugins install")
     print()
 
 
@@ -782,9 +754,9 @@ Each plugin maintains its own version independently.
     info("Step 7/8: Creating GitHub release...")
     create_release(config, args.plugin_name, new_version, args.notes)
 
-    # Step 8: Clear local caches and update registry
-    info("Step 8/8: Clearing caches and updating registry...")
-    clear_local_plugin_cache(config, args.plugin_name, new_version)
+    # Step 8: Clear local caches
+    info("Step 8/8: Clearing local caches...")
+    clear_local_plugin_cache(config, args.plugin_name)
 
     print()
     success(f"Release {args.plugin_name}-v{new_version} complete!")
