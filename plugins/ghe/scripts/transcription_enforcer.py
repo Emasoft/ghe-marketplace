@@ -428,7 +428,8 @@ def store_claude_response() -> None:
         "hash": compute_hash(response),
         "signature": extract_signature(response),
         "key_phrases": extract_key_phrases(response, 10),
-        "preview": response[:100] + "..." if len(response) > 100 else response
+        "preview": response[:100] + "..." if len(response) > 100 else response,
+        "content": response  # Store full content for auto-transcription
     }
 
     # Add to pending
@@ -670,6 +671,31 @@ def verify_transcription() -> None:
                 "msg": msg,
                 "issues": msg_issues
             })
+
+    # Auto-transcribe Claude responses to avoid infinite loop
+    claude_pending = [m for m in still_pending if m.get("speaker") == "claude"]
+    if claude_pending and issue_num:
+        try:
+            # Add scripts directory to path for import
+            scripts_dir = str(Path(__file__).parent)
+            if scripts_dir not in sys.path:
+                sys.path.insert(0, scripts_dir)
+            from auto_transcribe import post_assistant_message
+
+            for claude_msg in claude_pending:
+                # Get full message content from the pending record
+                content = claude_msg.get("content", "")  # Full content stored by store-response
+                if not content:
+                    # Fallback to preview if content not available
+                    content = claude_msg.get("preview", "")
+
+                if content:
+                    # Only remove from still_pending if post succeeded
+                    if post_assistant_message(content):
+                        still_pending.remove(claude_msg)
+        except Exception as e:
+            # If auto-transcribe fails, continue with blocking
+            print(f"DEBUG auto-transcribe failed: {e}", file=sys.stderr)
 
     # Compile all issues for reporting
     all_issues = []
