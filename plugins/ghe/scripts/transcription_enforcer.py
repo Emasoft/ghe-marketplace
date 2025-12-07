@@ -314,10 +314,13 @@ def extract_claude_response(transcript_path: str) -> Optional[str]:
     We look for the last assistant message.
     """
     if not transcript_path or not Path(transcript_path).exists():
+        print(f"DEBUG extract_claude_response: path missing or doesn't exist: {transcript_path}", file=sys.stderr)
         return None
 
     try:
         last_assistant_msg = None
+        entry_count = 0
+        assistant_count = 0
         with open(transcript_path, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -325,8 +328,13 @@ def extract_claude_response(transcript_path: str) -> Optional[str]:
                     continue
                 try:
                     entry = json.loads(line)
+                    entry_count += 1
+                    entry_type = entry.get("type", "unknown")
+                    entry_role = entry.get("role", "unknown")
+
                     # Look for assistant messages
-                    if entry.get("type") == "assistant" or entry.get("role") == "assistant":
+                    if entry_type == "assistant" or entry_role == "assistant":
+                        assistant_count += 1
                         # Get the content
                         content = entry.get("content", "")
                         if isinstance(content, list):
@@ -343,8 +351,15 @@ def extract_claude_response(transcript_path: str) -> Optional[str]:
                 except json.JSONDecodeError:
                     continue
 
+        print(f"DEBUG extract_claude_response: parsed {entry_count} entries, found {assistant_count} assistant messages", file=sys.stderr)
+        if last_assistant_msg:
+            print(f"DEBUG extract_claude_response: last msg length={len(last_assistant_msg)}", file=sys.stderr)
+        else:
+            print("DEBUG extract_claude_response: NO assistant message content found", file=sys.stderr)
+
         return last_assistant_msg
-    except IOError:
+    except IOError as e:
+        print(f"DEBUG extract_claude_response: IOError: {e}", file=sys.stderr)
         return None
 
 
@@ -353,16 +368,26 @@ def store_claude_response() -> None:
     try:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError:
+        print("DEBUG store_claude_response: Failed to parse JSON input", file=sys.stderr)
         silent_exit()
 
     transcript_path = input_data.get("transcript_path", "")
     session_id = input_data.get("session_id", "")
 
+    print(f"DEBUG store_claude_response: transcript_path={transcript_path}", file=sys.stderr)
+    print(f"DEBUG store_claude_response: transcript exists={Path(transcript_path).exists() if transcript_path else False}", file=sys.stderr)
+
     # Extract Claude's last response from transcript
     response = extract_claude_response(transcript_path)
 
+    print(f"DEBUG store_claude_response: response found={bool(response)}", file=sys.stderr)
+    if response:
+        print(f"DEBUG store_claude_response: response length={len(response)}", file=sys.stderr)
+        print(f"DEBUG store_claude_response: response preview={response[:200]}...", file=sys.stderr)
+
     if not response:
         # No response to store
+        print("DEBUG store_claude_response: No response found, exiting silently", file=sys.stderr)
         silent_exit()
 
     # Load existing pending messages
