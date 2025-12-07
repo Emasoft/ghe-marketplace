@@ -1,6 +1,6 @@
 # Marketplace Utils
 
-[![Version](https://img.shields.io/badge/version-1.1.5-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases)
+[![Version](https://img.shields.io/badge/version-1.1.6-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
 
@@ -69,12 +69,12 @@ python release.py --list
 |------|-------------|---------|
 | `patch` | Bug fixes, minor improvements | 0.5.4 -> 0.5.5 |
 | `minor` | New features, non-breaking changes | 0.5.5 -> 0.6.0 |
-| `major` | Breaking changes, major rewrites | 0.6.0 -> 1.1.5 |
+| `major` | Breaking changes, major rewrites | 0.6.0 -> 1.1.6 |
 
 #### Independent Versioning
 
 Each plugin has its own version:
-- Tags are plugin-specific: `ghe-v0.5.4`, `marketplace-utils-v1.1.5`
+- Tags are plugin-specific: `ghe-v0.5.4`, `marketplace-utils-v1.1.6`
 - Only the released plugin's version is bumped
 - Other plugins remain unchanged
 
@@ -89,7 +89,7 @@ The release script maintains a version table in the marketplace README:
 | Plugin | Version | Description |
 |--------|---------|-------------|
 | ghe | 0.5.4 | GHE (GitHub-Elements)... |
-| marketplace-utils | 1.1.5 | Portable utility tools... |
+| marketplace-utils | 1.1.6 | Portable utility tools... |
 
 *Last updated: 2025-01-15*
 <!-- PLUGIN-VERSIONS-END -->
