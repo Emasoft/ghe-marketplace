@@ -192,3 +192,15 @@ Project settings stored in `.claude/ghe.local.md` (gitignored). Created by `/ghe
 - SERENA integration settings
 - Auto worktree creation
 - Notification preferences
+
+<!-- GHE-CURRENT-ISSUE -->
+## GHE Active Transcription
+
+**CRITICAL**: All conversation is being transcribed to GitHub.
+
+```
+Currently discussing issue n.21: [SESSION] Fix GHE Hook Transcription System
+```
+
+**You MUST include this line in your responses when referencing the current work.**
+<!-- GHE-CURRENT-ISSUE -->

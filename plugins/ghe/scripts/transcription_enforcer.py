@@ -1013,8 +1013,11 @@ def verify_transcription() -> None:
                 else:
                     error_msg += f"\n  {last_debug}"
 
+        # Output warning to stderr but DON'T block
+        # sys.exit(2) was blocking compacting - removed
         print(error_msg, file=sys.stderr)
-        sys.exit(2)  # Exit code 2 blocks Claude from stopping
+        silent_exit()  # Allow stop/compacting with valid JSON
+        return
 
     # All properly transcribed, update pending file
     data["pending"] = []
