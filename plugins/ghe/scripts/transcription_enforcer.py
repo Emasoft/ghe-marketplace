@@ -433,7 +433,8 @@ def fetch_github_comments(issue_num: int, since: Optional[str] = None) -> List[D
 
 def silent_exit(event: str = "Stop") -> None:
     """Exit silently with suppressOutput JSON. Event defaults to Stop as most common."""
-    print(json.dumps({"event": event, "suppressOutput": True}))
+    print(json.dumps({"event": event, "suppressOutput": True}), flush=True)
+    sys.stdout.flush()
     sys.exit(0)
 
 

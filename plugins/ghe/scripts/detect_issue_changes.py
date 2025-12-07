@@ -303,7 +303,8 @@ def main() -> None:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError:
         debug_log("Failed to parse stdin JSON", level="ERROR")
-        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}), flush=True)
+        sys.stdout.flush()
         sys.exit(0)
 
     tool_name = input_data.get("tool_name", "")
@@ -312,7 +313,8 @@ def main() -> None:
 
     # Only process Bash commands
     if tool_name != "Bash":
-        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}), flush=True)
+        sys.stdout.flush()
         sys.exit(0)
 
     command = tool_input.get("command", "")
@@ -320,7 +322,8 @@ def main() -> None:
 
     if not cmd_type:
         debug_log("PostToolUse hook completed")
-        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}), flush=True)
+        sys.stdout.flush()
         sys.exit(0)
 
     debug_log(f"Detected command: {cmd_type}")
@@ -331,13 +334,16 @@ def main() -> None:
         issue_num, title = extract_issue_from_output(tool_output)
         if issue_num:
             update_active_issue(issue_num, title, "created")
-            print(f"Auto-switched to new issue #{issue_num}")
+            # User notification goes to stderr (visible to user, doesn't corrupt JSON)
+            print(f"[GHE] Auto-switched to new issue #{issue_num}", file=sys.stderr)
         else:
             debug_log(
                 "Could not extract issue number from create output", level="ERROR"
             )
             debug_print("Could not extract issue number from create output")
-            print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
+        # Always output valid JSON to stdout for Claude Code
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}), flush=True)
+        sys.stdout.flush()
 
     elif cmd_type == "close":
         # Get the issue being closed
@@ -352,16 +358,18 @@ def main() -> None:
             fallback = get_or_create_fallback_issue()
             if fallback:
                 update_active_issue(fallback, "GENERAL DISCUSSION", "closed_active")
-                print(f"Issue #{closed_issue} closed. Switched to fallback #{fallback}")
+                # User notification goes to stderr
+                print(f"[GHE] Issue #{closed_issue} closed. Switched to fallback #{fallback}", file=sys.stderr)
             else:
                 update_active_issue(None, "", "closed_active")
-                print(f"Issue #{closed_issue} closed. No fallback available.")
+                print(f"[GHE] Issue #{closed_issue} closed. No fallback available.", file=sys.stderr)
         else:
             # Closed a different issue, just notify
             if closed_issue:
-                print(f"Closed issue #{closed_issue} (not active issue)")
-            else:
-                print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
+                print(f"[GHE] Closed issue #{closed_issue} (not active issue)", file=sys.stderr)
+        # Always output valid JSON to stdout for Claude Code
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}), flush=True)
+        sys.stdout.flush()
 
     elif cmd_type == "reopen":
         # Get the issue being reopened
@@ -372,11 +380,14 @@ def main() -> None:
         if reopened_issue:
             # Switch to the reopened issue
             update_active_issue(reopened_issue, "", "reopened")
-            print(f"Issue #{reopened_issue} reopened. Auto-switched to it.")
+            # User notification goes to stderr
+            print(f"[GHE] Issue #{reopened_issue} reopened. Auto-switched to it.", file=sys.stderr)
         else:
             debug_log("Could not extract issue number from reopen", level="ERROR")
             debug_print("Could not extract issue number from reopen")
-            print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
+        # Always output valid JSON to stdout for Claude Code
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}), flush=True)
+        sys.stdout.flush()
 
     debug_log("PostToolUse hook completed")
     sys.exit(0)

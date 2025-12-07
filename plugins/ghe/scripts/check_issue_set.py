@@ -40,7 +40,8 @@ try:
 except ImportError as e:
     debug_log(f"ImportError: {e} - exiting with valid JSON", "ERROR")
     # If import fails, output valid JSON and exit gracefully
-    print(json.dumps({"event": "UserPromptSubmit", "suppressOutput": True}))
+    print(json.dumps({"event": "UserPromptSubmit", "suppressOutput": True}), flush=True)
+    sys.stdout.flush()
     sys.exit(0)
 
 
@@ -59,7 +60,8 @@ def main() -> None:
 
     # Suppress output from user view
     debug_log("Outputting JSON and exiting")
-    print(json.dumps({"event": "UserPromptSubmit", "suppressOutput": True}))
+    print(json.dumps({"event": "UserPromptSubmit", "suppressOutput": True}), flush=True)
+    sys.stdout.flush()
     sys.exit(0)
 
 

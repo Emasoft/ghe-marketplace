@@ -5,6 +5,7 @@ Returns "allow" with a reminder message about transcription
 """
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -37,7 +38,8 @@ def main() -> None:
             "permissionDecision": "allow"
         }
     }
-    print(json.dumps(response))
+    print(json.dumps(response), flush=True)
+    sys.stdout.flush()
     debug_log("PreToolUse Bash hook completed")
 
 

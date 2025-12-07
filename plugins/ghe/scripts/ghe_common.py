@@ -555,9 +555,9 @@ def ghe_init() -> None:
 
 
 def ghe_info(*args: Any) -> None:
-    """Print info message with green [GHE] prefix"""
+    """Print info message with green [GHE] prefix to stderr (to avoid corrupting hook JSON output)"""
     message = " ".join(str(arg) for arg in args)
-    print(f"{GHE_GREEN}[GHE]{GHE_NC} {message}")
+    print(f"{GHE_GREEN}[GHE]{GHE_NC} {message}", file=sys.stderr)
 
 
 def ghe_warn(*args: Any) -> None:

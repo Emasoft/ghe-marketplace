@@ -8,7 +8,7 @@
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_start.py",
             "timeout": 30,
-            "suppressOutput": false
+            "suppressOutput": true
           }
         ]
       }
@@ -72,7 +72,7 @@
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect_issue_changes.py",
             "timeout": 45,
-            "suppressOutput": false
+            "suppressOutput": true
           }
         ]
       }
