@@ -60,6 +60,11 @@
           },
           {
             "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py store-response",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py verify",
             "timeout": 30
           }
