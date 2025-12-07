@@ -25,7 +25,7 @@
 | Plugin | Version | Description |
 |--------|---------|-------------|
 | ghe | 0.6.25 | GHE (GitHub-Elements) - Automated project management for ... |
-| marketplace-utils | 1.1.0 | Portable utility tools for Claude Code plugin marketplace... |
+| marketplace-utils | 1.1.1 | Portable utility tools for Claude Code plugin marketplace... |
 
 *Last updated: 2025-12-07*
 
