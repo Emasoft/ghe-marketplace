@@ -235,12 +235,103 @@ def message_matches_comment(message: Dict[str, Any], comment_body: str) -> bool:
     return False
 
 
+def _save_issue_to_json(config_path: Path, issue_num: int, title: str) -> None:
+    """Helper to save issue to last_active_issue.json."""
+    try:
+        with open(config_path, 'w') as f:
+            json.dump({
+                'issue': issue_num,
+                'title': title,
+                'last_active': datetime.now(timezone.utc).isoformat()
+            }, f)
+        debug_print(f"Saved issue #{issue_num} to last_active_issue.json")
+    except IOError:
+        pass
+
+
+def _find_recent_open_issue() -> Optional[tuple]:
+    """
+    Search GitHub for the most recent open issue with session/in-progress labels.
+    Returns (issue_num, title) or None.
+    """
+    try:
+        # Search for open issues with session or in-progress labels, sorted by update time
+        result = subprocess.run(
+            ["gh", "issue", "list", "--state", "open", "--limit", "10",
+             "--json", "number,title,labels,updatedAt"],
+            capture_output=True, text=True, check=False, timeout=30
+        )
+        if result.returncode != 0:
+            return None
+
+        issues = json.loads(result.stdout)
+        if not issues:
+            return None
+
+        # Prefer issues with session or in-progress labels
+        for issue in issues:
+            labels = [l.get("name", "") for l in issue.get("labels", [])]
+            if "session" in labels or "in-progress" in labels:
+                debug_print(f"Found recent session issue: #{issue['number']}")
+                return (issue["number"], issue["title"])
+
+        # No session issue found, use most recent open issue
+        most_recent = issues[0]
+        debug_print(f"Using most recent open issue: #{most_recent['number']}")
+        return (most_recent["number"], most_recent["title"])
+
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, Exception) as e:
+        debug_print(f"Error finding recent issue: {e}")
+        return None
+
+
+def _create_fallback_issue() -> Optional[tuple]:
+    """
+    Create a fallback 'GENERAL DISCUSSION' issue for transcription.
+    Returns (issue_num, title) or None.
+    """
+    try:
+        title = f"[SESSION] General Discussion - {datetime.now().strftime('%Y%m%d')}"
+        body = """## General Discussion Thread
+
+This issue was auto-created by GHE as a fallback for conversation transcription.
+
+No specific issue was configured, so this thread captures general work discussion.
+
+---
+*Auto-created by GHE transcription system*"""
+
+        result = subprocess.run(
+            ["gh", "issue", "create", "--title", title, "--body", body,
+             "--label", "session,in-progress"],
+            capture_output=True, text=True, check=False, timeout=30
+        )
+        if result.returncode == 0:
+            # Parse issue URL to get number
+            url = result.stdout.strip()
+            # URL format: https://github.com/owner/repo/issues/123
+            issue_num = int(url.split("/")[-1])
+            debug_print(f"Created fallback issue: #{issue_num}")
+            return (issue_num, title)
+    except (subprocess.TimeoutExpired, ValueError, Exception) as e:
+        debug_print(f"Error creating fallback issue: {e}")
+    return None
+
+
 def get_current_issue() -> Optional[int]:
-    """Get the current issue number from config."""
-    # Try to read from last_active_issue.json first (preferred - has title too)
+    """
+    Get the current issue number from config, with smart fallbacks.
+
+    Priority order:
+    1. last_active_issue.json (explicit user selection)
+    2. ghe.local.md current_issue setting
+    3. Most recent open issue with session/in-progress label
+    4. Create new fallback issue
+    """
     pending_path = get_pending_file_path()
     config_path = pending_path.parent / "last_active_issue.json"
 
+    # 1. Try last_active_issue.json first (preferred - has title too)
     if config_path.exists():
         try:
             with open(config_path) as f:
@@ -251,25 +342,30 @@ def get_current_issue() -> Optional[int]:
         except (json.JSONDecodeError, IOError):
             pass
 
-    # Fallback: read from ghe.local.md settings
+    # 2. Fallback: read from ghe.local.md settings
     issue_str = ghe_get_setting("current_issue", "")
     if issue_str and issue_str != "null":
         try:
             issue_num = int(issue_str)
-            # Create last_active_issue.json for future reads
-            try:
-                with open(config_path, 'w') as f:
-                    json.dump({
-                        'issue': issue_num,
-                        'title': f'Issue #{issue_num}',
-                        'last_active': datetime.now(timezone.utc).isoformat()
-                    }, f)
-                debug_print(f"Created last_active_issue.json from ghe.local.md (issue #{issue_num})")
-            except IOError:
-                pass
+            _save_issue_to_json(config_path, issue_num, f"Issue #{issue_num}")
+            debug_print(f"Using issue from ghe.local.md: #{issue_num}")
             return issue_num
         except ValueError:
             pass
+
+    # 3. Fallback: search GitHub for recent open session issue
+    found = _find_recent_open_issue()
+    if found:
+        issue_num, title = found
+        _save_issue_to_json(config_path, issue_num, title)
+        return issue_num
+
+    # 4. Last resort: create a fallback issue
+    created = _create_fallback_issue()
+    if created:
+        issue_num, title = created
+        _save_issue_to_json(config_path, issue_num, title)
+        return issue_num
 
     return None
 
