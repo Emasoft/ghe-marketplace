@@ -1,9 +1,11 @@
 ---
 name: hook-development
 description: |
-  Master the art of writing reliable Claude Code hooks that never get aborted.
-  Learn the critical "immediate response" pattern that prevents the dreaded
-  "operation was aborted" error. Essential knowledge for any plugin developer.
+  This skill should be used when writing Claude Code plugin hooks or debugging
+  the "operation was aborted" error. Teaches the critical "immediate response"
+  pattern that prevents Claude Code's internal timeout from aborting hooks.
+  Essential knowledge for plugin developers creating PreToolUse, PostToolUse,
+  UserPromptSubmit, Stop, or SessionStart hooks.
 triggers:
   - write a hook
   - create a hook
@@ -263,6 +265,18 @@ if __name__ == "__main__":
 3. **Pass data via environment variables** - Safer than command args
 4. **Always exit 0** - Non-zero exit codes have special meanings
 5. **Test manually first** - Easier to debug outside Claude Code
+
+## Bundled Template Scripts
+
+This skill includes ready-to-use template scripts in the `scripts/` directory:
+
+- **`scripts/example_hook.py`** - Template hook with the immediate response pattern
+- **`scripts/example_worker.py`** - Template worker for background processing
+
+To use these templates:
+1. Copy them to your plugin's `scripts/` directory
+2. Rename and customize for your use case
+3. Update `hooks.json` to point to your hook script
 
 ## Related Resources
 
