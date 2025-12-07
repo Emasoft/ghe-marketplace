@@ -1110,9 +1110,9 @@ Resume workflow:
 
     elif args.command == "check":
         if check_github_repo():
-            print(json.dumps({"suppressOutput": True}))
+            print(json.dumps({"event": "SessionStart", "suppressOutput": True}))
         else:
-            print(json.dumps({"suppressOutput": True, "error": "No GitHub repo"}))
+            print(json.dumps({"event": "SessionStart", "suppressOutput": True, "error": "No GitHub repo"}))
             sys.exit(1)
 
     else:

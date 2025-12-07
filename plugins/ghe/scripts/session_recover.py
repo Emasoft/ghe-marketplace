@@ -137,7 +137,7 @@ def main() -> None:
             pass
 
     # Suppress output from user view
-    print(json.dumps({"suppressOutput": True}))
+    print(json.dumps({"event": "SessionStart", "suppressOutput": True}))
 
 
 if __name__ == '__main__':

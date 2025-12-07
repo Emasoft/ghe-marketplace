@@ -51,9 +51,10 @@ def main() -> None:
         else:
             message = f"GHE Transcription ON: Issue #{issue}"
 
-        # For SessionStart, must use JSON with additionalContext
+        # For SessionStart, must use JSON with event field and additionalContext
         # Plain stdout is NOT shown to user for SessionStart hooks
         output = {
+            "event": "SessionStart",
             "hookSpecificOutput": {
                 "additionalContext": message
             }
@@ -61,7 +62,7 @@ def main() -> None:
         print(json.dumps(output))
     else:
         # No issue - suppress output entirely
-        print(json.dumps({"suppressOutput": True}))
+        print(json.dumps({"event": "SessionStart", "suppressOutput": True}))
 
 
 if __name__ == "__main__":

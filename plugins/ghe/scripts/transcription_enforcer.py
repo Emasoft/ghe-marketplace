@@ -414,9 +414,9 @@ def fetch_github_comments(issue_num: int, since: Optional[str] = None) -> List[D
     return []
 
 
-def silent_exit() -> None:
-    """Exit silently with suppressOutput JSON."""
-    print(json.dumps({"suppressOutput": True}))
+def silent_exit(event: str = "Stop") -> None:
+    """Exit silently with suppressOutput JSON. Event defaults to Stop as most common."""
+    print(json.dumps({"event": event, "suppressOutput": True}))
     sys.exit(0)
 
 
@@ -426,13 +426,13 @@ def store_pending_message() -> None:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError:
         # No valid input
-        silent_exit()
+        silent_exit("UserPromptSubmit")
 
     prompt = input_data.get("prompt", "")
     session_id = input_data.get("session_id", "")
 
     if not prompt:
-        silent_exit()
+        silent_exit("UserPromptSubmit")
 
     # Skip hook feedback messages (these are system-injected, not real user messages)
     skip_patterns = [
@@ -444,7 +444,7 @@ def store_pending_message() -> None:
     ]
     for pattern in skip_patterns:
         if pattern in prompt:
-            silent_exit()
+            silent_exit("UserPromptSubmit")
 
     # Load existing pending messages
     data = load_pending()
@@ -509,7 +509,7 @@ def store_pending_message() -> None:
     save_pending(data)
 
     # Exit silently
-    silent_exit()
+    silent_exit("UserPromptSubmit")
 
 
 def extract_claude_response(transcript_path: str) -> Optional[str]:

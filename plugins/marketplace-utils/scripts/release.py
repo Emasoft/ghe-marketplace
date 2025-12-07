@@ -211,16 +211,28 @@ def check_prerequisites() -> None:
 
 
 def validate_plugin(config: MarketplaceConfig, plugin_name: str) -> None:
-    """Validate plugin using Claude Code plugin validator."""
-    info(f"Validating plugin '{plugin_name}'...")
+    """Validate plugin using comprehensive plugin_validator.py (11-step validation)."""
+    info(f"Validating plugin '{plugin_name}' (comprehensive 11-step validation)...")
 
     plugin_path = config.get_plugin_path(plugin_name)
     if not plugin_path:
         error(f"Cannot find plugin path for '{plugin_name}'")
 
-    result = run_cmd(f"claude plugin validate \"{plugin_path}\"", check=False, capture=True)
-    if result.returncode != 0:
-        error(f"Plugin validation failed:\n{result.stdout}\n{result.stderr}")
+    # Find plugin_validator.py in the same directory as this script
+    script_dir = Path(__file__).parent.resolve()
+    validator_script = script_dir / "plugin_validator.py"
+
+    if not validator_script.exists():
+        # Fallback to basic validation if comprehensive validator not found
+        warn("plugin_validator.py not found, falling back to basic validation")
+        result = run_cmd(f"claude plugin validate \"{plugin_path}\"", check=False, capture=True)
+        if result.returncode != 0:
+            error(f"Plugin validation failed:\n{result.stdout}\n{result.stderr}")
+    else:
+        # Use comprehensive validator
+        result = run_cmd(f"python3 \"{validator_script}\" \"{plugin_path}\"", check=False, capture=True)
+        if result.returncode != 0:
+            error(f"Plugin validation failed:\n{result.stdout}\n{result.stderr}")
 
     success(f"Plugin '{plugin_name}' validation passed")
 

@@ -24,7 +24,7 @@ def main() -> None:
     issue = ghe_get_setting("current_issue", "")
 
     # Suppress output from user view
-    print(json.dumps({"suppressOutput": True}))
+    print(json.dumps({"event": "UserPromptSubmit", "suppressOutput": True}))
     sys.exit(0)
 
 

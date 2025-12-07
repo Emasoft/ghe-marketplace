@@ -10,6 +10,7 @@ import json
 def main() -> None:
     """Output the hook response"""
     response = {
+        "event": "PreToolUse",
         "suppressOutput": True,
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",

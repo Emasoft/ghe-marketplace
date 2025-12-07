@@ -113,7 +113,7 @@ def main() -> None:
 
         # Silent success - output JSON to suppress from user view
         import json
-        print(json.dumps({"suppressOutput": True, "success": True}))
+        print(json.dumps({"event": "SessionStart", "suppressOutput": True, "success": True}))
     else:
         # No config found - need setup
         print("")

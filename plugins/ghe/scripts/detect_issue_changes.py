@@ -242,7 +242,7 @@ def main() -> None:
     try:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError:
-        print(json.dumps({"suppressOutput": True}))
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
         sys.exit(0)
 
     tool_name = input_data.get("tool_name", "")
@@ -251,14 +251,14 @@ def main() -> None:
 
     # Only process Bash commands
     if tool_name != "Bash":
-        print(json.dumps({"suppressOutput": True}))
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
         sys.exit(0)
 
     command = tool_input.get("command", "")
     cmd_type = detect_command_type(command)
 
     if not cmd_type:
-        print(json.dumps({"suppressOutput": True}))
+        print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
         sys.exit(0)
 
     debug_print(f"Detected gh issue {cmd_type}: {command[:100]}...")
@@ -271,7 +271,7 @@ def main() -> None:
             print(f"Auto-switched to new issue #{issue_num}")
         else:
             debug_print("Could not extract issue number from create output")
-            print(json.dumps({"suppressOutput": True}))
+            print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
 
     elif cmd_type == 'close':
         # Get the issue being closed
@@ -295,7 +295,7 @@ def main() -> None:
             if closed_issue:
                 print(f"Closed issue #{closed_issue} (not active issue)")
             else:
-                print(json.dumps({"suppressOutput": True}))
+                print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
 
     elif cmd_type == 'reopen':
         # Get the issue being reopened
@@ -309,7 +309,7 @@ def main() -> None:
             print(f"Issue #{reopened_issue} reopened. Auto-switched to it.")
         else:
             debug_print("Could not extract issue number from reopen")
-            print(json.dumps({"suppressOutput": True}))
+            print(json.dumps({"event": "PostToolUse", "suppressOutput": True}))
 
     sys.exit(0)
 
