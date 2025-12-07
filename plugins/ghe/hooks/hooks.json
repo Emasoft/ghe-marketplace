@@ -32,8 +32,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/capture_claude.sh",
-            "timeout": 1,
+            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/capture_claude.py",
+            "timeout": 30,
             "suppressOutput": true
           }
         ]
