@@ -658,20 +658,54 @@ Each plugin maintains its own version independently.
         list_plugins(config)
         return
 
-    # Validate required arguments
+    # Validate required arguments - prompt interactively if missing
     if not args.bump_type:
-        parser.print_help()
         print()
-        error("Missing required argument: bump_type")
+        info("Select version bump type:")
+        print("  1. patch (bug fixes, minor changes)")
+        print("  2. minor (new features, backward compatible)")
+        print("  3. major (breaking changes)")
+        print()
+        try:
+            choice = input("Enter number (1-3) or 'q' to quit: ").strip()
+            if choice.lower() == 'q':
+                print("Aborted.")
+                sys.exit(0)
+            bump_map = {'1': 'patch', '2': 'minor', '3': 'major'}
+            if choice in bump_map:
+                args.bump_type = bump_map[choice]
+            else:
+                error(f"Invalid selection: {choice}")
+        except EOFError:
+            error("Bump type required")
     if not args.plugin_name:
+        plugin_names = config.get_plugin_names()
         print()
-        info("Available plugins:")
-        for name in config.get_plugin_names():
-            print(f"  - {name}")
+        info("Select a plugin to release:")
+        for i, name in enumerate(plugin_names, 1):
+            version = config.get_plugin_version(name)
+            print(f"  {i}. {name} (v{version})")
         print()
-        error("Missing required argument: plugin_name")
+        try:
+            choice = input("Enter number (or 'q' to quit): ").strip()
+            if choice.lower() == 'q':
+                print("Aborted.")
+                sys.exit(0)
+            choice_idx = int(choice) - 1
+            if 0 <= choice_idx < len(plugin_names):
+                args.plugin_name = plugin_names[choice_idx]
+            else:
+                error(f"Invalid selection: {choice}")
+        except (ValueError, EOFError):
+            error("Invalid input")
     if not args.notes:
-        error("Missing required argument: notes")
+        print()
+        try:
+            args.notes = input("Enter release notes (brief description): ").strip()
+            if not args.notes:
+                error("Release notes cannot be empty")
+        except EOFError:
+            error("Release notes required")
 
     # Validate plugin name
     if args.plugin_name not in config.get_plugin_names():
