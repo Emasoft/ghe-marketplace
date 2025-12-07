@@ -680,7 +680,7 @@ def verify_transcription() -> None:
             scripts_dir = str(Path(__file__).parent)
             if scripts_dir not in sys.path:
                 sys.path.insert(0, scripts_dir)
-            from auto_transcribe import post_assistant_message
+            from auto_transcribe import post_to_issue, get_posting_agent
 
             for claude_msg in claude_pending:
                 # Get full message content from the pending record
@@ -690,9 +690,11 @@ def verify_transcription() -> None:
                     content = claude_msg.get("preview", "")
 
                 if content:
-                    # Only remove from still_pending if post succeeded
-                    if post_assistant_message(content):
-                        still_pending.remove(claude_msg)
+                    # Get appropriate agent name and post directly with issue_num
+                    agent = get_posting_agent(str(issue_num), None)
+                    post_to_issue(str(issue_num), agent, content, False)
+                    still_pending.remove(claude_msg)
+                    print(f"DEBUG auto-transcribed Claude response to issue #{issue_num}", file=sys.stderr)
         except Exception as e:
             # If auto-transcribe fails, continue with blocking
             print(f"DEBUG auto-transcribe failed: {e}", file=sys.stderr)
