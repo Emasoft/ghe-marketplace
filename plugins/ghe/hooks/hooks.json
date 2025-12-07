@@ -19,8 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/capture_user.py",
-            "timeout": 2,
+            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/capture_user.py",
+            "timeout": 30,
             "suppressOutput": true
           }
         ]
