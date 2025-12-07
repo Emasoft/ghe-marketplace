@@ -280,7 +280,7 @@ def classify_element(content: str) -> str:
         r"\.(py|js|ts|jsx|tsx|md|yml|yaml|json|xml|html|css|scss|sass|less|sh|bash|zsh|rb|go|rs|java|kt|swift|c|cpp|h|hpp)",
         r"\.(png|jpg|jpeg|gif|svg|ico|webp|avif|bmp|tiff|mp3|wav|ogg|flac|aac|m4a|mp4|webm|avi|mov|mkv|glb|gltf|obj|fbx|blend|dae|3ds|ttf|otf|woff|woff2|eot)",
         r"(raw\.githubusercontent\.com|github\.com/.*/blob/|cdn\.|assets/|images/|sprites/|textures/|sounds/|audio/|video/|models/|fonts/)",
-        r"(create[d]?|implement|writ(e|ten)|add(ed)?|modif(y|ied)|edit(ed)?|fix(ed)?|update[d]?|refactor|upload(ed)?|commit(ted)?|push(ed)?|deploy(ed)?|built|generat(e|ed)|render(ed)?|compil(e|ed)|export(ed)?|import(ed)?)",
+        r"(create[d]?|implement|writ(e|ten)|add(ed)?|modif(y|ied)|edit(ed)?|fix(ed)?|update[d]?|refactor|upload(ed)?|commit(ted)?|push(ed)?|deploy(ed)?|built|generat(e|ed)|render(ed)?|compil(e|ed)|export(ed)?|import(ed)?|install(ed)?|reinstall(ed)?|uninstall(ed)?|run|ran|execut(e|ed)|launch(ed)?|start(ed)?|stop(ped)?|restart(ed)?)",
         r"(asset[s]?|sprite[s]?|icon[s]?|graphic[s]?|image[s]?|texture[s]?|sound[s]?|audio|video|model[s]?|animation[s]?|stylesheet|font[s]?|avatar[s]?|logo|banner|thumbnail|screenshot)",
     ]
 
