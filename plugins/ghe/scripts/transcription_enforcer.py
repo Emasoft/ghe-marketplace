@@ -313,15 +313,22 @@ def extract_claude_response(transcript_path: str) -> Optional[str]:
     The transcript is a JSONL file with conversation messages.
     We look for the last assistant message.
     """
-    if not transcript_path or not Path(transcript_path).exists():
-        print(f"DEBUG extract_claude_response: path missing or doesn't exist: {transcript_path}", file=sys.stderr)
+    if not transcript_path:
+        print("DEBUG extract_claude_response: path is empty", file=sys.stderr)
+        return None
+
+    # CRITICAL: Expand tilde in path (Stop hook provides ~/ paths)
+    expanded_path = os.path.expanduser(transcript_path)
+
+    if not Path(expanded_path).exists():
+        print(f"DEBUG extract_claude_response: path doesn't exist: {transcript_path} -> {expanded_path}", file=sys.stderr)
         return None
 
     try:
         last_assistant_msg = None
         entry_count = 0
         assistant_count = 0
-        with open(transcript_path, 'r') as f:
+        with open(expanded_path, 'r') as f:
             for line in f:
                 line = line.strip()
                 if not line:
