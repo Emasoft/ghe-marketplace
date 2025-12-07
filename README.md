@@ -6,7 +6,7 @@
 
 **Persistent Memory for Claude Code**
 
-[![Version](https://img.shields.io/badge/version-0.6.38-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/ghe-v0.6.38)
+[![Version](https://img.shields.io/badge/version-0.6.39-blue.svg)](https://github.com/Emasoft/ghe-marketplace/releases/tag/ghe-v0.6.39)
 [![Release](https://img.shields.io/github/v/release/Emasoft/ghe-marketplace?include_prereleases&label=release)](https://github.com/Emasoft/ghe-marketplace/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
@@ -24,7 +24,7 @@
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| ghe | 0.6.38 | GHE (GitHub-Elements) - Automated project management for ... |
+| ghe | 0.6.39 | GHE (GitHub-Elements) - Automated project management for ... |
 | marketplace-utils | 1.1.6 | Portable utility tools for Claude Code plugin marketplace... |
 
 *Last updated: 2025-12-07*
@@ -53,7 +53,7 @@
   - [1. Claude Code](#1-claude-code)
   - [2. GitHub CLI](#2-github-cli)
 - [Plugin Contents](#plugin-contents)
-  - [GHE v0.6.38](#ghe-v0638)
+  - [GHE v0.6.39](#ghe-v0639)
   - [Agents](#agents)
   - [Argos Panoptes - The All-Seeing Guardian](#argos-panoptes-the-all-seeing-guardian)
   - [Skills](#skills)
@@ -346,7 +346,7 @@ gh auth login
 
 ## Plugin Contents
 
-### GHE v0.6.38
+### GHE v0.6.39
 
 | Component | Count | Description |
 |-----------|-------|-------------|
