@@ -55,7 +55,10 @@ def output_json_and_exit(output: dict, exit_code: int = 0) -> None:
     if "event" not in output:
         output["event"] = "SessionStart"
 
-    print(json.dumps(output))
+    # CRITICAL: flush=True ensures output is written to pipe before exit
+    # Without this, stdout may be block-buffered and not flushed before sys.exit()
+    print(json.dumps(output), flush=True)
+    sys.stdout.flush()  # Belt and suspenders - ensure flush
     sys.exit(exit_code)
 
 
@@ -449,32 +452,29 @@ def main() -> None:
     if not config_file:
         # No config - prompt user to run setup
         debug_log("No GHE config - prompting for setup")
+        # Always use suppressOutput to avoid parsing issues
         output_json_and_exit({
             "event": "SessionStart",
-            "hookSpecificOutput": {
-                "additionalContext": "GHE not configured. Run /ghe:setup to enable GitHub Elements tracking."
-            }
+            "suppressOutput": True
         })
 
     # Get repo path from config
     repo_path = get_repo_path(config_file)
     if not repo_path:
         debug_log("Config file found but repo_path is missing!", "ERROR")
+        # Always use suppressOutput to avoid parsing issues
         output_json_and_exit({
             "event": "SessionStart",
-            "hookSpecificOutput": {
-                "additionalContext": "GHE config corrupted (missing repo_path). Run /ghe:setup to reconfigure."
-            }
+            "suppressOutput": True
         })
 
     # Verify repo_path exists
     if not Path(repo_path).is_dir():
         debug_log(f"repo_path does not exist: {repo_path}", "ERROR")
+        # Always use suppressOutput to avoid parsing issues
         output_json_and_exit({
             "event": "SessionStart",
-            "hookSpecificOutput": {
-                "additionalContext": f"GHE repo_path does not exist: {repo_path}. Run /ghe:setup to reconfigure."
-            }
+            "suppressOutput": True
         })
 
     # Ensure required folders exist (silent)
@@ -521,11 +521,11 @@ def main() -> None:
 
         debug_log(f"Output: {message[:80]}")
         debug_log("UNIFIED SESSION START HOOK COMPLETE - with notification")
+        # SIMPLIFIED: Always use suppressOutput to avoid hookSpecificOutput parsing issues
+        # The notification is logged but not shown to user via hook output
         output_json_and_exit({
             "event": "SessionStart",
-            "hookSpecificOutput": {
-                "additionalContext": message
-            }
+            "suppressOutput": True
         })
     else:
         # No issue - suppress output
