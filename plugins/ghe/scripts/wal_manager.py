@@ -83,13 +83,24 @@ def release_wal_lock(lock_file) -> None:
 
 def get_next_sequence() -> int:
     """Get and increment the sequence number atomically."""
+    import time
     seq_path = get_sequence_path()
     lock_path = get_lock_path()
 
     lock_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(lock_path, 'w') as lock_file:
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        # Non-blocking lock with retry (max 2 seconds)
+        for attempt in range(20):
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except (IOError, OSError):
+                if attempt < 19:
+                    time.sleep(0.1)
+                else:
+                    # Fallback: use timestamp-based sequence
+                    return int(time.time() * 1000) % 1000000
         try:
             if seq_path.exists():
                 try:
@@ -129,13 +140,23 @@ def wal_append(
     Returns:
         The sequence number of the appended entry
     """
+    import time
     wal_path = get_wal_path()
     lock_path = get_lock_path()
 
     lock_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(lock_path, 'w') as lock_file:
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        # Non-blocking lock with retry (max 2 seconds)
+        for attempt in range(20):
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except (IOError, OSError):
+                if attempt < 19:
+                    time.sleep(0.1)
+                else:
+                    return -1  # Failed to acquire lock
         try:
             seq = get_next_sequence()
 
