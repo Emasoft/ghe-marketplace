@@ -12,7 +12,13 @@ from pathlib import Path
 script_dir = Path(__file__).parent
 sys.path.insert(0, str(script_dir))
 
-from ghe_common import ghe_init, ghe_get_setting
+# Safe import with fallback - MUST output valid JSON on any failure
+try:
+    from ghe_common import ghe_init, ghe_get_setting
+except ImportError:
+    # If import fails, output valid JSON and exit gracefully
+    print(json.dumps({"event": "UserPromptSubmit", "suppressOutput": True}))
+    sys.exit(0)
 
 
 def main() -> None:

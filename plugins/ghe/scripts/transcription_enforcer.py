@@ -425,7 +425,6 @@ def store_pending_message() -> None:
     try:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError:
-        # No valid input
         silent_exit("UserPromptSubmit")
 
     prompt = input_data.get("prompt", "")

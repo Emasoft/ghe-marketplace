@@ -18,7 +18,13 @@ from pathlib import Path
 script_dir = Path(__file__).parent
 sys.path.insert(0, str(script_dir))
 
-from ghe_common import ghe_init, GHE_CURRENT_ISSUE, GHE_PLUGIN_ROOT
+# Safe import with fallback - MUST output valid JSON on any failure
+try:
+    from ghe_common import ghe_init, GHE_CURRENT_ISSUE, GHE_PLUGIN_ROOT
+except ImportError:
+    # If import fails, output valid JSON and exit gracefully
+    print(json.dumps({"event": "SessionStart", "suppressOutput": True}))
+    sys.exit(0)
 
 
 def get_repo_from_settings() -> str:

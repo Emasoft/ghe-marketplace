@@ -116,24 +116,15 @@ def main() -> None:
         print(json.dumps({"event": "SessionStart", "suppressOutput": True, "success": True}))
     else:
         # No config found - need setup
-        print("")
-        print("==========================================")
-        print("  GHE PLUGIN NOT CONFIGURED")
-        print("==========================================")
-        print("")
-        print("GitHub Elements requires initial setup.")
-        print("")
-        print("Run: /ghe:setup")
-        print("")
-        print("This will:")
-        print("  1. Detect your git repository")
-        print("  2. Create configuration file")
-        print("  3. Create REQUIREMENTS/ folder")
-        print("  4. Create GHE_REPORTS/ folder")
-        print("  5. Set up GitHub labels")
-        print("")
-        print("==========================================")
-        print("")
+        # MUST output valid JSON with event field for Claude Code hooks
+        import json
+        output = {
+            "event": "SessionStart",
+            "hookSpecificOutput": {
+                "additionalContext": "GHE not configured. Run /ghe:setup to enable GitHub Elements tracking."
+            }
+        }
+        print(json.dumps(output))
 
 
 if __name__ == '__main__':
