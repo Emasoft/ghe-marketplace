@@ -267,13 +267,15 @@ def update_marketplace_json_for_plugin(config: MarketplaceConfig, plugin_name: s
     if plugin_index < 0:
         error(f"Plugin '{plugin_name}' not found in marketplace.json")
 
+    old_version = data['plugins'][plugin_index].get('version', 'unknown')
     data['plugins'][plugin_index]['version'] = new_version
 
     with open(config.marketplace_json_path, 'w') as f:
         json.dump(data, f, indent=2)
         f.write('\n')
 
-    success(f"Updated marketplace.json ({plugin_name} -> {new_version})")
+    success(f"{config.marketplace_json_path}")
+    print(f"       plugins[{plugin_name}].version: {old_version} -> {new_version}")
 
 
 def update_plugin_json(config: MarketplaceConfig, plugin_name: str, new_version: str) -> None:
@@ -287,14 +289,15 @@ def update_plugin_json(config: MarketplaceConfig, plugin_name: str, new_version:
     with open(plugin_json_path) as f:
         data = json.load(f)
 
+    old_version = data.get('version', 'unknown')
     data['version'] = new_version
 
     with open(plugin_json_path, 'w') as f:
         json.dump(data, f, indent=2)
         f.write('\n')
 
-    rel_path = plugin_json_path.relative_to(config.repo_root)
-    success(f"Updated {rel_path}")
+    success(f"{plugin_json_path}")
+    print(f"       version: {old_version} -> {new_version}")
 
 
 def update_script_versions(config: MarketplaceConfig, plugin_name: str, new_version: str) -> None:
@@ -577,6 +580,7 @@ def clear_local_plugin_cache(config: MarketplaceConfig, plugin_name: str, new_ve
             plugin_key = f"{plugin_name}@{marketplace_name}"
             if plugin_key in installed_data.get("plugins", {}):
                 from datetime import datetime, timezone
+                old_version = installed_data["plugins"][plugin_key].get("version", "unknown")
                 installed_data["plugins"][plugin_key]["version"] = new_version
                 installed_data["plugins"][plugin_key]["lastUpdated"] = datetime.now(timezone.utc).isoformat()
                 if new_commit_sha:
@@ -585,7 +589,8 @@ def clear_local_plugin_cache(config: MarketplaceConfig, plugin_name: str, new_ve
                 with open(installed_plugins_path, 'w') as f:
                     json.dump(installed_data, f, indent=2)
                     f.write('\n')
-                success(f"Updated installed_plugins.json ({plugin_key} -> {new_version})")
+                success(f"{installed_plugins_path}")
+                print(f"       plugins[{plugin_key}].version: {old_version} -> {new_version}")
             else:
                 info(f"Plugin {plugin_key} not in installed_plugins.json (will be added on install)")
         except Exception as e:
