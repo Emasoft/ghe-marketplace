@@ -10,13 +10,13 @@ import json
 def main() -> None:
     """Output the hook response"""
     response = {
+        "suppressOutput": True,
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-            "permissionDecisionReason": "Reminder: If this makes significant changes (git commit, deployment), note for transcription if active."
+            "permissionDecision": "allow"
         }
     }
-    print(json.dumps(response, indent=2))
+    print(json.dumps(response))
 
 
 if __name__ == '__main__':

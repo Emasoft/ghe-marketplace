@@ -246,19 +246,25 @@ def fetch_github_comments(issue_num: int, since: Optional[str] = None) -> List[D
     return []
 
 
+def silent_exit() -> None:
+    """Exit silently with suppressOutput JSON."""
+    print(json.dumps({"suppressOutput": True}))
+    sys.exit(0)
+
+
 def store_pending_message() -> None:
     """Store a pending user message from stdin (UserPromptSubmit hook)."""
     try:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError:
         # No valid input
-        sys.exit(0)
+        silent_exit()
 
     prompt = input_data.get("prompt", "")
     session_id = input_data.get("session_id", "")
 
     if not prompt:
-        sys.exit(0)
+        silent_exit()
 
     # Skip hook feedback messages (these are system-injected, not real user messages)
     skip_patterns = [
@@ -270,7 +276,7 @@ def store_pending_message() -> None:
     ]
     for pattern in skip_patterns:
         if pattern in prompt:
-            sys.exit(0)
+            silent_exit()
 
     # Load existing pending messages
     data = load_pending()
@@ -296,8 +302,8 @@ def store_pending_message() -> None:
     # Save
     save_pending(data)
 
-    # Output nothing - this is a background operation
-    sys.exit(0)
+    # Exit silently
+    silent_exit()
 
 
 def extract_claude_response(transcript_path: str) -> Optional[str]:
@@ -347,7 +353,7 @@ def store_claude_response() -> None:
     try:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError:
-        sys.exit(0)
+        silent_exit()
 
     transcript_path = input_data.get("transcript_path", "")
     session_id = input_data.get("session_id", "")
@@ -357,7 +363,7 @@ def store_claude_response() -> None:
 
     if not response:
         # No response to store
-        sys.exit(0)
+        silent_exit()
 
     # Load existing pending messages
     data = load_pending()
@@ -378,7 +384,7 @@ def store_claude_response() -> None:
     # Save
     save_pending(data)
 
-    sys.exit(0)
+    silent_exit()
 
 
 def has_user_avatar(comment_body: str) -> bool:
@@ -532,15 +538,13 @@ def verify_transcription() -> None:
 
     if not pending:
         # Nothing pending, allow stop
-        sys.exit(0)
+        silent_exit()
 
     # Get current issue
     issue_num = get_current_issue()
     if not issue_num:
-        # No issue configured, can't verify - allow stop but warn
-        print("Warning: No GHE issue configured for transcription verification",
-              file=sys.stderr)
-        sys.exit(0)
+        # No issue configured, can't verify - allow stop
+        silent_exit()
 
     # Find the oldest pending message timestamp for efficient filtering
     oldest_timestamp = min(m.get("timestamp", "") for m in pending)
@@ -552,9 +556,8 @@ def verify_transcription() -> None:
         # No comments found after our timestamp
         all_comments = fetch_github_comments(issue_num)
         if all_comments is None:
-            print(f"Warning: Could not fetch comments from issue #{issue_num}",
-                  file=sys.stderr)
-            sys.exit(0)
+            # Can't verify - allow stop
+            silent_exit()
         comments = []
 
     # Check for mixed speakers (user + Claude in same comment)
@@ -655,7 +658,7 @@ def verify_transcription() -> None:
     data["pending"] = []
     save_pending(data)
 
-    sys.exit(0)
+    silent_exit()
 
 
 def clear_pending(hash_to_clear: Optional[str] = None) -> None:

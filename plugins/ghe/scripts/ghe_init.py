@@ -111,8 +111,9 @@ def main() -> None:
         # Ensure GHE_REPORTS folder exists in repo
         ensure_folder(f"{repo_path}/GHE_REPORTS", "GHE_REPORTS")
 
-        # Silent success - config and folders verified
-        print(f"[GHE-INIT] Verified: {repo_path}")
+        # Silent success - output JSON to suppress from user view
+        import json
+        print(json.dumps({"suppressOutput": True, "success": True}))
     else:
         # No config found - need setup
         print("")
