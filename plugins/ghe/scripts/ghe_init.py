@@ -12,14 +12,19 @@ from datetime import datetime
 from pathlib import Path
 
 
-def debug_log(message: str) -> None:
-    """Append debug message to .claude/hook_debug.log with timestamp."""
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+
+    Format: YYYY-MM-DD HH:MM:SS,mmm LEVEL [logger] - message
+    Compatible with: lnav, glogg, Splunk, ELK, Log4j viewers
+    """
     try:
         log_file = Path(".claude/hook_debug.log")
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
         with open(log_file, "a") as f:
-            f.write(f"[{timestamp}] ghe_init: {message}\n")
+            f.write(f"{timestamp} {level:<5} [ghe_init] - {message}\n")
     except Exception:
         pass  # Never fail on logging
 
@@ -111,14 +116,14 @@ def main() -> None:
 
         if not repo_path:
             # Config exists but no repo_path - corrupted config
-            debug_log("ERROR: Config file found but repo_path is missing!")
+            debug_log("Config file found but repo_path is missing!", "ERROR")
             print("[GHE-INIT] WARNING: Config file found but repo_path is missing!")
             print("[GHE-INIT] Run /ghe:setup to reconfigure")
             sys.exit(0)
 
         # Verify repo_path exists
         if not Path(repo_path).is_dir():
-            debug_log(f"ERROR: repo_path does not exist: {repo_path}")
+            debug_log(f"repo_path does not exist: {repo_path}", "ERROR")
             print(f"[GHE-INIT] WARNING: Configured repo_path does not exist: {repo_path}")
             print("[GHE-INIT] Run /ghe:setup to reconfigure")
             sys.exit(0)

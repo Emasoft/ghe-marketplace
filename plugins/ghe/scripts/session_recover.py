@@ -20,14 +20,19 @@ script_dir = Path(__file__).parent
 sys.path.insert(0, str(script_dir))
 
 
-def debug_log(message: str) -> None:
-    """Append debug message to .claude/hook_debug.log with timestamp."""
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+
+    Format: YYYY-MM-DD HH:MM:SS,mmm LEVEL [logger] - message
+    Compatible with: lnav, glogg, Splunk, ELK, Log4j viewers
+    """
     try:
         log_file = Path(".claude/hook_debug.log")
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
         with open(log_file, "a") as f:
-            f.write(f"[{timestamp}] session_recover: {message}\n")
+            f.write(f"{timestamp} {level:<5} [session_recover] - {message}\n")
     except Exception:
         pass  # Never fail on logging
 
@@ -37,7 +42,7 @@ try:
     from ghe_common import ghe_init, GHE_CURRENT_ISSUE, GHE_PLUGIN_ROOT
     debug_log("Imported ghe_common successfully")
 except ImportError as e:
-    debug_log(f"ImportError: {e} - exiting with valid JSON")
+    debug_log(f"ImportError: {e} - exiting with valid JSON", "ERROR")
     # If import fails, output valid JSON and exit gracefully
     print(json.dumps({"event": "SessionStart", "suppressOutput": True}))
     sys.exit(0)
@@ -146,19 +151,19 @@ def auto_resume_last_issue() -> str:
         return issue_num
 
     except json.JSONDecodeError as e:
-        debug_log(f"JSONDecodeError: {e}")
+        debug_log(f"JSONDecodeError: {e}", "ERROR")
         return ""
     except subprocess.CalledProcessError as e:
-        debug_log(f"CalledProcessError: {e.returncode} - {e.stderr}")
+        debug_log(f"CalledProcessError: {e.returncode} - {e.stderr}", "ERROR")
         return ""
     except subprocess.TimeoutExpired:
-        debug_log("TimeoutExpired: gh command took >5s")
+        debug_log("TimeoutExpired: gh command took >5s", "WARN")
         return ""
     except FileNotFoundError as e:
-        debug_log(f"FileNotFoundError: {e}")
+        debug_log(f"FileNotFoundError: {e}", "ERROR")
         return ""
     except Exception as e:
-        debug_log(f"Unexpected error: {type(e).__name__}: {e}")
+        debug_log(f"Unexpected error: {type(e).__name__}: {e}", "ERROR")
         return ""
 
 
@@ -200,11 +205,11 @@ def main() -> None:
             )
             debug_log(f"recall_elements.py completed: exit={result.returncode}")
         except subprocess.TimeoutExpired:
-            debug_log("recall_elements.py TIMEOUT (>10s)")
+            debug_log("recall_elements.py TIMEOUT (>10s)", "WARN")
         except subprocess.SubprocessError as e:
-            debug_log(f"recall_elements.py SubprocessError: {e}")
+            debug_log(f"recall_elements.py SubprocessError: {e}", "ERROR")
         except FileNotFoundError as e:
-            debug_log(f"recall_elements.py FileNotFoundError: {e}")
+            debug_log(f"recall_elements.py FileNotFoundError: {e}", "ERROR")
     else:
         debug_log("No active issue to recover")
 

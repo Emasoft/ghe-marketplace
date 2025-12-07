@@ -13,14 +13,19 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 
-def debug_log(message: str) -> None:
-    """Append debug message to .claude/hook_debug.log with timestamp."""
+def debug_log(message: str, level: str = "INFO") -> None:
+    """
+    Append debug message to .claude/hook_debug.log in standard log format.
+
+    Format: YYYY-MM-DD HH:MM:SS,mmm LEVEL [logger] - message
+    Compatible with: lnav, glogg, Splunk, ELK, Log4j viewers
+    """
     try:
         log_file = Path(".claude/hook_debug.log")
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
         with open(log_file, "a") as f:
-            f.write(f"[{timestamp}] transcription_notify: {message}\n")
+            f.write(f"{timestamp} {level:<5} [transcription_notify] - {message}\n")
     except Exception:
         pass  # Never fail on logging
 
@@ -59,10 +64,10 @@ def get_active_issue() -> Tuple[Optional[int], str]:
             debug_log(f"Parsed issue={issue}, title={title[:50] if title else 'N/A'}")
             return issue, title
     except json.JSONDecodeError as e:
-        debug_log(f"JSONDecodeError: {e}")
+        debug_log(f"JSONDecodeError: {e}", "ERROR")
         return None, ""
     except IOError as e:
-        debug_log(f"IOError: {e}")
+        debug_log(f"IOError: {e}", "ERROR")
         return None, ""
 
 
