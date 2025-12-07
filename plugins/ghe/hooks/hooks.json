@@ -6,26 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/ghe_init.py",
-            "timeout": 15,
-            "suppressOutput": true
-          },
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_transcribe.py check",
-            "timeout": 10,
-            "suppressOutput": true
-          },
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_recover.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_start.py",
             "timeout": 30,
-            "suppressOutput": true
-          },
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_notify.py",
-            "timeout": 5,
             "suppressOutput": false
           }
         ]
