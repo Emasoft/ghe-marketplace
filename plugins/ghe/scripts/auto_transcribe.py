@@ -579,15 +579,14 @@ def post_to_issue(issue_num: str, speaker: str, message: str, is_user: bool = Fa
     # Classify element
     badges = classify_element(linkified_message)
 
-    # Format the comment - badges on same line as ---
-    comment = f"""<img src="{avatar_url}" width="77" align="left"/>
-
-**{speaker}**
-<br><br>
+    # Format the comment - new style with 81x81 avatar
+    comment = f"""<p><img src="{avatar_url}" width="81" height="81" alt="{speaker}" align="middle">&nbsp;&nbsp;&nbsp;&nbsp;<span style="vertical-align: middle;"><strong>{speaker} said:</strong></span></p>
 
 {linkified_message}
 
---- {badges}"""
+---
+
+{badges}"""
 
     # Post to GitHub
     run_gh("issue", "comment", issue_num, "--body", comment)

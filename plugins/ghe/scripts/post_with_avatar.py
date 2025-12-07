@@ -109,10 +109,7 @@ def format_comment(name: str, content: str) -> str:
 
     avatar_url = get_avatar_url(name)
 
-    return f'''<img src="{avatar_url}" width="77" align="left"/>
-
-**{name}**
-<br><br>
+    return f'''<p><img src="{avatar_url}" width="81" height="81" alt="{name}" align="middle">&nbsp;&nbsp;&nbsp;&nbsp;<span style="vertical-align: middle;"><strong>{name} said:</strong></span></p>
 
 {content}'''
 
@@ -165,10 +162,7 @@ def avatar_header(name: str) -> str:
 
     avatar_url = get_avatar_url(name)
 
-    return f'''<img src="{avatar_url}" width="77" align="left"/>
-
-**{name}**
-<br><br>
+    return f'''<p><img src="{avatar_url}" width="81" height="81" alt="{name}" align="middle">&nbsp;&nbsp;&nbsp;&nbsp;<span style="vertical-align: middle;"><strong>{name} said:</strong></span></p>
 
 '''
 

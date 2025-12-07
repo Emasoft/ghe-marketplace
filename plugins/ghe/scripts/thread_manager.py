@@ -131,10 +131,9 @@ def create_first_post(issue_num: int, phase: str, requirements: str) -> str:
     role = MANAGER_ROLES[manager]
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-    template = f'''<img src="{avatar_url}" width="77" align="left"/>
+    template = f'''<p><img src="{avatar_url}" width="81" height="81" alt="{manager}" align="middle">&nbsp;&nbsp;&nbsp;&nbsp;<span style="vertical-align: middle;"><strong>{manager} said:</strong></span></p>
 
-**{manager}** - {role}
-<br><br>
+**Role:** {role}
 
 ## Requirements
 
@@ -182,10 +181,9 @@ def update_first_post_manager(issue_num: int, new_phase: str) -> None:
     current_body = result.stdout
 
     # Create new header
-    new_header = f'''<img src="{avatar_url}" width="77" align="left"/>
+    new_header = f'''<p><img src="{avatar_url}" width="81" height="81" alt="{new_manager}" align="middle">&nbsp;&nbsp;&nbsp;&nbsp;<span style="vertical-align: middle;"><strong>{new_manager} said:</strong></span></p>
 
-**{new_manager}** - {role}
-<br><br>'''
+**Role:** {role}'''
 
     # Extract everything after the header (from ## Requirements onwards)
     match = re.search(r'^## Requirements', current_body, re.MULTILINE)
