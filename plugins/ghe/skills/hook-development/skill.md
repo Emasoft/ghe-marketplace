@@ -149,6 +149,93 @@ Timeline:
 - `timeout` is YOUR timeout (in seconds), separate from Claude Code's internal timeout
 - Don't use `suppressOutput: true` during debugging - you need to see errors
 
+## Script Setup Checklist
+
+### 1. Make Scripts Executable
+
+**CRITICAL**: All hook scripts must be executable!
+
+```bash
+chmod +x scripts/*.py
+```
+
+Without this, you'll get cryptic errors like "command not found" or "permission denied".
+
+### 2. Choose Your Invocation Method
+
+There are three ways to invoke Python hooks. Each has tradeoffs:
+
+#### Method A: `python3` prefix (RECOMMENDED)
+
+```json
+"command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/my_hook.py"
+```
+
+**Pros**: Works reliably, python3 is always in PATH
+**Cons**: None significant
+**Shebang**: `#!/usr/bin/env python3`
+
+#### Method B: Direct script execution
+
+```json
+"command": "${CLAUDE_PLUGIN_ROOT}/scripts/my_hook.py"
+```
+
+**Pros**: Cleaner command
+**Cons**: Requires executable permission, relies on shebang
+**Shebang**: `#!/usr/bin/env python3` (REQUIRED)
+
+#### Method C: `uv run` with inline dependencies (ADVANCED)
+
+```json
+"command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/my_hook.py"
+```
+
+**Pros**: Can specify dependencies inline via PEP 723
+**Cons**: `uv` may not be in Claude Code's PATH on all systems
+**Shebang**: Use PEP 723 format:
+
+```python
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "requests>=2.31.0",
+# ]
+# ///
+```
+
+**WARNING**: On macOS, `/opt/homebrew/bin` may not be in Claude Code's PATH. If `uv` fails, fall back to Method A.
+
+### 3. Shebang Reference
+
+| Shebang | Use Case |
+|---------|----------|
+| `#!/usr/bin/env python3` | Standard Python script |
+| `#!/usr/bin/env -S uv run --script` | Script with inline dependencies |
+| `#!/bin/bash` | Shell script hooks |
+
+**Common mistake**: Escaped shebangs like `#\!/usr/bin/env python3` - the backslash breaks it!
+
+### 4. The suppressOutput Setting
+
+```json
+{
+  "type": "command",
+  "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/my_hook.py",
+  "timeout": 30,
+  "suppressOutput": true  // REMOVE THIS WHEN DEBUGGING!
+}
+```
+
+- `suppressOutput: true` - Hides all output (clean but hides errors)
+- `suppressOutput: false` or omitted - Shows errors (use during development)
+
+**Debugging workflow**:
+1. Remove `suppressOutput` to see errors
+2. Fix the errors
+3. Add `suppressOutput: true` back for production
+
 ## Hook Events Reference
 
 | Event | When It Fires | Input Schema |
@@ -257,6 +344,61 @@ if __name__ == "__main__":
 | Making API calls in hook | Fork to worker, call API there |
 | Forgetting `flush=True` | Always flush stdout immediately |
 | Not using `start_new_session=True` | Worker might get killed with parent |
+| Script not executable | Run `chmod +x script.py` |
+| Escaped shebang `#\!` | Use `#!` (no backslash) |
+| Using `uv` without checking PATH | Fall back to `python3` prefix |
+| `suppressOutput: true` hiding errors | Remove it during debugging |
+| Relying on shell environment | Claude Code has minimal PATH |
+| Multiple plugins with same hook event | Can cause race conditions |
+
+## Troubleshooting Guide
+
+### Error: "failed to start: The operation was aborted"
+
+**Cause**: Hook didn't output JSON fast enough before Claude Code's internal timeout.
+
+**Fix**: Use the immediate response pattern - output JSON first, fork work to subprocess.
+
+### Error: "command not found" or "permission denied"
+
+**Cause**: Script not executable or bad shebang.
+
+**Fix**:
+```bash
+chmod +x scripts/*.py
+# Check shebang is correct (no backslash!)
+head -1 scripts/my_hook.py  # Should show: #!/usr/bin/env python3
+```
+
+### Error: "uv: command not found"
+
+**Cause**: `uv` not in Claude Code's PATH (common on macOS with Homebrew).
+
+**Fix**: Use `python3` prefix instead:
+```json
+"command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/my_hook.py"
+```
+
+### Hook runs but nothing happens
+
+**Causes**:
+1. `suppressOutput: true` hiding errors
+2. Worker subprocess failing silently
+3. Wrong working directory
+
+**Fix**:
+1. Remove `suppressOutput` temporarily
+2. Add debug logging to worker script
+3. Use absolute paths or `${CLAUDE_PLUGIN_ROOT}`
+
+### Hook works manually but fails in Claude Code
+
+**Cause**: Different environment (PATH, working directory, etc.)
+
+**Fix**:
+1. Don't rely on shell aliases or custom PATH entries
+2. Use `python3` or full paths to executables
+3. Pass data via environment variables, not stdin to subprocess
 
 ## Key Takeaways
 
