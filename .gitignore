@@ -58,3 +58,4 @@ samples_dev/
 logs/
 *.lock
 ghe_wal.jsonl
+ghe_pending_transcript.json
