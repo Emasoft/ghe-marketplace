@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.temp
+.cache/
+
+# Local settings (user-specific, not plugin-specific)
+*.local.md
+__pycache__/
+
+# Data folders - created in user's project by /ghe:setup, not in plugin
+# These may appear during testing but should NOT be committed with plugin
+GHE_REPORTS/
+GHE-REVIEWS/
+REQUIREMENTS/

@@ -49,6 +49,18 @@ if [ "$MARKER_COUNT" -lt 2 ]; then
   echo "   Content..."
   exit 1
 fi
+
+# Check 3b: Find first 2 markers (frontmatter delimiters)
+# Additional --- after frontmatter closing are horizontal rules, not duplicates
+FIRST_TWO_MARKERS=$(grep -n '^---$' "$SETTINGS_FILE" | head -2)
+FIRST_MARKER_LINE=$(echo "$FIRST_TWO_MARKERS" | head -1 | cut -d: -f1)
+SECOND_MARKER_LINE=$(echo "$FIRST_TWO_MARKERS" | tail -1 | cut -d: -f1)
+
+# Check if first marker is on line 1
+if [ "$FIRST_MARKER_LINE" != "1" ]; then
+  echo "❌ First '---' marker must be on line 1 (found on line $FIRST_MARKER_LINE)"
+  exit 1
+fi
 echo "✅ Frontmatter markers present"
 
 # Check 4: Extract and validate frontmatter
@@ -64,6 +76,20 @@ echo "✅ Frontmatter not empty"
 if ! echo "$FRONTMATTER" | grep -q ':'; then
   echo "⚠️  Warning: Frontmatter has no key:value pairs"
 fi
+
+# Check 5b: Check for duplicate keys (common YAML error)
+DUPLICATE_KEYS=$(echo "$FRONTMATTER" | grep -E '^[a-z_][a-z0-9_]*:' | sed 's/:.*//' | sort | uniq -d)
+if [ -n "$DUPLICATE_KEYS" ]; then
+  echo "❌ MALFORMED: Duplicate keys found in frontmatter!"
+  echo "   Duplicate keys:"
+  echo "$DUPLICATE_KEYS" | while read key; do
+    echo "   - $key (appears $(echo "$FRONTMATTER" | grep -c "^${key}:") times)"
+  done
+  echo ""
+  echo "   Fix: Each key must appear only once in frontmatter"
+  exit 1
+fi
+echo "✅ No duplicate keys"
 
 # Check 6: Look for common fields
 echo ""

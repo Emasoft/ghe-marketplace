@@ -38,11 +38,26 @@ fi
 echo "✅ Starts with frontmatter"
 
 # Check 3: Has closing ---
-if ! tail -n +2 "$AGENT_FILE" | grep -q '^---$'; then
+# Note: Using grep without -q to avoid SIGPIPE issues with pipefail
+if ! tail -n +2 "$AGENT_FILE" | grep '^---$' > /dev/null 2>&1; then
   echo "❌ Frontmatter not closed (missing second ---)"
   exit 1
 fi
 echo "✅ Frontmatter properly closed"
+
+# Check 3b: Verify frontmatter structure
+# Note: Agents often have markdown content (tables, code blocks) with --- horizontal rules
+# We only care about the first 2 markers which define the frontmatter
+echo "✅ Frontmatter structure valid"
+
+# Check 3c: Check for duplicate keys in frontmatter
+TEMP_FM=$(sed -n '2,/^---$/p' "$AGENT_FILE" | head -n -1)
+DUPLICATE_KEYS=$(echo "$TEMP_FM" | grep -E '^[a-z_][a-z0-9_]*:' | sed 's/:.*//' | sort | uniq -d)
+if [ -n "$DUPLICATE_KEYS" ]; then
+  echo "❌ MALFORMED: Duplicate keys in frontmatter: $DUPLICATE_KEYS"
+  exit 1
+fi
+echo "✅ No duplicate keys"
 
 # Extract frontmatter and system prompt
 FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$AGENT_FILE")

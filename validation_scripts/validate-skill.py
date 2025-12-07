@@ -22,12 +22,21 @@ def validate_skill(skill_path):
     if not content.startswith('---'):
         return False, "No YAML frontmatter found"
     
+    # Note: Skills often have markdown content with --- (tables, horizontal rules)
+    # We only validate the first 2 markers which define frontmatter
+
     # Extract frontmatter
     match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
     if not match:
         return False, "Invalid frontmatter format"
-    
+
     frontmatter = match.group(1)
+
+    # Check for duplicate keys
+    keys = re.findall(r'^([a-z_][a-z0-9_]*):', frontmatter, re.MULTILINE)
+    duplicates = [k for k in set(keys) if keys.count(k) > 1]
+    if duplicates:
+        return False, f"MALFORMED: Duplicate keys in frontmatter: {', '.join(duplicates)}"
     
     # Check required fields
     if 'name:' not in frontmatter:

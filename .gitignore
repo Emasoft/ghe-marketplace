@@ -45,7 +45,14 @@ build/
 
 # GHE plugin settings (user-local, per-project)
 .claude/*.local.md
+CLAUDE.md
 
 # Backup folder
 backup/
 .claude/ghe_pending_transcriptions.json
+
+docs_dev/
+scripts_dev/
+examples_dev/
+samples_dev/
+logs/
