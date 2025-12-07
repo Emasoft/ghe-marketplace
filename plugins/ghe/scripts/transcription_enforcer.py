@@ -586,6 +586,11 @@ def verify_transcription() -> None:
     - User and Claude messages must NOT be in the same comment
     - Message content must be complete (not truncated)
     """
+    import time
+    # Wait briefly to ensure store-response has finished writing
+    # (hooks may run in parallel, not sequentially)
+    time.sleep(0.5)
+
     data = load_pending()
     pending = data.get("pending", [])
 
