@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 # Script version - automatically updated by release.py when releasing marketplace-utils
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 SCRIPT_NAME = "generate_toc.py"
 
 
