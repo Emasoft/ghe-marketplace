@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 Plugin Validator - Comprehensive validation for Claude Code plugins
 Integrates all validation logic from individual validators

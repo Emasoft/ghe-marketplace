@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 Background worker for Stop hook.
 Receives JSON from stdin, extracts Claude's response from transcript, adds to WAL.

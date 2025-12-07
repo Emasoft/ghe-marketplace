@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """spawn_agent.py - Spawn a GHE agent in a background Terminal
 
 This script is the orchestration layer that allows:

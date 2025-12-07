@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 detect-duplicate-hooks.py - Detect duplicate hook configurations
 Part of the GHE Plugin - enforces ONE SOURCE OF TRUTH rule

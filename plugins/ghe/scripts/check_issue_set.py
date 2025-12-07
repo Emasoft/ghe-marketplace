@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 Quick check if an issue is currently set for transcription
 Returns exit 0 if issue is set, exit 1 if not

@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """check_review_ready.py - Check for background threads ready for user review
 
 This script is called by Claude to check if any background feature/bug

@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 GHE Initialization Script - runs on every SessionStart
 Ensures configuration exists and required folders are created in the correct repo

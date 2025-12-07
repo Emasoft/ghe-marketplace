@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 Hook: Stop - Full GHE instructions for transcribing assistant response
 Outputs the complete instructions that were previously in the invalid "type": "prompt"

@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 Spawn a Claude session in a BACKGROUND Terminal window.
 Cross-platform: macOS, Windows, Linux
