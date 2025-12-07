@@ -558,6 +558,16 @@ def clear_local_plugin_cache(config: MarketplaceConfig, plugin_name: str) -> Non
                            check=False, capture=True)
             if result.returncode == 0:
                 success("Marketplace cache updated")
+                # Clear Python bytecode cache (__pycache__) to prevent stale .pyc files
+                pycache_count = 0
+                for pycache in marketplace_path.rglob("__pycache__"):
+                    try:
+                        shutil.rmtree(pycache)
+                        pycache_count += 1
+                    except Exception:
+                        pass
+                if pycache_count > 0:
+                    success(f"Cleared {pycache_count} __pycache__ directories")
                 # Get the new commit SHA
                 sha_result = run_cmd(f'cd "{marketplace_path}" && git rev-parse HEAD',
                                    check=False, capture=True)
