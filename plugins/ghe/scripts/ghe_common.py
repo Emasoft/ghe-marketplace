@@ -51,13 +51,17 @@ def ghe_get_github_repo() -> tuple[Optional[str], Optional[str]]:
     if _github_owner is not None and _github_repo is not None:
         return _github_owner, _github_repo
 
+    # Run from plugin's repo directory (plugin is at REPO/plugins/ghe/)
+    plugin_repo_root = str(Path(GHE_PLUGIN_ROOT).parent.parent)
+
     try:
-        # Try gh CLI first (most reliable)
+        # Try gh CLI first (most reliable) - run from plugin repo
         result = subprocess.run(
             ['gh', 'repo', 'view', '--json', 'owner,name'],
             capture_output=True,
             text=True,
-            check=False
+            check=False,
+            cwd=plugin_repo_root  # Run from plugin's repo directory
         )
         if result.returncode == 0:
             import json
@@ -70,9 +74,9 @@ def ghe_get_github_repo() -> tuple[Optional[str], Optional[str]]:
         pass
 
     try:
-        # Fallback to parsing git remote URL
+        # Fallback to parsing git remote URL - run from plugin repo
         result = subprocess.run(
-            ['git', 'remote', 'get-url', 'origin'],
+            ['git', '-C', plugin_repo_root, 'remote', 'get-url', 'origin'],
             capture_output=True,
             text=True,
             check=False
