@@ -903,15 +903,23 @@ def save_last_active_issue(issue_num: str) -> None:
     except subprocess.CalledProcessError:
         title = "Unknown"
 
+    # Get repo info (owner/repo format)
+    try:
+        result = run_gh("repo", "view", "--json", "owner,name", "--jq", '"\(.owner.login)/\(.name)"')
+        repo = result.stdout.strip()
+    except subprocess.CalledProcessError:
+        repo = ""
+
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # Ensure .claude directory exists
     last_active_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # Save to JSON file
+    # Save to JSON file with repo info for cross-project resume
     data = {
         "issue": int(issue_num),
         "title": title,
+        "repo": repo,
         "last_active": timestamp,
     }
 

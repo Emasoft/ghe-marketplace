@@ -37,13 +37,19 @@ def auto_resume_last_issue() -> str:
         data = json.loads(last_active_file.read_text())
         issue_num = str(data.get("issue", ""))
         title = data.get("title", "")
+        repo = data.get("repo", "")
 
         if not issue_num:
             return ""
 
+        # Build gh command with repo if available
+        gh_cmd = ["gh", "issue", "view", issue_num, "--json", "number", "--jq", ".number"]
+        if repo:
+            gh_cmd.extend(["--repo", repo])
+
         # Verify issue still exists on GitHub
         result = subprocess.run(
-            ["gh", "issue", "view", issue_num, "--json", "number", "--jq", ".number"],
+            gh_cmd,
             capture_output=True,
             text=True,
             check=True
