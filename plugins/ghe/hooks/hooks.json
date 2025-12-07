@@ -19,14 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py store",
-            "timeout": 5,
-            "suppressOutput": true
-          },
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_issue_set.py",
-            "timeout": 5,
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/capture_user.py",
+            "timeout": 2,
             "suppressOutput": true
           }
         ]
@@ -38,14 +32,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py store-response",
-            "timeout": 10,
-            "suppressOutput": true
-          },
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py verify",
-            "timeout": 30,
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/capture_claude.py",
+            "timeout": 2,
             "suppressOutput": true
           }
         ]

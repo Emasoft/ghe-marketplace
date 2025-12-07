@@ -507,7 +507,31 @@ def main() -> None:
         debug_log("No active issue to recover")
 
     # =========================================================================
-    # PHASE 4: Build output
+    # PHASE 4: Check for unposted WAL entries and spawn worker
+    # =========================================================================
+    try:
+        from wal_manager import has_unposted_entries, is_worker_running
+        if has_unposted_entries() and not is_worker_running():
+            debug_log("Found unposted WAL entries, spawning worker...")
+            import subprocess
+            worker_script = Path(plugin_root) / "scripts" / "transcription_worker.py"
+            if worker_script.exists():
+                subprocess.Popen(
+                    [sys.executable, str(worker_script)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    stdin=subprocess.DEVNULL,
+                    start_new_session=True,
+                    cwd=repo_path,
+                )
+                debug_log("Spawned transcription worker")
+    except ImportError:
+        debug_log("wal_manager not available, skipping worker spawn", "WARN")
+    except Exception as e:
+        debug_log(f"Error spawning worker: {e}", "WARN")
+
+    # =========================================================================
+    # PHASE 5: Build output
     # =========================================================================
     # Get active issue for notification (may have been set during recovery)
     issue, title = get_active_issue()
