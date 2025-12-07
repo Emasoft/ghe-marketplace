@@ -63,6 +63,9 @@ def auto_resume_last_issue() -> str:
     Check for last_active_issue.json and auto-resume if found.
     Reads repo from plugin settings file (.claude/ghe.local.md).
 
+    IMPORTANT: This function must be fast to avoid hook timeout.
+    It only updates the config file directly - no subprocess calls.
+
     Returns:
         Issue number if resumed, empty string otherwise
     """
@@ -87,29 +90,35 @@ def auto_resume_last_issue() -> str:
         if repo:
             gh_cmd.extend(["--repo", repo])
 
-        # Verify issue still exists on GitHub
+        # Verify issue still exists on GitHub (quick check, 5s timeout)
         result = subprocess.run(
             gh_cmd,
             capture_output=True,
             text=True,
-            check=True
+            check=True,
+            timeout=5
         )
 
         if result.stdout.strip() != issue_num:
             return ""
 
-        # Auto-activate by calling set-issue
-        auto_transcribe = Path(GHE_PLUGIN_ROOT) / 'scripts' / 'auto_transcribe.py'
-        subprocess.run(
-            [sys.executable, str(auto_transcribe), "set-issue", issue_num],
-            capture_output=True,
-            text=True,
-            check=False
-        )
+        # Direct config update - FAST, no subprocess call
+        # This avoids the expensive set-issue subprocess that caused timeouts
+        config_file = Path(".claude/ghe.local.md")
+        if config_file.exists():
+            content = config_file.read_text()
+            import re
+            # Update current_issue
+            if re.search(r'^current_issue:.*$', content, re.MULTILINE):
+                content = re.sub(r'^current_issue:.*$', f'current_issue: {issue_num}', content, flags=re.MULTILINE)
+            # Update current_phase
+            if re.search(r'^current_phase:.*$', content, re.MULTILINE):
+                content = re.sub(r'^current_phase:.*$', 'current_phase: CONVERSATION', content, flags=re.MULTILINE)
+            config_file.write_text(content)
 
         return issue_num
 
-    except (json.JSONDecodeError, subprocess.CalledProcessError, FileNotFoundError):
+    except (json.JSONDecodeError, subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         return ""
 
 
@@ -128,7 +137,8 @@ def main() -> None:
         active_issue = auto_resume_last_issue()
 
     if active_issue and active_issue != "null":
-        # Try to run recall-elements script silently
+        # Try to run recall-elements script silently with timeout
+        # Using 10s timeout to stay well under the 30s hook timeout
         recall_script = Path(GHE_PLUGIN_ROOT) / 'scripts' / 'recall_elements.py'
 
         try:
@@ -137,9 +147,10 @@ def main() -> None:
                  '--issue', active_issue, '--recover'],
                 capture_output=True,
                 text=True,
-                check=False
+                check=False,
+                timeout=10
             )
-        except (subprocess.SubprocessError, FileNotFoundError):
+        except (subprocess.SubprocessError, FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
     # Suppress output from user view
