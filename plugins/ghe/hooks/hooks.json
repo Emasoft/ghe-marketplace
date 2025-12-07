@@ -6,9 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session_start.py",
-            "timeout": 30,
-            "suppressOutput": true
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_start.py",
+            "timeout": 30
           }
         ]
       }
@@ -19,9 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/capture_user.py",
-            "timeout": 30,
-            "suppressOutput": true
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/capture_user.py",
+            "timeout": 30
           }
         ]
       }
@@ -32,9 +30,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/capture_claude.py",
-            "timeout": 30,
-            "suppressOutput": true
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/capture_claude.py",
+            "timeout": 30
           }
         ]
       }
@@ -45,9 +42,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_reminder.py",
-            "timeout": 5000,
-            "suppressOutput": true
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_reminder.py",
+            "timeout": 5000
           }
         ]
       }
@@ -58,9 +54,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/detect_issue_changes.py",
-            "timeout": 45,
-            "suppressOutput": true
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect_issue_changes.py",
+            "timeout": 45
           }
         ]
       }
