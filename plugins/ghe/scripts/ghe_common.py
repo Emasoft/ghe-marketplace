@@ -180,8 +180,8 @@ def ghe_validate_issue(issue_num: int) -> Dict[str, Any]:
             - title: str - Issue title if exists
             - error: str - Error message if any
     """
-    # Run from plugin's repo directory
-    plugin_repo_root = str(Path(GHE_PLUGIN_ROOT).parent.parent)
+    # CRITICAL: Run from USER's repo (from config), NOT the plugin install location
+    user_repo_root = ghe_get_repo_path()
 
     try:
         result = subprocess.run(
@@ -189,7 +189,7 @@ def ghe_validate_issue(issue_num: int) -> Dict[str, Any]:
             capture_output=True,
             text=True,
             check=False,
-            cwd=plugin_repo_root,
+            cwd=user_repo_root,
         )
 
         if result.returncode != 0:
@@ -234,7 +234,8 @@ def ghe_get_or_create_fallback_issue() -> Optional[int]:
     Returns:
         Issue number if found/created, None on failure
     """
-    plugin_repo_root = str(Path(GHE_PLUGIN_ROOT).parent.parent)
+    # CRITICAL: Run from USER's repo (from config), NOT the plugin install location
+    user_repo_root = ghe_get_repo_path()
 
     # First, check if a GENERAL DISCUSSION issue already exists and is open
     try:
@@ -255,7 +256,7 @@ def ghe_get_or_create_fallback_issue() -> Optional[int]:
             capture_output=True,
             text=True,
             check=False,
-            cwd=plugin_repo_root,
+            cwd=user_repo_root,
         )
 
         if result.returncode == 0:
@@ -293,7 +294,7 @@ Messages posted here should be moved to appropriate issues when the topic become
             capture_output=True,
             text=True,
             check=False,
-            cwd=plugin_repo_root,
+            cwd=user_repo_root,
         )
 
         if result.returncode == 0:
