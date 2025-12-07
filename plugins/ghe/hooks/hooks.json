@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/session_start.py",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session_start.py",
             "timeout": 30,
             "suppressOutput": true
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/capture_user.py",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/capture_user.py",
             "timeout": 30,
             "suppressOutput": true
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/capture_claude.py",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/capture_claude.py",
             "timeout": 30,
             "suppressOutput": true
           }
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_reminder.py",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_reminder.py",
             "timeout": 5000,
             "suppressOutput": true
           }
@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/detect_issue_changes.py",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/detect_issue_changes.py",
             "timeout": 45,
             "suppressOutput": true
           }
