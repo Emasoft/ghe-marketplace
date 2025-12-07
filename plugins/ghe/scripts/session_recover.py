@@ -21,9 +21,41 @@ sys.path.insert(0, str(script_dir))
 from ghe_common import ghe_init, GHE_CURRENT_ISSUE, GHE_PLUGIN_ROOT
 
 
+def get_repo_from_settings() -> str:
+    """
+    Read repo from plugin settings file .claude/ghe.local.md
+
+    Returns:
+        repo string (owner/repo format) or empty string
+    """
+    settings_file = Path(".claude/ghe.local.md")
+
+    if not settings_file.exists():
+        return ""
+
+    try:
+        content = settings_file.read_text()
+        # Extract frontmatter between --- markers
+        import re
+        match = re.search(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
+        if not match:
+            return ""
+
+        frontmatter = match.group(1)
+        # Extract repo field
+        repo_match = re.search(r'^repo:\s*["\']?([^"\'\n]+)["\']?\s*$', frontmatter, re.MULTILINE)
+        if repo_match:
+            return repo_match.group(1).strip()
+        return ""
+
+    except Exception:
+        return ""
+
+
 def auto_resume_last_issue() -> str:
     """
     Check for last_active_issue.json and auto-resume if found.
+    Reads repo from plugin settings file (.claude/ghe.local.md).
 
     Returns:
         Issue number if resumed, empty string otherwise
@@ -37,10 +69,12 @@ def auto_resume_last_issue() -> str:
         data = json.loads(last_active_file.read_text())
         issue_num = str(data.get("issue", ""))
         title = data.get("title", "")
-        repo = data.get("repo", "")
 
         if not issue_num:
             return ""
+
+        # Get repo from plugin settings file (not from last_active_issue.json)
+        repo = get_repo_from_settings()
 
         # Build gh command with repo if available
         gh_cmd = ["gh", "issue", "view", issue_num, "--json", "number", "--jq", ".number"]
