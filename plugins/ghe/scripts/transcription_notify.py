@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 """
-Simple notification script for GHE Transcription System.
+GHE Transcription Notification for SessionStart hook.
 
-Outputs ONLY the transcription status:
-- "Transcription ON to issue #XYZ" when active
-- Nothing when no issue is set
-
-This is the "silent hooks" implementation - minimal output.
+For SessionStart hooks, stdout is NOT shown to user.
+Must use JSON with hookSpecificOutput.additionalContext.
 """
 from __future__ import annotations
 
 import json
-import os
-import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -46,16 +41,27 @@ def get_active_issue() -> Tuple[Optional[int], str]:
 
 
 def main() -> None:
-    """Output minimal transcription status notification."""
+    """Output notification via hookSpecificOutput.additionalContext for SessionStart."""
     issue, title = get_active_issue()
 
     if issue:
-        # Output the simple notification
+        # Build notification message
         if title:
-            print(f"Transcription ON to issue #{issue}: {title}")
+            message = f"GHE Transcription ON: Issue #{issue} - {title}"
         else:
-            print(f"Transcription ON to issue #{issue}")
-    # If no issue, output nothing (truly silent)
+            message = f"GHE Transcription ON: Issue #{issue}"
+
+        # For SessionStart, must use JSON with additionalContext
+        # Plain stdout is NOT shown to user for SessionStart hooks
+        output = {
+            "hookSpecificOutput": {
+                "additionalContext": message
+            }
+        }
+        print(json.dumps(output))
+    else:
+        # No issue - suppress output entirely
+        print(json.dumps({"suppressOutput": True}))
 
 
 if __name__ == "__main__":
