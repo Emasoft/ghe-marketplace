@@ -203,7 +203,7 @@ def main() -> None:
     """Main entry point for Stop hook."""
     debug_log("capture_claude started")
 
-    # Read JSON from stdin
+    # Read JSON from stdin FAST
     try:
         input_data = json.load(sys.stdin)
     except json.JSONDecodeError as e:
@@ -212,23 +212,18 @@ def main() -> None:
 
     transcript_path = input_data.get("transcript_path", "")
 
+    # Get current issue FIRST (fast local lookup)
+    issue = get_current_issue_local() or 0
+
     # Extract Claude's last response from transcript
     response = extract_last_assistant_message(transcript_path)
 
     if not response:
         debug_log("No response to capture")
-        # Still spawn worker in case there are pending user messages
         spawn_worker_if_not_running()
         silent_exit()
 
-    # Get current issue from local config (NO API call)
-    issue = get_current_issue_local()
-
-    if not issue:
-        debug_log("No issue configured, using issue=0 placeholder")
-        issue = 0
-
-    # Append to WAL
+    # IMMEDIATELY append to WAL - do this FAST before we get killed
     content_hash = compute_hash(response)
     seq = wal_append(
         speaker="claude",
@@ -236,10 +231,9 @@ def main() -> None:
         content=response,
         content_hash=content_hash
     )
-
     debug_log(f"Captured claude response seq={seq} issue={issue} len={len(response)}")
 
-    # Spawn background worker to post messages
+    # Spawn worker (non-blocking)
     spawn_worker_if_not_running()
 
     # Exit cleanly
