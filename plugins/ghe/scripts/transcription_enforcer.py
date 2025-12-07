@@ -54,6 +54,15 @@ PENDING_FILE = ".claude/ghe_pending_transcriptions.json"
 REDACTION_PLACEHOLDER = "XX REDACTED XX"
 MIN_MATCH_THRESHOLD = 0.7  # 70% similarity required
 
+# Debug mode - set GHE_DEBUG=1 to enable verbose output
+DEBUG_MODE = os.environ.get("GHE_DEBUG", "0") == "1"
+
+
+def debug_print(msg: str) -> None:
+    """Print debug message only if DEBUG_MODE is enabled."""
+    if DEBUG_MODE:
+        print(f"DEBUG: {msg}", file=sys.stderr)
+
 
 def get_pending_file_path() -> Path:
     """Get the path to the pending transcriptions file."""
@@ -140,6 +149,39 @@ def extract_key_phrases(text: str, max_phrases: int = 10) -> List[str]:
                 break
 
     return unique_words
+
+
+def extract_issue_mentions(text: str) -> List[int]:
+    """
+    Extract issue number mentions from text.
+
+    Matches patterns like:
+    - #17, #123
+    - issue 17, issue #17
+    - Issue 17, Issue #17
+    - issue n.17, issue n.123
+
+    Returns:
+        List of issue numbers mentioned (in order of appearance)
+    """
+    mentions = []
+    seen = set()
+
+    # Pattern 1: #123 (most common)
+    for match in re.finditer(r'#(\d+)', text):
+        num = int(match.group(1))
+        if num not in seen:
+            mentions.append(num)
+            seen.add(num)
+
+    # Pattern 2: issue 123, issue #123, issue n.123
+    for match in re.finditer(r'issue\s+(?:#|n\.)?(\d+)', text, re.IGNORECASE):
+        num = int(match.group(1))
+        if num not in seen:
+            mentions.append(num)
+            seen.add(num)
+
+    return mentions
 
 
 def calculate_similarity(text1: str, text2: str) -> float:
@@ -294,6 +336,43 @@ def store_pending_message() -> None:
         # New session, clear old pending
         data = {"pending": [], "session_id": session_id}
 
+    # Auto-detect issue mentions and switch active issue if valid
+    issue_mentions = extract_issue_mentions(prompt)
+    if issue_mentions:
+        # Try to switch to the first mentioned issue
+        mentioned_issue = issue_mentions[0]
+        validation = ghe_validate_issue(mentioned_issue)
+
+        if validation['valid']:
+            # Valid issue mentioned - update active issue
+            pending_path = get_pending_file_path()
+            config_path = pending_path.parent / "last_active_issue.json"
+            current_issue = None
+
+            # Check if we're already on this issue
+            if config_path.exists():
+                try:
+                    with open(config_path) as f:
+                        current_data = json.load(f)
+                        current_issue = current_data.get("issue")
+                except (json.JSONDecodeError, IOError):
+                    pass
+
+            if current_issue != mentioned_issue:
+                # Switch to new issue
+                with open(config_path, 'w') as f:
+                    json.dump({
+                        'issue': mentioned_issue,
+                        'title': validation['title'],
+                        'last_active': datetime.now(timezone.utc).isoformat()
+                    }, f)
+                # Store the switch notification for debug
+                data["issue_switched"] = {
+                    "from": current_issue,
+                    "to": mentioned_issue,
+                    "title": validation['title']
+                }
+
     # Create message record - marked as USER message
     message = {
         "speaker": "user",
@@ -301,7 +380,8 @@ def store_pending_message() -> None:
         "hash": compute_hash(prompt),
         "signature": extract_signature(prompt),
         "key_phrases": extract_key_phrases(prompt, 10),
-        "preview": prompt[:100] + "..." if len(prompt) > 100 else prompt
+        "preview": prompt[:100] + "..." if len(prompt) > 100 else prompt,
+        "content": prompt  # Store full content for auto-transcription
     }
 
     # Add to pending
@@ -322,14 +402,14 @@ def extract_claude_response(transcript_path: str) -> Optional[str]:
     We look for the last assistant message.
     """
     if not transcript_path:
-        print("DEBUG extract_claude_response: path is empty", file=sys.stderr)
+        debug_print("extract_claude_response: path is empty")
         return None
 
     # CRITICAL: Expand tilde in path (Stop hook provides ~/ paths)
     expanded_path = os.path.expanduser(transcript_path)
 
     if not Path(expanded_path).exists():
-        print(f"DEBUG extract_claude_response: path doesn't exist: {transcript_path} -> {expanded_path}", file=sys.stderr)
+        debug_print(f"extract_claude_response: path doesn't exist: {transcript_path} -> {expanded_path}")
         return None
 
     try:
@@ -372,15 +452,15 @@ def extract_claude_response(transcript_path: str) -> Optional[str]:
                 except json.JSONDecodeError:
                     continue
 
-        print(f"DEBUG extract_claude_response: parsed {entry_count} entries, found {assistant_count} assistant messages", file=sys.stderr)
+        debug_print(f"extract_claude_response: parsed {entry_count} entries, found {assistant_count} assistant messages")
         if last_assistant_msg:
-            print(f"DEBUG extract_claude_response: last msg length={len(last_assistant_msg)}", file=sys.stderr)
+            debug_print(f"extract_claude_response: last msg length={len(last_assistant_msg)}")
         else:
-            print("DEBUG extract_claude_response: NO assistant message content found", file=sys.stderr)
+            debug_print("extract_claude_response: NO assistant message content found")
 
         return last_assistant_msg
     except IOError as e:
-        print(f"DEBUG extract_claude_response: IOError: {e}", file=sys.stderr)
+        debug_print(f"extract_claude_response: IOError: {e}")
         return None
 
 
@@ -613,13 +693,13 @@ def verify_transcription() -> None:
         validation = ghe_validate_issue(issue_num)
         if not validation['valid']:
             # Issue is closed, deleted, or invalid
-            print(f"DEBUG: Issue #{issue_num} invalid: {validation['error']}", file=sys.stderr)
+            debug_print(f"Issue #{issue_num} invalid: {validation['error']}")
 
             if validation['state'] == 'CLOSED':
                 # Issue was closed - get or create fallback
                 fallback = ghe_get_or_create_fallback_issue()
                 if fallback:
-                    print(f"DEBUG: Using fallback issue #{fallback}", file=sys.stderr)
+                    debug_print(f"Using fallback issue #{fallback}")
                     issue_num = fallback
                     # Update the config file to use fallback
                     pending_path = get_pending_file_path()
@@ -628,13 +708,13 @@ def verify_transcription() -> None:
                         json.dump({'issue': fallback, 'title': 'GENERAL DISCUSSION (fallback)', 'last_active': datetime.now(timezone.utc).isoformat()}, f)
                 else:
                     # Can't create fallback - allow stop (will lose messages)
-                    print("DEBUG: Failed to create fallback issue", file=sys.stderr)
+                    debug_print("Failed to create fallback issue")
                     silent_exit()
             else:
                 # Issue doesn't exist or error - try fallback
                 fallback = ghe_get_or_create_fallback_issue()
                 if fallback:
-                    print(f"DEBUG: Issue not found, using fallback #{fallback}", file=sys.stderr)
+                    debug_print(f"Issue not found, using fallback #{fallback}")
                     issue_num = fallback
                 else:
                     silent_exit()
@@ -643,7 +723,7 @@ def verify_transcription() -> None:
         # No issue configured - try to create fallback
         fallback = ghe_get_or_create_fallback_issue()
         if fallback:
-            print(f"DEBUG: No issue configured, created fallback #{fallback}", file=sys.stderr)
+            debug_print(f"No issue configured, created fallback #{fallback}")
             issue_num = fallback
         else:
             # Can't verify without an issue - allow stop
@@ -738,16 +818,16 @@ def verify_transcription() -> None:
                     agent = get_posting_agent(str(issue_num), None)
                     post_to_issue(str(issue_num), agent, content, False)
                     still_pending.remove(msg)
-                    print(f"DEBUG auto-transcribed Claude response to issue #{issue_num}", file=sys.stderr)
+                    debug_print(f"Auto-transcribed Claude response to issue #{issue_num}")
                 elif speaker == "user":
                     # User messages: use GitHub username
                     username = ghe_get_github_user()
                     post_to_issue(str(issue_num), username, content, True)
                     still_pending.remove(msg)
-                    print(f"DEBUG auto-transcribed user message to issue #{issue_num}", file=sys.stderr)
+                    debug_print(f"Auto-transcribed user message to issue #{issue_num}")
         except Exception as e:
             # If auto-transcribe fails, continue with blocking
-            print(f"DEBUG auto-transcribe failed: {e}", file=sys.stderr)
+            debug_print(f"Auto-transcribe failed: {e}")
 
     # Compile all issues for reporting
     all_issues = []
@@ -787,32 +867,34 @@ def verify_transcription() -> None:
         error_msg += "\n\nEDIT the problematic comments to fix issues, or POST missing messages!"
         error_msg += "\n" + "="*60
 
-        # DEBUG: Show pending messages breakdown
-        error_msg += "\n\n[DEBUG] Pending messages breakdown:"
-        user_count = sum(1 for m in pending if m.get("speaker") == "user")
-        claude_count = sum(1 for m in pending if m.get("speaker") == "claude")
-        other_count = len(pending) - user_count - claude_count
-        error_msg += f"\n  Total: {len(pending)} | User: {user_count} | Claude: {claude_count} | Other: {other_count}"
-        for i, m in enumerate(pending[:5]):  # Show first 5
-            speaker = m.get("speaker", "?")
-            preview = m.get("preview", "???")[:40]
-            ts = m.get("timestamp", "?")[:19]
-            error_msg += f"\n  [{i+1}] {speaker}: \"{preview}...\" @ {ts}"
+        # Only show detailed debug info if DEBUG_MODE is enabled
+        if DEBUG_MODE:
+            # DEBUG: Show pending messages breakdown
+            error_msg += "\n\n[DEBUG] Pending messages breakdown:"
+            user_count = sum(1 for m in pending if m.get("speaker") == "user")
+            claude_count = sum(1 for m in pending if m.get("speaker") == "claude")
+            other_count = len(pending) - user_count - claude_count
+            error_msg += f"\n  Total: {len(pending)} | User: {user_count} | Claude: {claude_count} | Other: {other_count}"
+            for i, m in enumerate(pending[:5]):  # Show first 5
+                speaker = m.get("speaker", "?")
+                preview = m.get("preview", "???")[:40]
+                ts = m.get("timestamp", "?")[:19]
+                error_msg += f"\n  [{i+1}] {speaker}: \"{preview}...\" @ {ts}"
 
-        # DEBUG: Show last store-response debug info
-        last_debug = data.get("last_store_debug")
-        if last_debug:
-            error_msg += "\n\n[DEBUG] Last store-response:"
-            if isinstance(last_debug, dict):
-                error_msg += f"\n  transcript_path: {last_debug.get('transcript_path', 'N/A')}"
-                error_msg += f"\n  expanded_path: {last_debug.get('expanded_path', 'N/A')}"
-                error_msg += f"\n  path_exists: {last_debug.get('path_exists', 'N/A')}"
-                error_msg += f"\n  response_found: {last_debug.get('response_found', 'N/A')}"
-                error_msg += f"\n  response_length: {last_debug.get('response_length', 'N/A')}"
-                if last_debug.get('error'):
-                    error_msg += f"\n  ERROR: {last_debug.get('error')}"
-            else:
-                error_msg += f"\n  {last_debug}"
+            # DEBUG: Show last store-response debug info
+            last_debug = data.get("last_store_debug")
+            if last_debug:
+                error_msg += "\n\n[DEBUG] Last store-response:"
+                if isinstance(last_debug, dict):
+                    error_msg += f"\n  transcript_path: {last_debug.get('transcript_path', 'N/A')}"
+                    error_msg += f"\n  expanded_path: {last_debug.get('expanded_path', 'N/A')}"
+                    error_msg += f"\n  path_exists: {last_debug.get('path_exists', 'N/A')}"
+                    error_msg += f"\n  response_found: {last_debug.get('response_found', 'N/A')}"
+                    error_msg += f"\n  response_length: {last_debug.get('response_length', 'N/A')}"
+                    if last_debug.get('error'):
+                        error_msg += f"\n  ERROR: {last_debug.get('error')}"
+                else:
+                    error_msg += f"\n  {last_debug}"
 
         print(error_msg, file=sys.stderr)
         sys.exit(2)  # Exit code 2 blocks Claude from stopping

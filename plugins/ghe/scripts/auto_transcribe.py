@@ -591,6 +591,16 @@ def post_to_issue(issue_num: str, speaker: str, message: str, is_user: bool = Fa
     # Post to GitHub
     run_gh("issue", "comment", issue_num, "--body", comment)
 
+    # Update TOC after posting
+    try:
+        scripts_dir = Path(__file__).parent
+        subprocess.run(
+            ['python3', str(scripts_dir / 'toc_manager.py'), 'update', str(issue_num)],
+            capture_output=True, check=False, timeout=30
+        )
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+        pass  # TOC update is non-critical, don't block on failure
+
 
 def post_user_message(message: str) -> bool:
     """

@@ -24,9 +24,9 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_context.py",
-            "timeout": 10,
-            "suppressOutput": true
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_notify.py",
+            "timeout": 5,
+            "suppressOutput": false
           }
         ]
       }
@@ -46,12 +46,6 @@
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_issue_set.py",
             "timeout": 5,
             "suppressOutput": true
-          },
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_user_prompt.py",
-            "timeout": 10,
-            "suppressOutput": true
           }
         ]
       }
@@ -60,12 +54,6 @@
       {
         "matcher": ".*",
         "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_stop.py",
-            "timeout": 10,
-            "suppressOutput": true
-          },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcription_enforcer.py store-response",
@@ -90,6 +78,19 @@
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/transcribe_reminder.py",
             "timeout": 5000,
             "suppressOutput": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect_issue_changes.py",
+            "timeout": 45,
+            "suppressOutput": false
           }
         ]
       }
